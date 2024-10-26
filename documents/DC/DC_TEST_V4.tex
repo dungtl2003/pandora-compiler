@@ -1,0 +1,132 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{times}
+\usepackage[utf8]{vietnam}
+\usepackage[left=3cm,right=2cm,top=2cm,bottom=2cm]{geometry} 
+\usepackage{graphicx}   %thêm ảnh
+\usepackage{tikz}   %vẽ
+\usepackage{enumitem}   %tạo mục lục
+\usepackage{listings}
+\usepackage{array}  %tạo bảng có kích cỡ cụ thể
+\usepackage{pgfmath} %dùng để tạo biến
+
+
+\begin{document}
+    \newlist{mucluc}{enumerate}{5}
+    \newcommand{\mli}{\arabic{mucluci}.}
+    \newcommand{\mlii}{\mli\arabic{muclucii}.}
+    \newcommand{\mliii}{\mlii\arabic{mucluciii}.}
+    \newcommand{\mliv}{\mliii\arabic{mucluciv}.}
+    \newcommand{\mlv}{\mliv\arabic{muclucv}.}
+
+    \setlist[mucluc,1]{
+        label = \fontsize{13}{0} CHƯƠNG \mli,
+        leftmargin=2.5cm,
+        %rightmargin=10pt
+    }
+    \setlist[mucluc,2]{
+        label = \mlii
+    }
+    \setlist[mucluc,3]{
+        label = \mliii
+    }
+    \setlist[mucluc,4]{
+        label = \mliv
+    }
+    \setlist[mucluc,5]{
+        label = \mlv
+    }
+
+    \begin{center}
+        \begin{tabular}{ c c }
+            HỌC VIỆN KỸ THUẬT MẬT MÃ & \textbf{CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM}\\
+            \textbf{KHOA CÔNG NGHỆ THÔNG TIN} & \textbf{Độc lập - Tự do - Hạnh phúc}
+        \end{tabular}
+    \end{center}
+
+    \begin{center}
+        \fontsize{13}{35} \textbf{XÁC NHẬN ĐỀ CƯƠNG THỰC TẬP CƠ SỞ\\}
+    \end{center}
+
+    \noindent
+    \hspace{-10pt}
+    \begin{tabular}{ m{3.5cm} m{10cm}}
+        \textbf{Tên chuyên đề: }\newline & Xây dựng trình biên dịch cho ngôn ngữ lập trình Pandora sử dụng ngôn ngữ Rust
+    \end{tabular}
+
+    \noindent
+    \textbf{Lớp: } CT6D\\
+    \textbf{Danh sách thành viên trong nhóm: }
+    \begin{center}
+        \begin{tabular}{ m{5cm} m{2.5cm} m{6cm} }
+            Nguyễn Hữu Nhật Quang & 0348529273 & nhnquang01102k3@gmail.com\\
+            Trần Lưu Dũng & 0966124477 & luudung0806@gmail.com
+        \end{tabular}
+    \end{center}
+
+    \begin{center}
+        \textbf{Nội dung đề cương chi tiết}
+    \end{center}
+
+
+    \begin{mucluc}
+        \item TỔNG QUAN VỀ NGÔN NGỮ VÀ COMPILER
+        \begin{mucluc}
+            \item Giới thiệu về ngôn ngữ Pandora
+            \item Khái niệm và vai trò của compiler
+            \begin{mucluc}
+                \item Khái niệm compiler
+                \item Vai trò của compiler
+            \end{mucluc}
+            \item Giới thiệu về ngôn ngữ Rust
+            \item Mục tiêu của đề tài
+        \end{mucluc}
+        \item KIẾN TRÚC TỔNG QUAN VỀ COMPILER
+        \begin{mucluc}
+            \item Phân tích từ vựng
+            \item Phân tích cú pháp
+            \item Phân tích ngữ nghĩa
+            \item Sinh mã trung gian
+            \item Tối ưu mã
+            \item Sinh mã
+            \item Quản lý bảng ký hiệu
+            \item Xử lí lỗi
+        \end{mucluc}
+        \item QUÁ TRÌNH XÂY DỰNG COMPILER SỬ DỤNG NGÔN NGỮ RUST
+        \begin{mucluc}
+            \item Thiết lập môi trường phát triển
+            \item Xây dựng bảng kí hiệu
+            \item Xây dựng bộ phân tích từ vựng (Lexer)
+            \item Xây dựng bộ phân tích cú pháp (Parser)
+            \item Xây dựng bộ phân tích ngữ nghĩa
+            \item Sinh mã
+            \item Xây dựng bộ xử lí lỗi
+        \end{mucluc}
+        \item TRIỂN KHAI THỰC NGHIỆM VÀ ĐÁNH GIÁ
+        \begin{mucluc}
+            \item Triển khai biên dịch chương trình in “Hello, world”
+            \begin{mucluc}
+                \item Quá trình biên dịch chương trình 
+                \item Kết quả biên dịch chương trình
+            \end{mucluc}
+            \item Triển khai với những ví dụ khác
+            \item Đánh giá
+        \end{mucluc}
+    \end{mucluc}
+
+    % \fontsize{13}{0} 
+    \noindent 
+    \vspace{5pt}KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN\\\vspace{5pt}TÀI LIỆU THAM KHẢO\\PHỤ LỤC
+    
+    \vspace{1cm}
+    \fontsize{12}{0} 
+    \begin{tabular}{ m{8cm} c }
+        & \textbf{Xác nhận của cán bộ hướng dẫn}\\
+        & \textit{(Ký và ghi rõ họ tên)}\\
+        &\\ &\\ &\\ 
+        & \textbf{Nguyễn Văn Phác}
+    \end{tabular}
+
+\end{document}
+
+
+
