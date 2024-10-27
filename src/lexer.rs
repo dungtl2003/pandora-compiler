@@ -2,10 +2,23 @@ use unicode_xid::UnicodeXID;
 
 mod cursor;
 
-use crate::token::{
-    Base, BinOpToken, CommentKind, Delimiter, DocStyle, LiteralKind, Token, TokenKind,
-};
+use crate::token::{Base, CommentKind, DocStyle, LiteralKind, RawStrError, Token, TokenKind};
 use cursor::Cursor;
+
+pub fn tokenize(source: &str) -> Vec<Token> {
+    let mut tokens: Vec<Token> = Vec::new();
+    let mut cursor = Cursor::new(source);
+
+    loop {
+        let token = cursor.advance_token();
+        let is_last_token = token.kind() == TokenKind::Eof;
+        tokens.push(token);
+
+        if is_last_token {
+            return tokens;
+        }
+    }
+}
 
 fn is_valid_emoji(c: char) -> bool {
     // Ensure the character is a valid emoji with an emoji presentation.
@@ -64,75 +77,38 @@ impl Cursor<'_> {
         let kind = match first_char {
             c if is_whitespace(c) => self.whitespace(),
 
+            ':' => TokenKind::Colon,
             ',' => TokenKind::Comma,
             '.' => TokenKind::Dot,
             ';' => TokenKind::Semicolon,
+            '?' => TokenKind::Question,
 
-            '(' => TokenKind::OpenDelim(Delimiter::Parenthesis),
-            ')' => TokenKind::CloseDelim(Delimiter::Parenthesis),
-            '[' => TokenKind::OpenDelim(Delimiter::Bracket),
-            ']' => TokenKind::CloseDelim(Delimiter::Bracket),
-            '{' => TokenKind::OpenDelim(Delimiter::Brace),
-            '}' => TokenKind::CloseDelim(Delimiter::Brace),
+            '(' => TokenKind::OpenParen,
+            ')' => TokenKind::CloseParen,
+            '[' => TokenKind::OpenBracket,
+            ']' => TokenKind::CloseBracket,
+            '{' => TokenKind::OpenBrace,
+            '}' => TokenKind::CloseBrace,
 
-            // Not or Not equal
-            '!' => match self.first() {
-                '=' => {
-                    self.eat();
-                    TokenKind::NotEqual
-                }
-                _ => TokenKind::Not,
-            },
-
-            // Assign or Equal
-            '=' => match self.first() {
-                '=' => {
-                    self.eat();
-                    TokenKind::Equal
-                }
-                _ => TokenKind::Assign,
-            },
-
-            // Greater, Greater or equal, Shift right
-            '>' => match self.first() {
-                '=' => {
-                    self.eat();
-                    TokenKind::GreaterEqual
-                }
-                '>' => {
-                    self.eat();
-                    TokenKind::BinOp(BinOpToken::Shr)
-                }
-                _ => TokenKind::Greater,
-            },
-
-            // Less, Less or equal, Shift left
-            '<' => match self.first() {
-                '=' => {
-                    self.eat();
-                    TokenKind::LessEqual
-                }
-                '<' => {
-                    self.eat();
-                    TokenKind::BinOp(BinOpToken::Shl)
-                }
-                _ => TokenKind::Less,
-            },
+            '!' => self.not_or_not_equal(),
+            '=' => self.assign_or_equal(),
+            '>' => self.greater_or_ge_or_shift_right(),
+            '<' => self.less_or_le_or_shift_left(),
 
             '~' => TokenKind::Tilde,
-            '+' => TokenKind::BinOp(BinOpToken::Plus),
-            '-' => TokenKind::BinOp(BinOpToken::Minus),
-            '*' => TokenKind::BinOp(BinOpToken::Star),
-            '%' => TokenKind::BinOp(BinOpToken::Percent),
-            '^' => TokenKind::BinOp(BinOpToken::Caret),
-            '&' => TokenKind::BinOp(BinOpToken::And),
-            '|' => TokenKind::BinOp(BinOpToken::Or),
+            '+' => TokenKind::Plus,
+            '-' => TokenKind::Minus,
+            '*' => TokenKind::Star,
+            '%' => TokenKind::Percent,
+            '^' => TokenKind::Caret,
+            '&' => self.and_or_and_and(),
+            '|' => self.or_or_or_or(),
 
             // Slash, comment or block comment.
             '/' => match self.first() {
                 '/' => self.line_comment(),
                 '*' => self.block_comment(),
-                _ => TokenKind::BinOp(BinOpToken::Slash),
+                _ => TokenKind::Slash,
             },
 
             '0'..='9' => self.number(),
@@ -140,11 +116,15 @@ impl Cursor<'_> {
             // Raw identifier, Identifier, Raw double quote string
             'r' => match (self.first(), self.second()) {
                 ('#', c1) if is_id_start(c1) => self.raw_identifier(),
-                ('#', _) => self.raw_double_quote_string(),
+                ('#', _) => {
+                    let res = self.raw_double_quote_string();
+                    TokenKind::Literal(LiteralKind::RawStr { n_hashes: res.ok() })
+                }
                 _ => self.identifier(),
             },
 
-            '\"' => self.double_quote_string(),
+            '\'' => self.single_quote_string(),
+            '"' => self.double_quote_string(),
 
             c if is_id_start(c) => self.identifier(),
 
@@ -152,6 +132,120 @@ impl Cursor<'_> {
         };
 
         Token::new(kind, self.bytes_eaten())
+    }
+
+    /// 🗿🗿🗿
+    fn or_or_or_or(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == '|');
+
+        match self.first() {
+            '|' => {
+                self.eat();
+                TokenKind::OrOr
+            }
+            _ => TokenKind::Or,
+        }
+    }
+
+    fn and_or_and_and(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == '&');
+
+        match self.first() {
+            '&' => {
+                self.eat();
+                TokenKind::AndAnd
+            }
+            _ => TokenKind::And,
+        }
+    }
+
+    fn less_or_le_or_shift_left(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == '<');
+
+        match self.first() {
+            '=' => {
+                self.eat();
+                TokenKind::LessEqual
+            }
+            '<' => {
+                self.eat();
+                TokenKind::Shl
+            }
+            _ => TokenKind::Less,
+        }
+    }
+
+    fn greater_or_ge_or_shift_right(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == '>');
+
+        match self.first() {
+            '=' => {
+                self.eat();
+                TokenKind::GreaterEqual
+            }
+            '>' => {
+                self.eat();
+                TokenKind::Shr
+            }
+            _ => TokenKind::Greater,
+        }
+    }
+
+    fn assign_or_equal(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == '=');
+
+        match self.first() {
+            '=' => {
+                self.eat();
+                TokenKind::Equal
+            }
+            _ => TokenKind::Assign,
+        }
+    }
+
+    fn not_or_not_equal(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == '!');
+        match self.first() {
+            '=' => {
+                self.eat();
+                TokenKind::NotEqual
+            }
+            _ => TokenKind::Not,
+        }
+    }
+
+    // String because this will not guarantee that there is only 1 symbol.
+    fn single_quote_string(&mut self) -> TokenKind {
+        debug_assert!(self.prev() == '\'');
+
+        // If it only contains 1 symbol.
+        if self.first() == '\\' && self.second() == '\'' {
+            self.eat();
+            self.eat();
+            return TokenKind::Literal(LiteralKind::Char { terminated: true });
+        }
+
+        // This can contains more than 1 symbol.
+        let mut terminated = false;
+        while !self.is_eof() {
+            match self.first() {
+                // Eats twice because \ will take the character after it.
+                '\\' => {
+                    self.eat();
+                    self.eat();
+                }
+                '\'' => {
+                    terminated = true;
+                    self.eat();
+                    break;
+                }
+                _ => {
+                    self.eat();
+                }
+            }
+        }
+
+        TokenKind::Literal(LiteralKind::Char { terminated })
     }
 
     fn whitespace(&mut self) -> TokenKind {
@@ -206,7 +300,7 @@ impl Cursor<'_> {
 
         TokenKind::Comment {
             kind: CommentKind::Block {
-                is_terminated: depths == 0,
+                terminated: depths == 0,
             },
             doc_style,
         }
@@ -221,7 +315,7 @@ impl Cursor<'_> {
                     self.eat();
                     return TokenKind::Literal(LiteralKind::Number {
                         base: Base::Binary,
-                        empty_digit: !self.eat_decimal_digits(),
+                        empty_digit: !self.eat_binary_digits(),
                         empty_exponent: false,
                     });
                 }
@@ -317,7 +411,7 @@ impl Cursor<'_> {
 
         if self.first() == '0' || self.first() == '1' {
             has_digits = true;
-            self.eat_while(|ch| ch == '_' || ch == '0' || ch == '1');
+            self.eat_while(|ch| matches!(ch, '_' | '0' | '1'));
         }
 
         has_digits
@@ -332,7 +426,7 @@ impl Cursor<'_> {
 
         if self.first() >= '0' && self.first() <= '7' {
             has_digits = true;
-            self.eat_while(|ch| ch == '_' || (ch >= '0' && ch <= '7'));
+            self.eat_while(|ch| matches!(ch, '_' | '0'..='7'));
         }
 
         has_digits
@@ -371,9 +465,9 @@ impl Cursor<'_> {
     /// Eats the exponent part, return `true` if there is atleast 1 digit, return `false`
     /// otherwise.
     fn eat_exponent(&mut self) -> bool {
-        debug_assert!(self.prev() == 'e' || self.prev() == 'E');
+        debug_assert!(matches!(self.prev(), 'e' | 'E'));
 
-        if self.first() == '+' || self.first() == '-' {
+        if matches!(self.first(), '+' | '-') {
             self.eat();
         }
 
@@ -381,7 +475,28 @@ impl Cursor<'_> {
     }
 
     fn double_quote_string(&mut self) -> TokenKind {
-        todo!();
+        debug_assert!(self.prev() == '"');
+
+        let mut terminated = false;
+        while !self.is_eof() {
+            match self.first() {
+                // This will eat the character after it.
+                '\\' => {
+                    self.eat();
+                    self.eat();
+                }
+                '"' => {
+                    self.eat();
+                    terminated = true;
+                    break;
+                }
+                _ => {
+                    self.eat();
+                }
+            }
+        }
+
+        TokenKind::Literal(LiteralKind::Str { terminated })
     }
 
     fn identifier(&mut self) -> TokenKind {
@@ -393,8 +508,65 @@ impl Cursor<'_> {
         TokenKind::Ident
     }
 
-    fn raw_double_quote_string(&mut self) -> TokenKind {
-        todo!();
+    fn raw_double_quote_string(&mut self) -> Result<u8, RawStrError> {
+        debug_assert!(self.prev() == 'r' && self.first() == '#');
+
+        let start_pos = self.bytes_eaten();
+        let mut start_hashes = 0;
+
+        while self.first() == '#' {
+            self.eat();
+            start_hashes += 1;
+        }
+
+        match self.first() {
+            '"' => {}
+            bad_char => return Err(RawStrError::InvalidStarter { bad_char }),
+        }
+
+        let mut possible_terminator_offset: Option<u32> = None;
+        let mut max_end_hashes: u32 = 0;
+        let mut maybe_end_hashes: u32;
+
+        loop {
+            self.eat_while(|ch| ch != '"');
+            if self.is_eof() {
+                return Err(RawStrError::NoTerminator {
+                    expected: start_hashes,
+                    found: max_end_hashes,
+                    possible_terminator_offset,
+                });
+            }
+
+            self.eat();
+            match self.first() {
+                '#' => {
+                    maybe_end_hashes = 0;
+                    while self.first() == '#' && maybe_end_hashes < start_hashes {
+                        self.eat();
+                        maybe_end_hashes += 1;
+                    }
+
+                    if maybe_end_hashes == start_hashes {
+                        if maybe_end_hashes > 255 {
+                            return Err(RawStrError::TooManyHashes {
+                                found: maybe_end_hashes,
+                            });
+                        }
+
+                        return Ok(start_hashes as u8);
+                    }
+
+                    // end < start
+                    if maybe_end_hashes > max_end_hashes {
+                        max_end_hashes = maybe_end_hashes;
+                        possible_terminator_offset =
+                            Some(self.bytes_eaten() - start_pos + 1 - max_end_hashes);
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 
     fn raw_identifier(&mut self) -> TokenKind {
@@ -408,7 +580,7 @@ impl Cursor<'_> {
     }
 
     fn eat_while(&mut self, predicate: impl Fn(char) -> bool) {
-        while predicate(self.first()) {
+        while !self.is_eof() && predicate(self.first()) {
             self.eat();
         }
     }
@@ -417,6 +589,372 @@ impl Cursor<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn basic() {
+        let source = r#####"
+/*@ this is main function */
+fun main() {
+    let x: number = 9; // create x
+    let y: number = 8;
+    let z: number = x + y;
+    sysout("x + y = ${x + y}");
+}
+"#####;
+        let mut tokens_iter = tokenize(&source).into_iter();
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(
+                TokenKind::Comment {
+                    kind: CommentKind::Block { terminated: true },
+                    doc_style: Some(DocStyle::Outer)
+                },
+                28
+            ))
+        ); // /*@ this is main function */
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 3))); // fun
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 4))); // main
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::OpenParen, 1))
+        ); // (
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::CloseParen, 1))
+        ); // )
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::OpenBrace, 1))
+        ); // {
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 5))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 3))); // let
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 1))); // x
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Colon, 1))); // :
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 6))); // number
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Assign, 1))); // =
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(
+                TokenKind::Literal(LiteralKind::Number {
+                    base: Base::Decimal,
+                    empty_digit: false,
+                    empty_exponent: false
+                }),
+                1
+            ))
+        ); // 9
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Semicolon, 1))
+        ); // ;
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(
+                TokenKind::Comment {
+                    kind: CommentKind::Line,
+                    doc_style: None
+                },
+                11
+            ))
+        ); // // create x
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 5))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 3))); // let
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 1))); // y
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Colon, 1))); // :
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 6))); // number
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Assign, 1))); // =
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(
+                TokenKind::Literal(LiteralKind::Number {
+                    base: Base::Decimal,
+                    empty_digit: false,
+                    empty_exponent: false
+                }),
+                1
+            ))
+        ); // 8
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Semicolon, 1))
+        ); // ;
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 5))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 3))); // let
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 1))); // z
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Colon, 1))); // :
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 6))); // number
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Assign, 1))); // =
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 1))); // x
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Plus, 1))); // +
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 1))); // y
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Semicolon, 1))
+        ); // ;
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 5))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 6))); // sysout
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::OpenParen, 1))
+        ); // (
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(
+                TokenKind::Literal(LiteralKind::Str { terminated: true }),
+                18
+            ))
+        ); // "x + y = ${x + y}"
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::CloseParen, 1))
+        ); // )
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Semicolon, 1))
+        ); // ;
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::CloseBrace, 1))
+        ); // )
+        assert_eq!(
+            tokens_iter.next(),
+            Some(Token::new(TokenKind::Whitespace, 1))
+        ); //
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Eof, 0))); //
+        assert_eq!(tokens_iter.next(), None); //
+    }
+
+    #[test]
+    fn tokenize_raw_double_quote_string() {
+        let source = r#####"
+r#"abc"#
+r###"a"##b"###
+r##"a"####
+r####"a"#"ab"###"##
+"#####;
+        let mut cursor = Cursor::new(&source);
+
+        // r#"abc"#
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(
+                TokenKind::Literal(LiteralKind::RawStr { n_hashes: Some(1) }),
+                8
+            )
+        );
+
+        // r###"a"##b"###
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(
+                TokenKind::Literal(LiteralKind::RawStr { n_hashes: Some(3) }),
+                14
+            )
+        );
+
+        // r##"a"####
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(
+                TokenKind::Literal(LiteralKind::RawStr { n_hashes: Some(2) }),
+                8
+            )
+        );
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Unknown, 1));
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Unknown, 1));
+
+        // r####"a"#"ab"###"##
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(
+                TokenKind::Literal(LiteralKind::RawStr { n_hashes: None }),
+                20
+            )
+        );
+    }
+
+    #[test]
+    fn tokenize_double_quote_string() {
+        let source = r#"
+"ab🤨"
+"ac\"f"
+"ab\"a
+"#;
+        let mut cursor = Cursor::new(&source);
+
+        // "ab🤨"
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(TokenKind::Literal(LiteralKind::Str { terminated: true }), 8)
+        );
+
+        // "ac\"f"
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(TokenKind::Literal(LiteralKind::Str { terminated: true }), 7)
+        );
+
+        // "ab\"a
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(
+                TokenKind::Literal(LiteralKind::Str { terminated: false }),
+                7
+            )
+        );
+    }
+
+    #[test]
+    fn tokenize_single_quote_string() {
+        let source = r#"
+'a'
+'ab🤨'
+'ac\'f'
+'ab\'a
+"#;
+        let mut cursor = Cursor::new(&source);
+
+        // 'a'
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(
+                TokenKind::Literal(LiteralKind::Char { terminated: true }),
+                3
+            )
+        );
+
+        // Although more than 1 symbol but still count as char (for now).
+        // 'ab🤨'
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(
+                TokenKind::Literal(LiteralKind::Char { terminated: true }),
+                8
+            )
+        );
+
+        // 'ac\'f'
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(
+                TokenKind::Literal(LiteralKind::Char { terminated: true }),
+                7
+            )
+        );
+
+        // 'ab\'a
+        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
+        assert_eq!(
+            cursor.advance_token(),
+            Token::new(
+                TokenKind::Literal(LiteralKind::Char { terminated: false }),
+                7
+            )
+        );
+    }
 
     #[test]
     fn tokenize_block_comment() {
@@ -446,9 +984,7 @@ Outer
             cursor.advance_token(),
             Token::new(
                 TokenKind::Comment {
-                    kind: CommentKind::Block {
-                        is_terminated: true,
-                    },
+                    kind: CommentKind::Block { terminated: true },
                     doc_style: None
                 },
                 30
@@ -462,9 +998,7 @@ Outer
             cursor.advance_token(),
             Token::new(
                 TokenKind::Comment {
-                    kind: CommentKind::Block {
-                        is_terminated: true
-                    },
+                    kind: CommentKind::Block { terminated: true },
                     doc_style: Some(DocStyle::Inner),
                 },
                 12
@@ -479,9 +1013,7 @@ Outer
             cursor.advance_token(),
             Token::new(
                 TokenKind::Comment {
-                    kind: CommentKind::Block {
-                        is_terminated: true
-                    },
+                    kind: CommentKind::Block { terminated: true },
                     doc_style: Some(DocStyle::Outer),
                 },
                 12
@@ -496,9 +1028,7 @@ Outer
             cursor.advance_token(),
             Token::new(
                 TokenKind::Comment {
-                    kind: CommentKind::Block {
-                        is_terminated: true
-                    },
+                    kind: CommentKind::Block { terminated: true },
                     doc_style: None,
                 },
                 40
@@ -513,9 +1043,7 @@ Outer
             cursor.advance_token(),
             Token::new(
                 TokenKind::Comment {
-                    kind: CommentKind::Block {
-                        is_terminated: false
-                    },
+                    kind: CommentKind::Block { terminated: false },
                     doc_style: None,
                 },
                 41

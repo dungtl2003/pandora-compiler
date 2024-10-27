@@ -1,5 +1,3 @@
-type BytePos = u32;
-
 #[derive(Debug, PartialEq, Eq)]
 pub struct Token {
     kind: TokenKind,
@@ -10,23 +8,37 @@ impl Token {
     pub fn new(kind: TokenKind, len: u32) -> Token {
         Token { kind, len }
     }
+
+    pub fn kind(&self) -> TokenKind {
+        self.kind
+    }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TokenKind {
-    /* Structure symbols */
+    /* one/two-char symbol */
+    /// :
+    Colon,
     /// ,
     Comma,
     /// .
     Dot,
     /// ;
     Semicolon,
-    /// '
-    SingleQuote,
-    OpenDelim(Delimiter),
-    CloseDelim(Delimiter),
-
-    /* Expression-operator symbols */
+    /// ?
+    Question,
+    /// (
+    OpenParen,
+    /// )
+    CloseParen,
+    /// {
+    OpenBrace,
+    /// }
+    CloseBrace,
+    /// [
+    OpenBracket,
+    /// ]
+    CloseBracket,
     /// `!`
     Not,
     /// `!=`
@@ -45,7 +57,30 @@ pub enum TokenKind {
     LessEqual,
     /// `~`
     Tilde,
-    BinOp(BinOpToken),
+    /// `+`
+    Plus,
+    /// `-`
+    Minus,
+    /// `*`
+    Star,
+    /// `/`
+    Slash,
+    /// `%`
+    Percent,
+    /// "^"
+    Caret,
+    /// `&`
+    And,
+    /// `&&`
+    AndAnd,
+    /// `|`
+    Or,
+    /// `||`
+    OrOr,
+    /// `<<`
+    Shl,
+    /// `>>`
+    Shr,
 
     // Literal
     Literal(LiteralKind),
@@ -71,66 +106,51 @@ pub enum TokenKind {
     Eof,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DocStyle {
     Inner,
     Outer,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CommentKind {
     Line,
-    Block { is_terminated: bool },
+    Block { terminated: bool },
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum BinOpToken {
-    /// `+`
-    Plus,
-    /// `-`
-    Minus,
-    /// `*`
-    Star,
-    /// `/`
-    Slash,
-    /// `%`
-    Percent,
-    /// "^"
-    Caret,
-    /// `&`
-    And,
-    /// `|`
-    Or,
-    /// `<<`
-    Shl,
-    /// `>>`
-    Shr,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum Delimiter {
-    /// `( ... )`
-    Parenthesis,
-    /// `{ ... }`
-    Brace,
-    /// `[ ... ]`
-    Bracket,
-}
-
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LiteralKind {
-    Str,
-    RawStr,
+    /// `"abc"`, `"ab`, `"ab\"`, `"ab\""`.
+    Str { terminated: bool },
+    /// `r#"abc"#`, `r###"ab"##c"###`, `r###"ab"######`, None means invalid.
+    RawStr { n_hashes: Option<u8> },
+    /// `1_000`, `0b1101`, `0o657`, `0h1af9`.
     Number {
         base: Base,
         empty_digit: bool,
         empty_exponent: bool,
     },
-    Char,
+    // Although kind can be Char but it can be many symbols (error). Ex: 'abc' -> error.
+    /// `'a'`, `'\''`, `'\\'`, `'abc'`, `'ab`.
+    Char { terminated: bool },
+}
+
+pub enum RawStrError {
+    /// Non `#` symbol between `#` and `"`.
+    InvalidStarter { bad_char: char },
+    /// The string was not terminated. Ex: `r###"abc"##`.
+    /// `possible_terminator_offset` is where we think you should add more `#` symbols.
+    NoTerminator {
+        expected: u32,
+        found: u32,
+        possible_terminator_offset: Option<u32>,
+    },
+    /// When there are more than 255 hashes.
+    TooManyHashes { found: u32 },
 }
 
 /// Base of numeric literal encoding according to its prefix.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Base {
     /// Literal starts with "0b".
     Binary = 2,
