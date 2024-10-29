@@ -4,9 +4,14 @@
 \usepackage[left=3cm,right=2cm,top=2cm,bottom=2cm]{geometry} 
 \usepackage{graphicx}   %insert image
 \usepackage{tikz}   %draw
-\usepackage{titlesec}   %use titleformat
 
-\usepackage{cleveref}
+\usepackage{titlesec}   %use titleformat
+\usepackage{tocloft}
+
+\usepackage{tocloft}    %format title toc
+
+
+% \usepackage{cleveref}
 
 \usepackage{indentfirst} %add indent to first para after subsection
 
@@ -16,25 +21,48 @@
 
 \usepackage{custom/custom-package}
 
-% \usepackage{pgffor}   %Use foreach
-% \newcommand{\cmd}{-x-}
+\usepackage{pgffor}   %Use foreach
+
+\usepackage{hyperref}   %Link toc
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    % pdftitle={Overleaf Example},
+    % pdfpagemode=FullScreen,
+}
+    
+\urlstyle{same}
 
 
 
 \graphicspath{{images/}}    %Path images
 
 \begin{document}
+
 \include{custom/format}
 
-% \include{Sections/Tittle/tittle}
+\pagenumbering{gobble}  %remove number of page
+
+\include{chapters/tittle/tittle}
+ 
 \fontsizedefault
 
 \include{chapters/preface}
 \include{chapters/undertaking}
+\include{chapters/table-of-contents}
+
+\clearpage
+\pagenumbering{roman}   %i,ii,iii,...
+\include{chapters/table-of-symbols}
+\include{chapters/list-of-tables}
+\include{chapters/list-of-figure}
+
+
+\clearpage
+\pagenumbering{arabic}  %1,2,3,...
 \include{chapters/chapter1/chapter1}
-
-% hello loop
-
-% \foreach \n in {1,5,4}{\cmd{} n }
 
 \end{document}
