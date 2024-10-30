@@ -10,21 +10,35 @@
 \setlist[mucluc,1]{
     label = \bf{CHƯƠNG \mli},
     leftmargin=3cm,
+    before={\setlength{\topsep}{0cm}},
+    % after=\vspace*{-1cm}
     %rightmargin=10pt
 }
 % \setlist[mucluc,2]{
 %     label = \mlii
 % }
 
-Trong bối cảnh phát triển mạnh mẽ của ngành công nghệ thông tin, ngôn ngữ lập trình và công cụ biên dịch (compiler) đóng vai trò quan trọng trong việc xây dựng các phần mềm hiện đại. Từ các công cụ phân tích dữ liệu đến các hệ thống điều khiển công nghiệp, các ngôn ngữ lập trình mới không ngừng được ra đời nhằm đáp ứng nhu cầu đa dạng và chuyên biệt của ngành.
+Trong bối cảnh phát triển mạnh mẽ của ngành công nghệ thông tin, ngôn ngữ lập trình và 
+công cụ biên dịch (compiler) đóng vai trò quan trọng trong việc xây dựng các phần mềm 
+hiện đại. Từ các công cụ phân tích dữ liệu đến các hệ thống điều khiển công nghiệp, 
+các ngôn ngữ lập trình mới không ngừng được ra đời nhằm đáp ứng nhu cầu đa dạng và 
+chuyên biệt của ngành.
 
-Nhóm chúng em thực hiện đề tài "Xây dựng trình biên dịch cho ngôn ngữ lập trình Pandora sử dụng ngôn ngữ Rust" nhằm nghiên cứu, thiết kế và triển khai một trình biên dịch dành riêng cho ngôn ngữ lập trình Pandora. Đề tài này được lựa chọn với mục tiêu khám phá các khía cạnh cốt lõi của quá trình biên dịch và mở ra hướng đi mới cho việc ứng dụng Rust vào các dự án phức tạp.
+Nhóm chúng em thực hiện đề tài "Xây dựng trình biên dịch cho ngôn ngữ lập trình Pandora 
+sử dụng ngôn ngữ Rust" nhằm nghiên cứu, thiết kế ngôn ngữ lập trình Pandora và triển khai 
+một trình biên dịch dành riêng cho ngôn ngữ này. Đề tài này được lựa chọn với mục tiêu 
+khám phá các khía cạnh cốt lõi của quá trình biên dịch và mở ra hướng đi mới cho việc 
+ứng dụng Rust vào các dự án phức tạp.
 
-Qua quá trình thực hiện, nhóm đã tìm hiểu về kiến trúc của compiler, từ các giai đoạn phân tích từ vựng, phân tích cú pháp, phân tích ngữ nghĩa, đến sinh mã và tối ưu mã. Đồng thời, chúng em đã triển khai các kỹ thuật và thư viện mới của Rust nhằm đạt được hiệu quả cao trong việc biên dịch và xử lý lỗi.
+Qua quá trình thực hiện, nhóm đã tìm hiểu về kiến trúc của compiler, từ các giai đoạn 
+phân tích từ vựng, phân tích cú pháp, phân tích ngữ nghĩa, đến sinh mã và tối ưu mã. 
+Đồng thời, chúng em đã triển khai các kỹ thuật và thư viện mới của Rust nhằm đạt được 
+hiệu quả cao trong việc biên dịch và xử lý lỗi.
 
 Nội dung báo cáo được chia làm bốn chương cụ thể như sau:
 
 \begin{mucluc}
+    
     \item {\bf{Tổng quan về ngôn ngữ và compiler}} - 
         Giới thiệu về các đặc điểm cơ bản của ngôn ngữ lập trình 
         Pandora và các khái niệm cơ bản liên quan đến trình biên dịch 
@@ -60,9 +74,12 @@ Nội dung báo cáo được chia làm bốn chương cụ thể như sau:
 \end{mucluc}
 
 Cuối cùng, báo cáo sẽ tổng kết lại những kết quả đạt được, phân tích về những
-hạn chế và đề xuất một số hướng cải tiến, phát triển tiếp theo cho ngôn ngữ Pandora và trình biên dịch trong
-tương lai, chẳng hạn như tối ưu hóa hệ thống để tăng tốc độ biên dịch hoặc mở
-rộng chức năng của ngôn ngữ Pandora, giúp ngôn ngữ lập trình Pandora có thể được ứng dụng thực tế tốt hơn
+hạn chế và đề xuất một số hướng cải tiến, phát triển tiếp theo cho ngôn ngữ Pandora và 
+trình biên dịch  trong tương lai, chẳng hạn như tối ưu hóa hệ thống để tăng tốc độ biên 
+dịch hoặc mở rộng chức năng của ngôn ngữ Pandora, giúp ngôn ngữ lập trình Pandora có thể 
+được ứng dụng thực tế tốt hơn
 
-Chúng em hy vọng đề tài này sẽ đóng góp một phần nhỏ vào công cuộc nghiên cứu và phát triển các công cụ biên dịch, đồng thời tạo tiền đề cho các hướng nghiên cứu mới về compiler và ngôn ngữ lập trình trong tương lai.
+Chúng em hy vọng đề tài này sẽ đóng góp một phần nhỏ vào công cuộc nghiên cứu và phát 
+triển các công cụ biên dịch, đồng thời tạo tiền đề cho các hướng nghiên cứu mới về 
+compiler và ngôn ngữ lập trình trong tương lai.
 
