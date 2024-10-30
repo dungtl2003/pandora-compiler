@@ -1,12 +1,12 @@
-/// This is main function.
 fun main() {
+    //! This is main function.
     let name: String = String.new("John Cena");
     let age: number = 21; // Calculate my age.
 
     print_raw_message(name, age);
 }
 
-/*@ This is another function.
+/*@ This is another function. */
 fun print_raw_message(name: String, age: number) {
-    sysout("Hello ${name}, you are ${number} years old!\n");
+    sysout("Hello ${name}, you are ${number} years old🫣!\n");
 }

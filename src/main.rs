@@ -1,8 +1,12 @@
+mod ast;
 mod error_handler;
+mod interner;
 #[path = "keyword.rs"]
 mod kw;
 mod lexer;
-mod token;
+mod parser;
+mod session_global;
+mod visitor;
 
 use std::fs;
 

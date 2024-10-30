@@ -1,0 +1,17 @@
+\begin{flushleft}
+\begin{tikzpicture}[shorten >=1pt,auto,node distance=2.8cm]
+  \node[initial,state] (q1)      {$1$};
+  \node[state]         (q2) [right of=q1]  {$2$};
+  \node[state] (q4) [below right of=q2] {$4$};
+  \node[state, accepting]         (q3) [above right of=q4] {$3$};
+  \node[state] (q5) [right of=q3] {$5$};
+  \node[state] (q6) [right of=q5] {$6$};
+  \node[state] (q7) [right of=q6] {$7$};
+
+  \path[->]          (q1)  edge                 node {a} (q2);
+  \path[->]          (q2)  edge   [bend left=20]   node {b} (q3);
+  \path[->]          (q3)  edge   [bend left=20]   node {a} (q2);
+  \path[->]          (q2)  edge                 node [swap] {b} (q4);
+  \path[->]          (q4)  edge                 node [swap] {a} (q3);
+\end{tikzpicture}
+\end{flushleft}

@@ -1,9 +1,11 @@
-use unicode_xid::UnicodeXID;
-
 mod cursor;
+mod token;
+mod unescape;
 
-use crate::token::{Base, CommentKind, DocStyle, LiteralKind, RawStrError, Token, TokenKind};
-use cursor::Cursor;
+pub use cursor::Cursor;
+pub use token::{Base, DocStyle, LiteralKind, RawStrError, Token, TokenKind};
+pub use unescape::{unescape_char, EscapeError};
+use unicode_xid::UnicodeXID;
 
 pub fn tokenize(source: &str) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
@@ -11,7 +13,7 @@ pub fn tokenize(source: &str) -> Vec<Token> {
 
     loop {
         let token = cursor.advance_token();
-        let is_last_token = token.kind() == TokenKind::Eof;
+        let is_last_token = token.kind == TokenKind::Eof;
         tokens.push(token);
 
         if is_last_token {
@@ -66,7 +68,7 @@ fn is_id_continue(c: char) -> bool {
 
 impl Cursor<'_> {
     /// Parses a token from the input string.
-    fn advance_token(&mut self) -> Token {
+    pub fn advance_token(&mut self) -> Token {
         self.reset_bytes_eaten();
 
         let first_char = match self.eat() {
@@ -165,13 +167,13 @@ impl Cursor<'_> {
         match self.first() {
             '=' => {
                 self.eat();
-                TokenKind::LessEqual
+                TokenKind::Le
             }
             '<' => {
                 self.eat();
                 TokenKind::Shl
             }
-            _ => TokenKind::Less,
+            _ => TokenKind::Le,
         }
     }
 
@@ -181,13 +183,13 @@ impl Cursor<'_> {
         match self.first() {
             '=' => {
                 self.eat();
-                TokenKind::GreaterEqual
+                TokenKind::Ge
             }
             '>' => {
                 self.eat();
                 TokenKind::Shr
             }
-            _ => TokenKind::Greater,
+            _ => TokenKind::Gt,
         }
     }
 
@@ -197,9 +199,9 @@ impl Cursor<'_> {
         match self.first() {
             '=' => {
                 self.eat();
-                TokenKind::Equal
+                TokenKind::Eq
             }
-            _ => TokenKind::Assign,
+            _ => TokenKind::Eq,
         }
     }
 
@@ -208,9 +210,9 @@ impl Cursor<'_> {
         match self.first() {
             '=' => {
                 self.eat();
-                TokenKind::NotEqual
+                TokenKind::BangEq
             }
-            _ => TokenKind::Not,
+            _ => TokenKind::Bang,
         }
     }
 
@@ -219,7 +221,7 @@ impl Cursor<'_> {
         debug_assert!(self.prev() == '\'');
 
         // If it only contains 1 symbol.
-        if self.first() == '\\' && self.second() == '\'' {
+        if self.first() != '\\' && self.second() == '\'' {
             self.eat();
             self.eat();
             return TokenKind::Literal(LiteralKind::Char { terminated: true });
@@ -268,10 +270,7 @@ impl Cursor<'_> {
 
         self.eat_while(|ch| ch != '\n');
 
-        TokenKind::Comment {
-            kind: CommentKind::Line,
-            doc_style,
-        }
+        TokenKind::LineComment { doc_style }
     }
 
     fn block_comment(&mut self) -> TokenKind {
@@ -298,10 +297,8 @@ impl Cursor<'_> {
             self.eat();
         }
 
-        TokenKind::Comment {
-            kind: CommentKind::Block {
-                terminated: depths == 0,
-            },
+        TokenKind::BlockComment {
+            terminated: depths == 0,
             doc_style,
         }
     }
@@ -609,8 +606,8 @@ fun main() {
         assert_eq!(
             tokens_iter.next(),
             Some(Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Block { terminated: true },
+                TokenKind::BlockComment {
+                    terminated: true,
                     doc_style: Some(DocStyle::Outer)
                 },
                 28
@@ -662,7 +659,7 @@ fun main() {
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
         ); //
-        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Assign, 1))); // =
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Eq, 1))); // =
         assert_eq!(
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
@@ -689,13 +686,7 @@ fun main() {
 
         assert_eq!(
             tokens_iter.next(),
-            Some(Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Line,
-                    doc_style: None
-                },
-                11
-            ))
+            Some(Token::new(TokenKind::LineComment { doc_style: None }, 11))
         ); // // create x
         assert_eq!(
             tokens_iter.next(),
@@ -717,7 +708,7 @@ fun main() {
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
         ); //
-        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Assign, 1))); // =
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Eq, 1))); // =
         assert_eq!(
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
@@ -757,7 +748,7 @@ fun main() {
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
         ); //
-        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Assign, 1))); // =
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Eq, 1))); // =
         assert_eq!(
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
@@ -983,8 +974,8 @@ Outer
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Block { terminated: true },
+                TokenKind::BlockComment {
+                    terminated: true,
                     doc_style: None
                 },
                 30
@@ -997,8 +988,8 @@ Outer
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Block { terminated: true },
+                TokenKind::BlockComment {
+                    terminated: true,
                     doc_style: Some(DocStyle::Inner),
                 },
                 12
@@ -1012,8 +1003,8 @@ Outer
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Block { terminated: true },
+                TokenKind::BlockComment {
+                    terminated: true,
                     doc_style: Some(DocStyle::Outer),
                 },
                 12
@@ -1027,8 +1018,8 @@ Outer
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Block { terminated: true },
+                TokenKind::BlockComment {
+                    terminated: true,
                     doc_style: None,
                 },
                 40
@@ -1042,8 +1033,8 @@ Outer
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Block { terminated: false },
+                TokenKind::BlockComment {
+                    terminated: false,
                     doc_style: None,
                 },
                 41
@@ -1066,13 +1057,7 @@ Outer
         assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
         assert_eq!(
             cursor.advance_token(),
-            Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Line,
-                    doc_style: None,
-                },
-                18,
-            )
+            Token::new(TokenKind::LineComment { doc_style: None }, 18,)
         );
 
         // //! Inner doc comment.
@@ -1080,8 +1065,7 @@ Outer
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Line,
+                TokenKind::LineComment {
                     doc_style: Some(DocStyle::Inner),
                 },
                 22,
@@ -1093,8 +1077,7 @@ Outer
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Line,
+                TokenKind::LineComment {
                     doc_style: Some(DocStyle::Inner),
                 },
                 18,
@@ -1106,8 +1089,7 @@ Outer
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Line,
+                TokenKind::LineComment {
                     doc_style: Some(DocStyle::Outer),
                 },
                 22,
@@ -1119,8 +1101,7 @@ Outer
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Comment {
-                    kind: CommentKind::Line,
+                TokenKind::LineComment {
                     doc_style: Some(DocStyle::Outer),
                 },
                 18,

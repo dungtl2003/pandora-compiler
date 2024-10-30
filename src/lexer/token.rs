@@ -1,16 +1,12 @@
 #[derive(Debug, PartialEq, Eq)]
 pub struct Token {
-    kind: TokenKind,
-    len: u32,
+    pub kind: TokenKind,
+    pub len: u32,
 }
 
 impl Token {
     pub fn new(kind: TokenKind, len: u32) -> Token {
         Token { kind, len }
-    }
-
-    pub fn kind(&self) -> TokenKind {
-        self.kind
     }
 }
 
@@ -40,21 +36,21 @@ pub enum TokenKind {
     /// ]
     CloseBracket,
     /// `!`
-    Not,
+    Bang,
     /// `!=`
-    NotEqual,
+    BangEq,
     /// `=`
-    Assign,
+    Eq,
     /// `==`
-    Equal,
+    EqEq,
     /// `>`
-    Greater,
+    Gt,
     /// `>=`
-    GreaterEqual,
+    Ge,
     /// `<`
-    Less,
+    Lt,
     /// `<=`
-    LessEqual,
+    Le,
     /// `~`
     Tilde,
     /// `+`
@@ -67,7 +63,7 @@ pub enum TokenKind {
     Slash,
     /// `%`
     Percent,
-    /// "^"
+    /// `^`
     Caret,
     /// `&`
     And,
@@ -92,9 +88,12 @@ pub enum TokenKind {
     RawIdent,
 
     // Comments
-    Comment {
-        kind: CommentKind,
+    LineComment {
         doc_style: Option<DocStyle>,
+    },
+    BlockComment {
+        doc_style: Option<DocStyle>,
+        terminated: bool,
     },
 
     Whitespace,
@@ -110,12 +109,6 @@ pub enum TokenKind {
 pub enum DocStyle {
     Inner,
     Outer,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CommentKind {
-    Line,
-    Block { terminated: bool },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

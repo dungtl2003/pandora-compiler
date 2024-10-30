@@ -1,0 +1,66 @@
+\paragraph{Productions}
+\setlength{\grammarparsep}{20pt plus 1pt minus 1pt} % increase separation between rules
+\setlength{\grammarindent}{12em} % increase separation between LHS/RHS 
+
+\begin{grammar}
+
+<expression> ::= <or> `;'
+
+<or> ::= <and> (`||' <and>)*
+
+<and> ::= <bitwise-or> (`&&' <bitwise-or>)*
+
+<bitwise-or> ::= <bitwise-xor> (`|' <bitwise-xor>)*
+
+<bitwise-xor> ::= <bitwise-and> (`^' <bitwise-and>)*
+
+<bitwise-and> ::= <equality> (`&' <equality>)*
+
+<equality> ::= <comparation> (<equality-op> <comparation>)*
+
+<equality-op> ::=
+`==' 
+\alt `!=' 
+
+<comparation> ::= <shift> (<compare-op> <shift>)*
+
+<compare-op> ::= 
+`<' 
+\alt `<=' 
+\alt `>' 
+\alt `>=' 
+
+<shift> ::= <term> (<shift-op> <term>)*
+
+<shift-op> ::=
+`>>'
+\alt `<<'
+
+<term> ::= <factor> (<term-op> <factor>)*
+
+<term-op> ::=
+`+'
+\alt `-'
+
+<factor> ::= <unary> (<factor-op> <unary>)*
+
+<factor-op> ::=
+`*'
+\alt `/'
+\alt `\%'
+
+<unary> ::= <unary-op> <unary> | <primary>
+
+<unary-op> ::= `!'
+\alt `~'
+
+<primary> ::= 
+`"true"'
+\alt `"false"'
+\alt `CHAR'
+\alt `NUMBER'
+\alt `STRING'
+\alt `RAW_STRING'
+\alt `(' <expression> `)'
+
+\end{grammar}

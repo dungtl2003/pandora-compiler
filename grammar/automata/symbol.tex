@@ -1,0 +1,31 @@
+\hspace*{-4cm}
+\begin{tikzpicture} [default,node distance=1.25cm]
+    % Help grid
+\draw [help lines] (-2,2) grid (2,-2);
+   \node[state,initial left, initial text = {Start}, accepting] (q_0)   {$q_0$}; 
+   \node[state,accepting] (q_20) [right=of q_0] at (5,0) {$q_{20}$}; 
+   \node[state,accepting] (q_21) [below=of q_20] {$q_{21}$}; 
+   \node[state,accepting] (q_22) [below=of q_21] {$q_{22}$}; 
+   \node[state,accepting] (q_23) [below=of q_22] {$q_{23}$}; 
+   \node[state,accepting] (q_24) [below=of q_23] {$q_{24}$}; 
+   \node[state,accepting] (q_25) [below=of q_24] {$q_{25}$}; 
+   \node[state,accepting] (q_26) [below=of q_25] {$q_{26}$}; 
+   \node[state,accepting] (q_27) [below=of q_26] {$q_{27}$}; 
+   \node[state,accepting] (q_28) [below=of q_27] {$q_{28}$}; 
+   \node[state,accepting] (q_29) [below=of q_28] {$q_{29}$}; 
+   \node[state,accepting] (q_30) [below=of q_29] {$q_{30}$}; 
+
+   \path [-stealth, thick,text =red]
+    (q_0) edge node {:} (q_20)
+    (q_0) edge node {,} (q_21)
+    (q_0) edge node {.} (q_22)
+    (q_0) edge node {;} (q_23)
+    (q_0) edge node {?} (q_24)
+    (q_0) edge node {(} (q_25)
+    (q_0) edge node {)} (q_26)
+    (q_0) edge node {[} (q_27)
+    (q_0) edge node {]} (q_28)
+    (q_0) edge node {\{} (q_29)
+    (q_0) edge node {\{} (q_30)
+    ;
+\end{tikzpicture}

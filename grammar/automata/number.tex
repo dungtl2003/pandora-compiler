@@ -1,0 +1,52 @@
+\paragraph{Number}
+\hspace*{-4cm}
+\begin{tikzpicture} [default]
+    % 1 - 15
+   \node[state,initial left, initial text = {0}, accepting] (q_1)   {$q_1$};
+   \node[state] (q_2) [above right=of q_1] {$q_2$}; 
+   \node[state,accepting] (q_3) [right=of q_2] {$q_3$}; 
+   \node[state] (q_4) [below right=of q_2] {$q_4$}; 
+   \node[state,accepting] (q_5) [right=of q_4] {$q_5$}; 
+   \node[state] (q_6) [below left=of q_4] {$q_6$}; 
+   \node[state,accepting] (q_7) [right=of q_6] {$q_7$}; 
+   \node[state] (q_8) [below =of q_1] {$q_8$}; 
+   \node[state,initial, initial text = {1-9}, accepting] (q_9) [below left=of q_8]   {$q_9$}; 
+   \node[state, accepting] (q_10) [below right=of q_9] {$q_{10}$}; 
+   \node[state, accepting] (q_11) [right=of q_10]   {$q_{11}$}; 
+   \node[state] (q_12) [below right=of q_8] {$q_{12}$}; 
+   \node[state] (q_13) [right=of q_12] {$q_{13}$}; 
+   \node[state, accepting] (q_15) [above right =of q_12]   {$q_{15}$}; 
+   \node[state] (q_14) [above right =of q_13] {$q_{14}$}; 
+
+   \path [-stealth, thick,text =red]
+    (q_1) edge node {b} (q_2)
+          edge node {o} (q_4)
+          edge node {h} (q_6)
+          edge node [right] {\_} (q_8)
+          edge node [left] {0-9} (q_9)
+          edge node {e, E} (q_12)
+    (q_2) edge node {0, 1} (q_3) 
+          edge [loop above] node {\_} ()
+    (q_3) edge [loop above] node {0, 1, \_} ()
+    (q_4) edge node {0-7} (q_5) 
+          edge [loop above] node {\_} ()
+    (q_5) edge [loop above] node {0-7, \_} ()
+    (q_6) edge node {0-9, a-f, A-F} (q_7) 
+          edge [loop above] node {\_} ()
+    (q_7) edge [loop above] node {0-9, a-f, A-F, \_} ()
+    (q_8) edge [loop right] node {\_} ()
+          edge node [right] {0-9} (q_9)
+    (q_9) edge [loop below] node {0-9, \_} ()
+          edge node [left] {.} (q_10)
+          edge node {e, E} (q_12)
+    (q_10) edge node [below] {0-9} (q_11)
+    (q_11) edge [loop below] node {0-9, \_} ()
+           edge node {e, E} (q_12)
+    (q_12) edge node [below] {+, -} (q_13)
+           edge node {\_} (q_14)
+           edge node {0-9} (q_15)
+    (q_13) edge node [right] {\_} (q_14)
+    (q_14) edge [loop right] node {\_} ()
+           edge node [above] {0-9} (q_15)
+    (q_15) edge [loop left] node {0-9, \_} ();
+\end{tikzpicture}
