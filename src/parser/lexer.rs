@@ -152,7 +152,18 @@ impl<'src> StringReader<'src> {
         start: BytePos,
         end: BytePos,
     ) -> TokenKind {
-        todo!();
+        if let Some(n) = n_hashes {
+            // r##" "#
+            let start_content = start + n as u32 + 2;
+            let end_content = end - n as u32 - 1;
+            let symbol = self.symbol_from_to(start_content, end_content);
+            TokenKind::Literal(Lit {
+                kind: LitKind::RawStr(n),
+                symbol,
+            })
+        } else {
+            self.report_raw_string_error();
+        }
     }
 
     fn cook_str_literal(&mut self, terminated: bool, start: BytePos, end: BytePos) -> TokenKind {
@@ -214,6 +225,7 @@ impl<'src> StringReader<'src> {
         &self.src[start as usize..end as usize]
     }
 
+    /// Symbol from start (inclusive) to end (exclusive).
     fn symbol_from_to(&mut self, start: BytePos, end: BytePos) -> Symbol {
         let content = self.str_from_to(start, end);
         self.intener.intern(content)
@@ -236,6 +248,10 @@ impl<'src> StringReader<'src> {
     }
 
     fn report_unknown_symbol(&self) {
+        unimplemented!();
+    }
+
+    fn report_raw_string_error(&self) -> ! {
         unimplemented!();
     }
 }

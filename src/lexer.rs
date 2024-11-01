@@ -118,7 +118,7 @@ impl Cursor<'_> {
             // Raw identifier, Identifier, Raw double quote string
             'r' => match (self.first(), self.second()) {
                 ('#', c1) if is_id_start(c1) => self.raw_identifier(),
-                ('#', _) => {
+                ('#', _) | ('"', _) => {
                     let res = self.raw_double_quote_string();
                     TokenKind::Literal(LiteralKind::RawStr { n_hashes: res.ok() })
                 }
@@ -506,7 +506,7 @@ impl Cursor<'_> {
     }
 
     fn raw_double_quote_string(&mut self) -> Result<u8, RawStrError> {
-        debug_assert!(self.prev() == 'r' && self.first() == '#');
+        debug_assert!(self.prev() == 'r' && matches!(self.first(), '#' | '"'));
 
         let start_pos = self.bytes_eaten();
         let mut start_hashes = 0;
