@@ -16,6 +16,100 @@ Nguồn gốc tên Pandora:
 
 \subsection{Mô tả ngôn ngữ Pandora}
 \subsection{Định nghĩa ngôn ngữ Pandora}
-\subsubsection{Từ tố}
+\subsubsection{Từ tố (\textit{token})}
+Định nghĩa từ tố thường được biểu diễn ở dạng biểu thức chính quy.
+
+\textbf{\textit{Quy ước của biểu thức chính quy (Regular Expression):}}
+
+\begin{itemize}
+    \item{$|$ nghĩa là hoặc (or)}
+    \item{( ) nhóm các thành phần}
+    \item{[ ] khớp bất kì 1 thành phần nào bên trong nó}
+    \item{{\verbfont\textasciitilde} để phủ định thành phần}
+    \item{* lặp lại không hoặc nhiều lần}
+\end{itemize}
+
+    Những từ tố đơn giản được định nghĩa bằng cách đưa trực tiếp mẫu của
+nó (như các định nghĩa về từ khoá, dấu toán học, ...). Những từ tố phức tạp
+hơn sẽ được định nghĩa bằng biểu thức chính quy như tên, xâu, số và chú thích.
+Phần phân tích từ vựng (lexical analyzer) phải có khả năng phân tích chương trình nguồn
+và đưa ra được các từ tố như sau:
+
 \input{chapters/chapter-1/table-of-symbols.tex}
+
+    Từ vựng của Pandora được xác định không chỉ từ chữ cái (alphabet) và chữ số (digit), mà là hầu hết các ký tự trong bảng mã Unicode \cite{allen2012unicode}, cụ thể như sau:
+
+    \verb/digit -> 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9/
+
+    \verb/alphabet -> a | b | c | ... | z | A | B | ... | Z/
+
+\noindent và các ký tự khác trong bảng mã Unicode.
+
+    Khoảng trắng (\textbf{whitespace}) là bất kỳ chuỗi không trống nào chỉ chứa các ký tự có thuộc tính Unicode Pattern\_White\_Space \cite{web:unicode:report}, cụ thể là:
+    \begin{itemize}
+        \item{U+0009 (horizontal tab, '\textbackslash t')}
+        \item{U+000A (line feed, '\textbackslash n')}
+        \item{U+000B (vertical tab)}
+        \item{U+000C (form feed)}
+        \item{U+000D (carriage return, '\textbackslash r')}
+        \item{U+0020 (space, ' ')}
+        \item{U+0085 (next line)}
+        \item{U+200E (left-to-right mark)}
+        \item{U+200F (right-to-left mark)}
+        \item{U+2028 (line separator)}
+        \item{U+2029 (paragraph separator)}
+    \end{itemize}
+\noindent Pandora là một ngôn ngữ "dạng tự do", có nghĩa là tất cả các dạng khoảng trắng chỉ dùng để phân tách các từ tố trong ngữ pháp và không có ý nghĩa ngữ nghĩa.
+
+    Tên \textbf{\textit{identifier}} trong Pandora được phân làm 2 loại: \textbf{non keyword identifier} hoặc \textbf{raw identifier}. \textbf{non keyword identifier} được tạo thành từ tập các kí tự nêu trên và không được là từ khóa (keyword). Trong khi đó, \textbf{raw identifier} có thể là tên hoặc từ khóa (có \textbf{r\#} ở phía trước để phân biệt với tên thường hay từ khóa), cụ thể như sau:
+
+    \verb/identifier -> non_keyword_identifier/
+
+    \verb/              | raw_identifier/
+
+    \verb/non_keyword_identifier -> identifier_or_keyword/
+
+    \hspace*{0pt}\hfill\textbf{\textit{(without keyword)}}
+
+    \verb/raw_identifier -> r#identifier_or_keyword/
+
+    \verb/identifier_or_keyword -> id_start id_continue*/
+
+    \verb/                         | _id_continue*/
+
+    \verb/id_start -> XID_Start | emoji_symbol/
+
+    \verb/id_continue -> XID_Continue | emoji_symbol/
+
+\noindent Trong đó \textbf{XID\_Start} và \textbf{XID\_Continue} là các thuộc tính của ký tự trong Unicode liên quan đến tên (định danh). Chúng thường được sử dụng để xác định liệu một ký tự có thể là phần đầu hoặc phần thân của 1 định danh trong các ngôn ngữ lập trình hay không. Ngoài ra, 1 tên còn có thể chứa các biểu tượng cảm xúc (\textbf{emoji\_symbol}).
+
+    1 ký tự chữ (\textbf{character}) là 1 ký tự Unicode đơn được đặt trong 2 ký tự ' (dấu nháy đơn - U+0027), ngoại trừ chính U+0027, ký tự này phải được thoát bằng ký tự U+005C trước đó (\textbackslash), cụ thể như sau:
+
+    \verb/char_literal -> '(~[' \ \n \r \t]/ 
+
+    \verb/                | quote_esc | ascii_esc)'/
+
+    \verb/quote_esc -> \' | \"/
+
+    \verb/ascii_esc -> \n | \r | \t | \\ | \0/
+
+    Chuỗi ký tự (\textbf{string literal}) là một chuỗi gồm bất kỳ ký tự Unicode nào được đặt trong hai ký tự U+0022 (dấu ngoặc kép), ngoại trừ chính U+0022, ký tự này phải được thoát bằng ký tự U+005C trước đó (\textbackslash). Chuỗi ký tự cho phép có các line-breaks (cho phép ngắt dòng, được biểu thị bởi ký tự U+000A). Khi ký tự U+005C không thoát (\textbackslash) xuất hiện ngay trước ngắt dòng, ngắt dòng sẽ không xuất hiện trong xâu được biểu diễn trong từ tố, cụ thể như sau:
+
+    \verb/string_literal -> "(~[" \]/
+
+    \verb/                  | quote_esc | ascii_esc/
+
+    \verb/                  | string_continue)*"/
+
+    \verb/string_continue -> \/
+    \textbf{\textit{(followed by \textbackslash n)}}
+
+    Ta có thể thấy, các ký tự chữ hoặc các xâu có thể chứa 1 hoặc 1 vài loại \textbf{escape} (thoát ký tự). Một escape bắt đầu bằng U+005C (\textbackslash) và tiếp tục bằng một trong các dạng sau:
+
+    \begin{itemize}
+    \item{\textbf{Whitespace escape} (thoát khoảng trắng) là 1 trong các ký tự U+006E (n), U+0072 (r) hoặc U+0074 (t), biểu thị các giá trị Unicode U+000A (LF), U+000D (CR) hoặc U+ 0009 (HT) tương ứng}
+    \item{\textbf{Null escape} (thoát null) là ký tự U+0030 (0) và biểu thị giá trị Unicode U+0000 (NUL)}
+    \item{\textbf{Backslash escape} (thoát gạch chéo ngược) là ký tự U+005C (\textbackslash) phải được thoát để biểu thị chính nó}
+    \end{itemize}
+
 \subsubsection{Cú pháp và ngữ nghĩa}
