@@ -21,17 +21,13 @@ Nguồn gốc tên Pandora:
 
 \textbf{\textit{Quy ước của biểu thức chính quy (Regular Expression):}}
 
-\vspace{-10pt}
 \begin{itemize}
-\setlength\itemsep{-5pt}
-\setlength{\leftskip}{10pt} %TODO: fix
     \item{$|$ nghĩa là hoặc (or)}
     \item{( ) nhóm các thành phần}
     \item{[ ] khớp bất kì 1 thành phần nào bên trong nó}
-    \item{\~{} để phủ định thành phần}
+    \item{{\verbfont\textasciitilde} để phủ định thành phần}
     \item{* lặp lại không hoặc nhiều lần}
 \end{itemize}
-\vspace{-10pt}
 
     Những từ tố đơn giản được định nghĩa bằng cách đưa trực tiếp mẫu của
 nó (như các định nghĩa về từ khoá, dấu toán học, ...). Những từ tố phức tạp
@@ -50,10 +46,7 @@ và đưa ra được các từ tố như sau:
 \noindent và các ký tự khác trong bảng mã Unicode.
 
     Khoảng trắng (\textbf{whitespace}) là bất kỳ chuỗi không trống nào chỉ chứa các ký tự có thuộc tính Unicode Pattern\_White\_Space \cite{web:unicode:report}, cụ thể là:
-    \vspace{-10pt}
     \begin{itemize}
-    \setlength\itemsep{-5pt}
-    \setlength{\leftskip}{10pt} %TODO: fix
         \item{U+0009 (horizontal tab, '\textbackslash t')}
         \item{U+000A (line feed, '\textbackslash n')}
         \item{U+000B (vertical tab)}
@@ -66,7 +59,6 @@ và đưa ra được các từ tố như sau:
         \item{U+2028 (line separator)}
         \item{U+2029 (paragraph separator)}
     \end{itemize}
-    \vspace{-10pt}
 \noindent Pandora là một ngôn ngữ "dạng tự do", có nghĩa là tất cả các dạng khoảng trắng chỉ dùng để phân tách các từ tố trong ngữ pháp và không có ý nghĩa ngữ nghĩa.
 
     Tên \textbf{\textit{identifier}} trong Pandora được phân làm 2 loại: \textbf{non keyword identifier} hoặc \textbf{raw identifier}. \textbf{non keyword identifier} được tạo thành từ tập các kí tự nêu trên và không được là từ khóa (keyword). Trong khi đó, \textbf{raw identifier} có thể là tên hoặc từ khóa (có \textbf{r\#} ở phía trước để phân biệt với tên thường hay từ khóa), cụ thể như sau:
@@ -114,14 +106,10 @@ và đưa ra được các từ tố như sau:
 
     Ta có thể thấy, các ký tự chữ hoặc các xâu có thể chứa 1 hoặc 1 vài loại \textbf{escape} (thoát ký tự). Một escape bắt đầu bằng U+005C (\textbackslash) và tiếp tục bằng một trong các dạng sau:
 
-    \vspace{-10pt}
     \begin{itemize}
-    \setlength\itemsep{-5pt}
-    \setlength{\leftskip}{10pt} %TODO: fix
     \item{\textbf{Whitespace escape} (thoát khoảng trắng) là 1 trong các ký tự U+006E (n), U+0072 (r) hoặc U+0074 (t), biểu thị các giá trị Unicode U+000A (LF), U+000D (CR) hoặc U+ 0009 (HT) tương ứng}
     \item{\textbf{Null escape} (thoát null) là ký tự U+0030 (0) và biểu thị giá trị Unicode U+0000 (NUL)}
     \item{\textbf{Backslash escape} (thoát gạch chéo ngược) là ký tự U+005C (\textbackslash) phải được thoát để biểu thị chính nó}
     \end{itemize}
-    \vspace{-10pt}
 
 \subsubsection{Cú pháp và ngữ nghĩa}

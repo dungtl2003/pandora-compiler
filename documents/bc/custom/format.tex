@@ -17,9 +17,12 @@
 \titleformat{\subsubsection}[block]{}{\textbf{\thesubsubsection. }}{0pt}{\textbf}{}
 \titleformat{\paragraph}[block]{}{\textbf{\theparagraph. }}{0pt}{\textbf}{}
 
-\setlength{\arrayrulewidth}{0.5mm}
-% \setlength{\tabcolsep}{18pt}
-\renewcommand{\arraystretch}{1.5}
+\setlength{\arrayrulewidth}{0.5mm}  %set border of table
+\renewcommand{\arraystretch}{1.5}   %set vertical size of table = 1.5 size default
 
 \renewcommand{\tablename}{\itshape Bảng}
 % \renewcommand{\thetable}{\itshape\thetable}
+
+\setlist[itemize]{itemsep=-\parskip, topsep=0pt}
+\addtolength{\leftmargini}{10pt}    %leftmargini add 10pt
+% \addtolength{\leftmarginii}{10pt}   %leftmarginii add 10pt
