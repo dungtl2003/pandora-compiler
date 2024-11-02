@@ -4,7 +4,7 @@ mod unescape;
 
 pub use cursor::Cursor;
 pub use token::{Base, DocStyle, LiteralKind, RawStrError, Token, TokenKind};
-pub use unescape::{unescape_char, EscapeError};
+pub use unescape::{unescape_char, unescape_str, EscapeError};
 use unicode_xid::UnicodeXID;
 
 pub fn tokenize(source: &str) -> Vec<Token> {

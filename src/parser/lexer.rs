@@ -156,7 +156,28 @@ impl<'src> StringReader<'src> {
     }
 
     fn cook_str_literal(&mut self, terminated: bool, start: BytePos, end: BytePos) -> TokenKind {
-        todo!();
+        if !terminated {
+            self.report_unterminated_str_literal();
+        }
+
+        let content_inside_quote = self.str_from_to(start+1, end-1); // remove ""
+        let res: Result<String, lexer::EscapeError> = lexer::unescape_str(content_inside_quote);
+
+        match res {
+            Err(_) => {
+                self.report_unescape_character_literal();
+                return TokenKind::Literal(Lit {
+                    kind: LitKind::Err,
+                    symbol: self.symbol_from_to(start, end),
+                });
+            }
+            Ok(_) => {
+                return TokenKind::Literal(Lit {
+                    kind: LitKind::Str,
+                    symbol: self.symbol_from_to(start + 1, end - 1),
+                })
+            }
+        }
     }
 
     fn cook_char_literal(&mut self, terminated: bool, start: BytePos, end: BytePos) -> TokenKind {
@@ -238,4 +259,9 @@ impl<'src> StringReader<'src> {
     fn report_unknown_symbol(&self) {
         unimplemented!();
     }
+
+    fn report_unterminated_str_literal(&self){
+        unimplemented!();
+    }
+
 }
