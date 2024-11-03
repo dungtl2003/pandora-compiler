@@ -45,6 +45,7 @@ fn scan_escape<T: From<char>>(chars: &mut Chars<'_>) -> Result<T, EscapeError> {
         'n' => '\n',
         'r' => '\r',
         't' => '\t',
+        '0' => '\0',
         '\\' => '\\',
         '\'' => '\'',
         _ => return Err(EscapeError::InvalidEscape),
