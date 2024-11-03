@@ -17,9 +17,9 @@ Nguồn gốc tên Pandora:
 \subsection{Mô tả ngôn ngữ Pandora}
 \subsection{Định nghĩa ngôn ngữ Pandora}
 \subsubsection{Từ tố (\textit{token})}
-Định nghĩa từ tố thường được biểu diễn ở dạng biểu thức chính quy\cite{li2008regular}.
+Định nghĩa từ tố thường được biểu diễn ở dạng biểu thức chính quy\cite{li2008regular}. Ở đây, ta sẽ sử dụng 1 số quy ước cú pháp của biểu thức chính quy mở rộng (Extended regular expression \cite{freydenberger2013extended}).
 
-\textbf{\textit{Quy ước của biểu thức chính quy (Regular Expression):}}
+\textbf{\textit{Quy ước của biểu thức chính quy mở rộng:}}
 
 \begin{itemize}
     \item{$|$ nghĩa là hoặc (or)}
@@ -29,6 +29,7 @@ Nguồn gốc tên Pandora:
     \item{[$^\wedge$ ] khớp bất kì 1 thành phần nào không bên trong nó}
     \item{* lặp lại không hoặc nhiều lần}
     \item{. khớp với 1 ký tự bất kì}
+    \item{? để chỉ thành phần trước nó có thể có hoặc không}
 \end{itemize}
 
     Những từ tố đơn giản được định nghĩa bằng cách đưa trực tiếp mẫu của
