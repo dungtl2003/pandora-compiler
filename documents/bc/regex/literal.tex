@@ -1,0 +1,73 @@
+\newcommand{\regexcharliteral}{%
+    \begin{rg}
+    CHAR\_LITERAL -> 
+
+    \hspace{2cm}\w{'}([\rnot\w{'}\w{\textbackslash}\w{\textbackslash n}\w{\textbackslash r}\w{\textbackslash t}] | QUOTE\_ESC | ASCII\_ESC)\w{'}
+
+    QUOTE\_ESC -> \w{\textbackslash}\w{'} | \w{\textbackslash}\w{"}
+
+    ASCII\_ESC -> \w{\textbackslash}\w{n} | \w{\textbackslash}\w{r} | \w{\textbackslash}\w{t} | \w{\textbackslash}\w{\textbackslash} | \w{\textbackslash}\w{0}
+    \end{rg}
+}
+
+\newcommand{\regexstringliteral}{%
+    \begin{rg}
+    STRING\_LITERAL -> 
+
+    \hspace{-0.75cm}\w{"}([\w{"}\w{\textbackslash}] | QUOTE\_ESC | ASCII\_ESC | STRING\_CONTINUE)*\w{"}
+
+    STRING\_CONTINUE -> \w{\textbackslash}\w{\textbackslash n}
+    \end{rg}
+}
+
+\newcommand{\regexrawstringliteral}{%
+    \begin{rg}
+    RAW\_STRING\_LITERAL -> \w{r}RAW\_STRING\_CONTENT
+
+    RAW\_STRING\_CONTENT -> \w{"}.*\w{"} | \w{\#}RAW\_STRING\_CONTENT\w{\#}
+    \end{rg}
+}
+
+\newcommand{\regexintegerliteral}{%
+    \begin{rg}
+    INTEGER\_LITERAL -> DEC\_LITERAL
+
+    \hspace{5cm}| BIN\_LITERAL
+
+    \hspace{5cm}| OCT\_LITERAL
+
+    \hspace{5cm}| HEX\_LITERAL
+
+    DEC\_LITERAL -> DEC\_DIGIT(DEC\_DIGIT | \w{\_})*
+
+    BIN\_LITERAL -> \w{0b}BIN\_DIGIT(BIN\_DIGIT | \w{\_})*
+
+    OCT\_LITERAL -> \w{0o}OCT\_DIGIT(OCT\_DIGIT | \w{\_})*
+
+    HEX\_LITERAL -> \w{0h}HEX\_DIGIT(HEX\_DIGIT | \w{\_})*
+
+    DEC\_DIGIT -> \w{0} | \w{1} | ... | \w{9}
+
+    BIN\_DIGIT -> \w{0} | \w{1}
+
+    OCT\_DIGIT -> \w{0} | \w{1} | ... | \w{7}
+
+    HEX\_DIGIT -> \w{0} | \w{1} | ... | \w{9}
+
+    \hspace{3.25cm}| \w{a} | \w{b} | ... | \w{f}
+
+    \hspace{3.25cm}| \w{A} | \w{B} | ... | \w{F}
+    \end{rg}
+}
+
+\newcommand{\regexfloatliteral}{%
+    \begin{rg}
+    FLOAT\_LITERAL -> DEC\_LITERAL\w{.}
+
+    \hspace{2cm}| DEC\_LITERAL(\w{.}DEC\_LITERAL)\w{?}FLOAT\_EXPONENT
+
+    FLOAT\_EXPONENT -> (\w{e} | \w{E})(\w{+} | \w{-})\w{?}
+
+    \hspace{2cm}(DEC\_DIGIT | \w{\_})*DEC\_DIGIT(DEC\_DIGIT | \w{\_})*
+    \end{rg}
+}
