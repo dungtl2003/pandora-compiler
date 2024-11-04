@@ -61,7 +61,7 @@ pub fn unescape_str(src: &str) -> Result<String, EscapeError> {
                         ' ' | '\t' | '\r' => {
                             chars.next();
                         }
-                        ch => break,
+                        _ => break,
                     }
                 }
             }
