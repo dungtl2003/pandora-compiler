@@ -18,8 +18,6 @@ pub enum EscapeError {
     BareCarriageReturn,
     /// Unescaped character that was expected to be escaped (e.g. raw '\t').
     EscapeOnlyChar,
-
-    NoName, //TODO!
 }
 
 /// Takes a contents of a char literal (without quotes), and returns an
@@ -41,27 +39,35 @@ pub fn unescape_char(src: &str) -> Result<char, EscapeError> {
 }
 
 pub fn unescape_str(src: &str) -> Result<String, EscapeError> {
-    let mut chars = src.chars();
+    let mut chars = src.chars().peekable();
     let mut result = String::new();
-    
-    while let Some(c) = chars.next() {
-        match c {
-            '\"' => return Err(EscapeError::NoName),//TODO!
-            '\\' => {
-                match chars.next().ok_or(EscapeError::LoneSlash)? {
-                    '\n' | '\t' | '\r' => {}
-                    '"' => result.push('"'),
-                    'n' => result.push('\n'),
-                    'r' => result.push('\r'),
-                    't' => result.push('\t'),
-                    '\\' => result.push('\\'),
-                    '\'' => result.push('\''),
-                    ch => result.push(ch),
+
+    while let Some(c1) = chars.next() {
+        match c1 {
+            '\"' => return Err(EscapeError::EscapeOnlyChar),
+            '\\' => match chars.next().ok_or(EscapeError::LoneSlash)? {
+                '\n' | '\t' | '\r' => {}
+                '"' => result.push('"'),
+                'n' => result.push('\n'),
+                'r' => result.push('\r'),
+                't' => result.push('\t'),
+                '\\' => result.push('\\'),
+                '\'' => result.push('\''),
+                ch => result.push(ch),
+            },
+            '\n' => {
+                while let Some(c2) = chars.peek() {
+                    match c2 {
+                        ' ' | '\t' | '\r' => {
+                            chars.next();
+                        }
+                        ch => break,
+                    }
                 }
             }
             ch => result.push(ch),
         };
-    };
+    }
 
     Ok(result)
 }
