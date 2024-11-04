@@ -1,5 +1,4 @@
-# syntax
-## unterminated_block_comment
+# E0758
 
 A multi-line (doc-)comment is unterminated.
 
