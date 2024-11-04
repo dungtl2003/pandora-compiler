@@ -1,0 +1,41 @@
+\newcommand{\regexlinecomment}{%
+    \begin{rg}
+    LINE\_COMMENT -> \w{/}\w{/}([\rnot\w{!}\w{@}\w{\textbackslash n}])\rnot\w{\textbackslash n}*
+
+    \hspace{4.15cm}| \w{/}\w{/}
+    \end{rg}
+}
+
+\newcommand{\regexblockcomment}{%
+    \begin{rg}
+    BLOCK\_COMMENT -> \w{/}\w{*}([\w{@}\w{!}]
+
+    \hspace{4.5cm}| BLOCK\_COMMENT\_OR\_DOC)
+
+    \hspace{4cm}(BLOCK\_COMMENT\_OR\_DOC | \rnot(\w{*}\w{/}))*\w{*}\w{/}
+
+    \hspace{4.5cm}| \w{/}\w{*}\w{*}\w{/}
+
+    BLOCK\_COMMENT\_OR\_DOC -> BLOCK\_COMMENT
+
+    \hspace{6.5cm}| OUTER\_BLOCK\_DOC
+
+    \hspace{6.5cm}| INNER\_BLOCK\_DOC
+    \end{rg}
+}
+
+\newcommand{\regexdoc}{%
+    \begin{rg}
+        INNER\_LINE\_DOC -> \w{/}\w{/}\w{!}\rnot\w{\textbackslash n}*
+
+        OUTER\_LINE\_DOC -> \w{/}\w{/}\w{@}\rnot\w{\textbackslash n}*
+
+        INNER\_BLOCK\_DOC -> 
+
+        \hspace{3cm}\w{/}\w{*}\w{!}(\rnot(\w{*}\w{/}) | BLOCK\_COMMENT\_OR\_DOC)*\w{*}\w{/}
+
+        OUTER\_BLOCK\_DOC -> 
+
+        \hspace{3cm}\w{/}\w{*}\w{@}(\rnot(\w{*}\w{/}) | BLOCK\_COMMENT\_OR\_DOC)*\w{*}\w{/}
+    \end{rg}
+}
