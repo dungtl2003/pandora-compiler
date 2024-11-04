@@ -1,4 +1,4 @@
-# syntax::unterminated_block_comment
+# unterminated_block_comment
 
 A multi-line (doc-)comment is unterminated.
 
