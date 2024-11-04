@@ -44,7 +44,7 @@ pub fn unescape_str(src: &str) -> Result<String, EscapeError> {
 
     while let Some(c1) = chars.next() {
         match c1 {
-            '\"' => return Err(EscapeError::EscapeOnlyChar),
+            '"' => return Err(EscapeError::EscapeOnlyChar),
             '\\' => match chars.next().ok_or(EscapeError::LoneSlash)? {
                 '\n' | '\t' | '\r' => {}
                 '"' => result.push('"'),
@@ -58,7 +58,7 @@ pub fn unescape_str(src: &str) -> Result<String, EscapeError> {
             '\n' => {
                 while let Some(c2) = chars.peek() {
                     match c2 {
-                        ' ' | '\t' | '\r' => {
+                        ' ' => {
                             chars.next();
                         }
                         _ => break,

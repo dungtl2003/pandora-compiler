@@ -171,10 +171,10 @@ impl<'src> StringReader<'src> {
                     symbol: self.symbol_from_to(start, end),
                 });
             }
-            Ok(_) => {
+            Ok(s) => {
                 return TokenKind::Literal(Lit {
                     kind: LitKind::Str,
-                    symbol: self.symbol_from_to(start + 1, end - 1),
+                    symbol: self.intener.intern(s.as_str()),
                 })
             }
         }
