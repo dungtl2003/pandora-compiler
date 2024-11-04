@@ -13,6 +13,8 @@ grammar/*.pdf
 grammar/*.run.xml
 grammar/*.synctex.gz
 grammar/*.fls
+grammar/*.lof
+grammar/*.lot
 
 
 documents/bc/*.aux
@@ -29,6 +31,8 @@ documents/bc/*.synctex.gz
 documents/bc/*.fls
 documents/bc/*.out
 documents/bc/*.toc
+documents/bc/*.lof
+documents/bc/*.lot
 
 documents/bc/*/*.aux
 documents/bc/*/*.bbl
@@ -44,6 +48,8 @@ documents/bc/*/*.synctex.gz
 documents/bc/*/*.fls
 documents/bc/*/*.out
 documents/bc/*/*.toc
+documents/bc/*/*.lof
+documents/bc/*/*.lot
 
 documents/bc/*/*/*.aux
 documents/bc/*/*/*.bbl
@@ -59,6 +65,8 @@ documents/bc/*/*/*.synctex.gz
 documents/bc/*/*/*.fls
 documents/bc/*/*/*.out
 documents/bc/*/*/*.toc
+documents/bc/*/*/*.lof
+documents/bc/*/*/*.lot
 
 documents/dc/*.pdf
 
