@@ -14,8 +14,6 @@ pub enum EscapeError {
     LoneSlash,
     /// Invalid escape character (e.g. '\z').
     InvalidEscape,
-    /// Raw '\r' encountered.
-    BareCarriageReturn,
     /// Unescaped character that was expected to be escaped (e.g. raw '\t').
     EscapeOnlyChar,
 }
@@ -28,8 +26,7 @@ pub fn unescape_char(src: &str) -> Result<char, EscapeError> {
     let c = chars.next().ok_or(EscapeError::ZeroChars)?;
     let res = match c {
         '\\' => scan_escape(&mut chars),
-        '\n' | '\t' | '\'' => Err(EscapeError::EscapeOnlyChar),
-        '\r' => Err(EscapeError::BareCarriageReturn),
+        '\r' | '\n' | '\t' | '\'' => Err(EscapeError::EscapeOnlyChar),
         ch => Ok(ch),
     }?;
     if chars.next().is_some() {

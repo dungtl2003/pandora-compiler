@@ -1,6 +1,6 @@
 use std::str::Chars;
 
-const EOF_CHAR: char = '\0';
+pub const EOF_CHAR: char = '\0';
 
 pub struct Cursor<'a> {
     chars: Chars<'a>,

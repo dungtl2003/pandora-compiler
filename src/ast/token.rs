@@ -101,7 +101,8 @@ pub struct Lit {
 pub enum LitKind {
     Bool,
     Char,
-    Number,
+    Int,
+    Float,
     Str,
     RawStr(u8), // raw string delimited by `n` hash symbols
 
