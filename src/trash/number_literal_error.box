@@ -1,0 +1,20 @@
+fun main() {
+    /// base 2 will only have 0 and 1
+    let a: int = 0b1234;
+
+    /// base 8 will only have 0 to 7
+    let b: int = 0o1896;
+
+    /// after E | e must have digit(s)
+    let c: float = 1289.53e__;
+
+    /// float number does not support base (for now)
+    let d1: float = 0b1011_0100.521;
+    let d2: float = 0o527E7;
+    let d3: float = 0hf3.323;
+
+    /// no digit found
+    let e1: int = 0B_____;
+    let e2: int = 0O_____;
+    let e3: int = 0H____;
+}

@@ -1,0 +1,22 @@
+fun main() {
+    // normal code
+    let x: int = 5;
+
+    // code...
+
+    oops();
+}
+
+/* Time to write invalid block comment
+    * multiline
+    * multiline /* another open
+    * multiline
+    * multiline
+    * multiline /* third one
+    * multiline
+    * multiline
+    * multiline */ first close */ second (last) close
+fun oops() {
+    sysout("Wrong comment format");
+    // code...
+}

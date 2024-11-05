@@ -1,0 +1,13 @@
+fun main() {
+    // There are a few cases for this one.
+
+    //! New line will stop checking.
+    let c1: char = 'abc
+    
+
+    //! Meet / (if not the first char) will stop checking as well (maybe a comment afterward).
+    let c2: char = 'a // comment here maybe
+
+    // more code below...
+    sysout(r"Can be scanned normally");
+}
