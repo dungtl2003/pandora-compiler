@@ -1,8 +1,12 @@
-use crate::interner::Symbol;
+use crate::{interner::Symbol, span_encoding::Span};
+
+use BinOpToken::*;
+use TokenKind::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Token {
     pub kind: TokenKind,
+    pub span: Span,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -12,13 +16,26 @@ pub enum TokenKind {
     Eq,
     /// `<`
     Lt,
+    /// `<=`
+    Le,
+    /// `==`
+    EqEq,
+    /// `!=`
+    Ne,
+    /// `>=`
+    Ge,
     /// `>`
     Gt,
+    /// `&&`
+    AndAnd,
+    /// `||`
+    OrOr,
     /// `!`
     Not,
     /// `~`
     Tilde,
     BinOp(BinOpToken),
+    BinOpEq(BinOpToken),
 
     /* Structural symbols */
     /// `.`
@@ -59,6 +76,8 @@ pub enum BinOpToken {
     Caret,
     And,
     Or,
+    Shl,
+    Shr,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -105,4 +124,63 @@ pub enum IdentIsRaw {
 pub enum DocStyle {
     Inner,
     Outer,
+}
+
+impl Token {
+    pub fn new(kind: TokenKind, span: Span) -> Token {
+        Token { kind, span }
+    }
+
+    pub fn glue(&self, joint: &Token) -> Option<Token> {
+        let kind = match self.kind {
+            Eq => match joint.kind {
+                Eq => EqEq,
+                _ => return None,
+            },
+            Not => match joint.kind {
+                Eq => Ne,
+                _ => return None,
+            },
+            Lt => match joint.kind {
+                Eq => Le,
+                Lt => BinOp(Shl),
+                Le => BinOpEq(Shl),
+                _ => return None,
+            },
+            Gt => match joint.kind {
+                Eq => Ge,
+                Gt => BinOp(Shr),
+                Ge => BinOpEq(Shr),
+                _ => return None,
+            },
+            BinOp(op) => match joint.kind {
+                Eq => BinOpEq(op),
+                BinOp(And) if op == And => AndAnd,
+                BinOp(Or) if op == Or => OrOr,
+                _ => return None,
+            },
+            Le | EqEq | Ne | Ge | AndAnd | OrOr | Tilde | BinOpEq(_) | Dot | Comma | Semicolon
+            | Colon | Question | OpenDelim(_) | CloseDelim(_) | Literal(_) | Ident(..)
+            | DocComment(..) | Eof => return None,
+        };
+
+        Some(Token {
+            kind,
+            span: Span {
+                offset: self.span.offset,
+                length: self.span.length + joint.span.length,
+            },
+        })
+    }
+
+    pub fn is_punct(&self) -> bool {
+        match self.kind {
+            Eq | Lt | Le | EqEq | Ne | Ge | Gt | AndAnd | OrOr | Not | Tilde | BinOp(_)
+            | BinOpEq(_) | Dot | Comma | Semicolon | Colon | Question => true,
+
+            OpenDelim(..) | CloseDelim(..) | Literal(..) | DocComment(..) | Ident(..) | Eof => {
+                false
+            }
+        }
+    }
 }

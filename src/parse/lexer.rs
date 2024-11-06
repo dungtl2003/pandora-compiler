@@ -1,3 +1,5 @@
+mod tokentrees;
+
 use crate::ast::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,
 };
@@ -6,6 +8,7 @@ use crate::interner::Interner;
 use crate::interner::Symbol;
 use crate::lexer::{self, Base, Cursor, EscapeError, RawStrError};
 use crate::session_global::BytePos;
+use crate::span_encoding::Span;
 
 pub fn tokenize<'src>(src: &'src str, emitter: ErrorEmitter) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
@@ -126,7 +129,15 @@ impl<'src> StringReader<'src> {
                 lexer::TokenKind::Eof => TokenKind::Eof,
             };
 
-            return Token { kind };
+            let span = self.mk_sp(start_pos, (self.pos - start_pos) as usize);
+            return Token::new(kind, span);
+        }
+    }
+
+    fn mk_sp(&self, start: BytePos, len: usize) -> Span {
+        Span {
+            offset: start,
+            length: len,
         }
     }
 
