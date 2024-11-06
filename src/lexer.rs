@@ -98,27 +98,24 @@ impl Cursor<'_> {
             '.' => TokenKind::Dot,
             ';' => TokenKind::Semicolon,
             '?' => TokenKind::Question,
-
             '(' => TokenKind::OpenParen,
             ')' => TokenKind::CloseParen,
             '[' => TokenKind::OpenBracket,
             ']' => TokenKind::CloseBracket,
             '{' => TokenKind::OpenBrace,
             '}' => TokenKind::CloseBrace,
-
-            '!' => self.not_or_not_equal(),
-            '=' => self.assign_or_equal(),
-            '>' => self.greater_or_ge_or_shift_right(),
-            '<' => self.less_or_le_or_shift_left(),
-
+            '!' => TokenKind::Bang,
+            '=' => TokenKind::Eq,
+            '>' => TokenKind::Gt,
+            '<' => TokenKind::Lt,
             '~' => TokenKind::Tilde,
             '+' => TokenKind::Plus,
             '-' => TokenKind::Minus,
             '*' => TokenKind::Star,
             '%' => TokenKind::Percent,
             '^' => TokenKind::Caret,
-            '&' => self.and_or_and_and(),
-            '|' => self.or_or_or_or(),
+            '&' => TokenKind::And,
+            '|' => TokenKind::Or,
 
             // Slash, comment or block comment.
             '/' => match self.first() {
@@ -148,86 +145,6 @@ impl Cursor<'_> {
         };
 
         Token::new(kind, self.bytes_eaten())
-    }
-
-    /// 🗿🗿🗿🗿
-    fn or_or_or_or(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '|');
-
-        match self.first() {
-            '|' => {
-                self.eat();
-                TokenKind::OrOr
-            }
-            _ => TokenKind::Or,
-        }
-    }
-
-    fn and_or_and_and(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '&');
-
-        match self.first() {
-            '&' => {
-                self.eat();
-                TokenKind::AndAnd
-            }
-            _ => TokenKind::And,
-        }
-    }
-
-    fn less_or_le_or_shift_left(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '<');
-
-        match self.first() {
-            '=' => {
-                self.eat();
-                TokenKind::Le
-            }
-            '<' => {
-                self.eat();
-                TokenKind::Shl
-            }
-            _ => TokenKind::Le,
-        }
-    }
-
-    fn greater_or_ge_or_shift_right(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '>');
-
-        match self.first() {
-            '=' => {
-                self.eat();
-                TokenKind::Ge
-            }
-            '>' => {
-                self.eat();
-                TokenKind::Shr
-            }
-            _ => TokenKind::Gt,
-        }
-    }
-
-    fn assign_or_equal(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '=');
-
-        match self.first() {
-            '=' => {
-                self.eat();
-                TokenKind::Eq
-            }
-            _ => TokenKind::Eq,
-        }
-    }
-
-    fn not_or_not_equal(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '!');
-        match self.first() {
-            '=' => {
-                self.eat();
-                TokenKind::BangEq
-            }
-            _ => TokenKind::Bang,
-        }
     }
 
     // String because this will not guarantee that there is only 1 symbol.

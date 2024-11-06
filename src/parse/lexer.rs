@@ -89,19 +89,13 @@ impl<'src> StringReader<'src> {
                 }
                 lexer::TokenKind::RawIdent => {
                     let content = self.str_from_to(start_pos + 2, self.pos); // skip r#
-                    self.cook_ident(content)
+                    self.cook_raw_ident(content)
                 }
                 lexer::TokenKind::Literal(kind) => self.cook_literal(start_pos, self.pos, kind),
 
                 lexer::TokenKind::Eq => TokenKind::Eq,
                 lexer::TokenKind::Lt => TokenKind::Lt,
-                lexer::TokenKind::Le => TokenKind::Le,
-                lexer::TokenKind::EqEq => TokenKind::EqEq,
-                lexer::TokenKind::BangEq => TokenKind::Ne,
-                lexer::TokenKind::Ge => TokenKind::Ge,
                 lexer::TokenKind::Gt => TokenKind::Gt,
-                lexer::TokenKind::AndAnd => TokenKind::AndAnd,
-                lexer::TokenKind::OrOr => TokenKind::OrOr,
                 lexer::TokenKind::Bang => TokenKind::Not,
                 lexer::TokenKind::Tilde => TokenKind::Tilde,
                 lexer::TokenKind::Plus => TokenKind::BinOp(BinOpToken::Plus),
@@ -112,19 +106,17 @@ impl<'src> StringReader<'src> {
                 lexer::TokenKind::Caret => TokenKind::BinOp(BinOpToken::Caret),
                 lexer::TokenKind::And => TokenKind::BinOp(BinOpToken::And),
                 lexer::TokenKind::Or => TokenKind::BinOp(BinOpToken::Or),
-                lexer::TokenKind::Shl => TokenKind::BinOp(BinOpToken::Shl),
-                lexer::TokenKind::Shr => TokenKind::BinOp(BinOpToken::Shr),
                 lexer::TokenKind::Dot => TokenKind::Dot,
                 lexer::TokenKind::Comma => TokenKind::Comma,
                 lexer::TokenKind::Semicolon => TokenKind::Semicolon,
                 lexer::TokenKind::Colon => TokenKind::Colon,
                 lexer::TokenKind::Question => TokenKind::Question,
                 lexer::TokenKind::OpenParen => TokenKind::OpenDelim(Delimiter::Parenthesis),
-                lexer::TokenKind::CloseParen => TokenKind::OpenDelim(Delimiter::Parenthesis),
+                lexer::TokenKind::CloseParen => TokenKind::CloseDelim(Delimiter::Parenthesis),
                 lexer::TokenKind::OpenBrace => TokenKind::OpenDelim(Delimiter::Brace),
-                lexer::TokenKind::CloseBrace => TokenKind::OpenDelim(Delimiter::Brace),
+                lexer::TokenKind::CloseBrace => TokenKind::CloseDelim(Delimiter::Brace),
                 lexer::TokenKind::OpenBracket => TokenKind::OpenDelim(Delimiter::Bracket),
-                lexer::TokenKind::CloseBracket => TokenKind::OpenDelim(Delimiter::Bracket),
+                lexer::TokenKind::CloseBracket => TokenKind::CloseDelim(Delimiter::Bracket),
 
                 lexer::TokenKind::Unknown => {
                     self.report_unknown_symbol(start_pos, self.pos);

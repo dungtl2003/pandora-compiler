@@ -12,20 +12,8 @@ pub enum TokenKind {
     Eq,
     /// `<`
     Lt,
-    /// `<=`
-    Le,
-    /// `==`
-    EqEq,
-    /// `!=`
-    Ne,
-    /// `>=`
-    Ge,
     /// `>`
     Gt,
-    /// `&&`
-    AndAnd,
-    /// `||`
-    OrOr,
     /// `!`
     Not,
     /// `~`
@@ -71,8 +59,6 @@ pub enum BinOpToken {
     Caret,
     And,
     Or,
-    Shl,
-    Shr,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

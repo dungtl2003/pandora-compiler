@@ -12,7 +12,7 @@ impl Token {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TokenKind {
-    /* one/two-char symbol */
+    /* one char symbol */
     /// :
     Colon,
     /// ,
@@ -37,20 +37,12 @@ pub enum TokenKind {
     CloseBracket,
     /// `!`
     Bang,
-    /// `!=`
-    BangEq,
     /// `=`
     Eq,
-    /// `==`
-    EqEq,
     /// `>`
     Gt,
-    /// `>=`
-    Ge,
     /// `<`
     Lt,
-    /// `<=`
-    Le,
     /// `~`
     Tilde,
     /// `+`
@@ -67,16 +59,8 @@ pub enum TokenKind {
     Caret,
     /// `&`
     And,
-    /// `&&`
-    AndAnd,
     /// `|`
     Or,
-    /// `||`
-    OrOr,
-    /// `<<`
-    Shl,
-    /// `>>`
-    Shr,
 
     // Literal
     Literal(LiteralKind),
