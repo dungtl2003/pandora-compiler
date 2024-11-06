@@ -35,6 +35,41 @@ pub fn unescape_char(src: &str) -> Result<char, EscapeError> {
     Ok(res)
 }
 
+pub fn unescape_str(src: &str) -> Result<String, EscapeError> {
+    let mut chars = src.chars();
+    let mut content = String::new();
+
+    while let Some(c) = chars.next() {
+        match c {
+            '"' => return Err(EscapeError::EscapeOnlyChar),
+            '\\' => match chars.clone().next() {
+                Some('\n') => {
+                    skip_whitespace(&mut chars);
+                }
+                _ => {
+                    let res = scan_escape(&mut chars);
+                    match res {
+                        Err(e) => return Err(e),
+                        Ok(ch) => content.push(ch),
+                    }
+                }
+            },
+            ch => content.push(ch),
+        };
+    }
+
+    Ok(content)
+}
+
+fn skip_whitespace(chars: &mut Chars<'_>) {
+    while let Some(c) = chars.next() {
+        match c {
+            c if super::is_whitespace(c) => {}
+            _ => return,
+        }
+    }
+}
+
 fn scan_escape<T: From<char>>(chars: &mut Chars<'_>) -> Result<T, EscapeError> {
     // Previous character was '\\', unescape what follows.
     let res: char = match chars.next().ok_or(EscapeError::LoneSlash)? {
