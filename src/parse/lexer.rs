@@ -2,6 +2,7 @@ mod tokentrees;
 
 use crate::ast::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,
+    TokenStream,
 };
 use crate::error_handler::ErrorEmitter;
 use crate::interner::Interner;
@@ -9,6 +10,12 @@ use crate::interner::Symbol;
 use crate::lexer::{self, Base, Cursor, EscapeError, RawStrError};
 use crate::session_global::BytePos;
 use crate::span_encoding::Span;
+
+pub fn lex_token_tree<'src>(src: &'src str, emitter: ErrorEmitter) -> TokenStream {
+    let string_reader = StringReader::new(src, emitter);
+
+    tokentrees::TokenTreesReader::lex_all_token_trees(string_reader)
+}
 
 pub fn tokenize<'src>(src: &'src str, emitter: ErrorEmitter) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();

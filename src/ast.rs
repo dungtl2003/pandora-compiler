@@ -1,4 +1,7 @@
 mod token;
+mod tokenstream;
+
+pub use tokenstream::{pretty_print, DelimSpan, Spacing, TokenStream, TokenTree};
 
 pub use token::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,

@@ -1,4 +1,7 @@
-use crate::{interner::Symbol, span_encoding::Span};
+use crate::{
+    interner::Symbol,
+    span_encoding::{Span, DUMMY_SP},
+};
 
 use BinOpToken::*;
 use TokenKind::*;
@@ -182,5 +185,10 @@ impl Token {
                 false
             }
         }
+    }
+
+    /// Some token that will be thrown away later.
+    pub fn dummy() -> Self {
+        Token::new(TokenKind::Question, DUMMY_SP)
     }
 }
