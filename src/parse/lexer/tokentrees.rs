@@ -29,7 +29,7 @@ impl<'src> TokenTreesReader<'src> {
     // Lex into a token stream. The `Spacing` in the result is that of the
     // opening delimiter. Return `true` if not encounter any errors, return `false` otherwise.
     fn lex_token_trees(&mut self, is_delimited: bool) -> (TokenStream, bool) {
-        // Move past the opening delimiter.
+        // This can be the first token or open delim, can not glue.
         self.eat(false);
 
         let mut buf = Vec::new();
@@ -57,6 +57,7 @@ impl<'src> TokenTreesReader<'src> {
                 }
                 _ => {
                     // Get the next normal token.
+                    // We will have the previous token, so we can try to glue.
                     let (this_tok, this_spacing) = self.eat(true);
                     buf.push(TokenTree::Token(this_tok, this_spacing));
                 }
@@ -86,12 +87,14 @@ impl<'src> TokenTreesReader<'src> {
             TokenKind::CloseDelim(close_delim) if close_delim == open_delim => {
                 self.open_delims.pop();
 
-                // Move past the closing delimiter.
+                // Move past the closing delimiter (ofcourse no glue here).
                 self.eat(false);
             }
 
             // Incorrect delimiter.
             TokenKind::CloseDelim(close_delim) => {
+                // The top delim will not have any matched close delim for it, so throw it away.
+                self.open_delims.pop();
                 // If the incorrect delimiter matches an earlier opening
                 // delimiter, then don't consume it (it can be used to
                 // close the earlier one). Otherwise, consume it.
