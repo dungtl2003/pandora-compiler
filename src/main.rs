@@ -6,6 +6,7 @@ mod kw;
 mod lexer;
 mod parse;
 mod session_global;
+mod span_encoding;
 mod visitor;
 
 use crate::error_handler::*;
@@ -16,12 +17,13 @@ use std::sync::Arc;
 fn main() {
     let file_path = "src/trash/".to_string();
     let file_names = vec![
-        "unterminated_block_comment.box",
-        "number_literal_error.box",
-        "unterminated_raw_str.box",
-        "too_many_hashes_raw_str.box",
-        "unterminated_char.box",
-        "unescape_error.box",
+        "main.box",
+        //"unterminated_block_comment.box",
+        //"number_literal_error.box",
+        //"unterminated_raw_str.box",
+        //"too_many_hashes_raw_str.box",
+        //"unterminated_char.box",
+        //"unescape_error.box",
     ];
 
     for file_name in file_names {
@@ -33,11 +35,12 @@ fn main() {
         let emitter = ErrorEmitter {
             file: Arc::new(source),
         };
-        let tokens = parse::lexer::tokenize(&data, emitter);
-
-        for token in tokens.iter() {
-            println!("{token:?}");
-        }
+        let tokens = parse::lexer::lex_token_tree(&data, emitter);
+        ast::pretty_print(&tokens);
+        //let tokens = lexer::tokenize(&data);
+        //for token in tokens.iter() {
+        //    println!("{token:?}");
+        //}
         println!("================ END ================");
     }
 }

@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use std::rc::Rc;
 
 use crate::span_encoding::Span;
@@ -6,6 +5,33 @@ use crate::span_encoding::Span;
 use super::{Delimiter, Token};
 
 pub type TokenStream = Rc<Vec<TokenTree>>;
+
+pub fn pretty_print(stream: &TokenStream) {
+    print_recursive(stream, 0);
+}
+
+fn print_recursive(stream: &TokenStream, depth: u32) {
+    let spaces = " ".repeat((depth * 4) as usize);
+    for tt in stream.iter() {
+        match tt {
+            TokenTree::Token(tok, _) => {
+                println!(
+                    "{spaces}{:?} [{} - {}]",
+                    tok.kind,
+                    tok.span.offset,
+                    tok.span.offset + tok.span.length as u32 - 1
+                );
+            }
+            TokenTree::Delimited(delim_span, delimiter, s) => {
+                println!(
+                    "{spaces}Delimited, type: {delimiter:?}, [{} - {}]",
+                    delim_span.open.offset, delim_span.close.offset
+                );
+                print_recursive(s, depth + 1);
+            }
+        }
+    }
+}
 
 /// Part of a `TokenStream`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -15,20 +41,6 @@ pub enum TokenTree {
     Token(Token, Spacing),
     // A delimited sequence of token trees.
     Delimited(DelimSpan, Delimiter, TokenStream),
-}
-
-impl Display for TokenTree {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Token(..) => println!("{self}"),
-            Self::Delimited(delim_span, delimiter, stream) => {
-                println!("Delim span: {delim_span:?}");
-                println!("Delimiter: {delimiter:?}");
-                println!("Stream: {stream:?}");
-            }
-        }
-        todo!()
-    }
 }
 
 /// Indicates whether a token can join with the following token to form a
