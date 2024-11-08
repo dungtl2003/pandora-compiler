@@ -1,9 +1,6 @@
 \section{Phân tích từ vựng}
 \subsection{Mục đích và nhiệm vụ}
-\subsubsection{Mục đích và nhiệm vụ}
-Nhiệm vụ chính của phần phân tích từ vựng là đọc các ký tự vào từ văn bản 
-chương trình nguồn và đưa ra lần lượt các từ tố cùng một sô thông tin thuộc 
-tính.
+Nhiệm vụ chính của phần phân tích từ vựng là đọc các ký tự vào từ văn bản chương trình nguồn và đưa ra lần lượt các từ tố cùng một số thông tin thuộc tính.
 
 \vspace{1cm}
 \hspace{-1cm}
@@ -31,18 +28,17 @@ tính.
 \vspace{1cm}
 
 
-Phân này có thể coi là phần tiền xử lý văn bản chương trình nguồn, làm cho 
-nhiệm vụ của các giai đoạn sau đơn giản hơn. Quá trình này bao gồm các công việc:
+Phần này có thể coi là phần tiền xử lý văn bản chương trình nguồn, làm cho nhiệm vụ của các giai đoạn sau đơn giản hơn. Quá trình này bao gồm các công việc:
 
 1. {\itshape Xóa bỏ các ký tự không có nghĩa.} Các chú thích, dòng trống, các ký tự xuống dòng, dấu tab, các khoảng trắng không cần thiết đều bị xóa bỏ.
 
 2. {\itshape Nhận dạng các ký hiệu.} Nhận dạng các ký tự liền nhau tạo thành một ký hiệu. Các dạng ký hiệu này gọi là các từ tố. Các từ tố có thể là:
 
-a. Từ khóa như WHEN, FOR, \dots;
+a. Từ khóa như \textbf{when, for, \dots};
 
 b. Tên của biến, hàm, \dots;
 
-c. Các số như 12 ,4 , 3.14, \dots;
+c. Các số như 12, 4, 3.14, \dots;
 
 d. Xâu, nằm trong cặp dấu nháy kép (")
 
@@ -54,8 +50,8 @@ e. Ký tự, nằm trong cặp dấu nháy đơn (')
 
 Ngoài ra, bộ phân tích từ vựng còn làm một nhiệm vụ phụ: đóng vai trò giao diện với người dùng. Nó xóa bỏ các ký tự thừa như các khoảng trắng, các chú thích, các ký tự hết dòng\dots\space làm cho chương trình không phụ thuộc vào chúng. Như vậy cũng có nghĩa nó cho phép người lập trình trình bày chương trình nguồn của mình tùy ý và dễ đọc hơn. Mặt khác, đây là phần duy nhất lưu các thông tin phụ về từ tố như số dòng, số cột của nó, \dots\space cho phép bộ phận báo lỗi chỉ chính xác nơi xảy ra lỗi trong chương trình nguồn. Nếu ngôn ngữ nguồn cho phép dùng các hàm macro, thì việc xử lí các macro cũng thường được đặt trong phần này.
 
-\subsubsection{Sự cần thiết phải tách rời phân tích từ vựng với phân tích cú pháp}
-Như trên đã trình bày, phần phâ tích của chương trình dịch bao gồm 3 phần là: phân tích từ vựng, phân tích cú pháp, phân tích ngữ nghĩa. Trước đây phần phân tích từ vựng và phân tích cú pháp có thể viết chung làm một khối. Bây giờ có một số lý do để ta nên chia hai phần phân tích này tách rời nhau:
+\subsection{Sự cần thiết phải tách rời phân tích từ vựng với phân tích cú pháp}
+Như trên đã trình bày, phần phân tích của chương trình dịch bao gồm 3 phần là: phân tích từ vựng, phân tích cú pháp, phân tích ngữ nghĩa. Trước đây phần phân tích từ vựng và phân tích cú pháp có thể viết chung làm một khối. Bây giờ có một số lý do để ta nên chia hai phần phân tích này tách rời nhau:
 
 1. Thiết kế từng phần đơn giản hơn. Đây là lý do quan trọng nhất, phù hợp với các quy tắc thiết kế và bảo dưỡng chương trình.
 
@@ -63,134 +59,95 @@ Như trên đã trình bày, phần phâ tích của chương trình dịch bao 
 
 3. Cho phép chương trình dịch có thể chuyển đổi. Ví dụ như khi thay đổi bảng mã ký tự, quy ước lại các ký hiệu \dots\space thì việc sửa đổi sẽ ít, dễ dàng và chính xác hơn.
 
-Phân tích từ vựng là phần đơn giản nhất của chương trình dịch. Tuy vậy, nó lại chiếm một phần khá lớn trong tổng số thời gian dịch (thường chiếm 20-40\%) do phải làm việc trực tiếp vớ chương trình nguồn ghi trên các thiết bị lưu trữ ngoài có tốc độ chậm (như ổ đĩa), điều đó cũng có nghĩa tác dụng cải tiến của nó đặc biệt quan trọng.
+Phân tích từ vựng là phần đơn giản nhất của chương trình dịch. Tuy vậy, nó lại chiếm một phần khá lớn trong tổng số thời gian dịch (thường chiếm 20-40\%) do phải làm việc trực tiếp với chương trình nguồn ghi trên các thiết bị lưu trữ ngoài có tốc độ chậm (như ổ đĩa), điều đó cũng có nghĩa tác dụng cải tiến của nó đặc biệt quan trọng.
 
 \subsection{Các giai đoạn phân tích từ vựng}
 \textbf{Giai đoạn 1.} \textit{Phân tích từ tố sơ cấp}:
 
-Từ tố sơ cấp bao gồm các thuộc tính là loại từ tố và độ dài của từ tố
+Từ tố sơ cấp bao gồm các thuộc tính là loại từ tố và độ dài của từ tố:
 
 \clearpage
-\begin{lstlisting}[language=Rust]
+\begin{lstlisting}[]
   pub struct Token {
     pub kind: TokenKind,
     pub len: u32,
   }
 \end{lstlisting}
 
-Ở giai đoạn này, bộ phân tích từ vựng sẽ đọc chương trinh nguồn và phân tích nó thành các từ tố sơ cấp.
-Các loại từ tố sơ cấp được thể hiện bởi enum sau:
-
-\begin{lstlisting}[language=Rust]
-  pub enum TokenKind {
-    /* one char symbol */
-    /// :
-    Colon,
-    /// ,
-    Comma,
-    /// .
-    Dot,
-    /// ;
-    Semicolon,
-    /// ?
-    Question,
-    /// (
-    OpenParen,
-    /// )
-    CloseParen,
-    /// {
-    OpenBrace,
-    /// }
-    CloseBrace,
-    /// [
-    OpenBracket,
-    /// ]
-    CloseBracket,
-    /// `!`
-    Bang,
-    /// `=`
-    Eq,
-    /// `>`
-    Gt,
-    /// `<`
-    Lt,
-    /// `~`
-    Tilde,
-    /// `+`
-    Plus,
-    /// `-`
-    Minus,
-    /// `*`
-    Star,
-    /// `/`
-    Slash,
-    /// `%`
-    Percent,
-    /// `^`
-    Caret,
-    /// `&`
-    And,
-    /// `|`
-    Or,
-
-    // Literal
-    Literal(LiteralKind),
-
-    // Identifier
-    Ident,
-
-    // Raw identifier
-    RawIdent,
-
-    // Comments
-    LineComment {
-        doc_style: Option<DocStyle>,
-    },
-    BlockComment {
-        doc_style: Option<DocStyle>,
-        terminated: bool,
-    },
-
-    Whitespace,
-
-    // Unknown token's kind.
-    Unknown,
-
-    /// End of input.
-    Eof,
-  }
-\end{lstlisting}
-
-Cụ thể:
+Ở giai đoạn này, bộ phân tích từ vựng sẽ đọc chương trình nguồn và phân tích nó thành các từ tố sơ cấp. Các loại từ tố sơ cấp được thể hiện như sau:
 
 \begin{itemize}
-  \item Các ký tự đơn được đọc trực tiếp: 
-  \begin{itemize}
-    \item ':' - Colon, 
-    \item ',' - Comma, 
-    \item '.' - Dot, 
-    \item ';' - Semicolon, 
-    \item '?' - Question, 
-    \item '(' - OpenParen,
-    \item ')' - CloseParen,
-    \item '\{' - OpenBarace,
-    \item '\}' - CloseBarace,
-    \item '!' - Bang,
-    \item '=' - Eq,
-    \item '>' - Gt,
-    \item '<' - Lt,
-    \item '~' - Tilde,
-    \item '+' - Plus,
-    \item '-' - Minus,
-    \item '*' - Star,
-    \item '/' - Slash,
-    \item '\%' - Percent,
-    \item '\^' - Caret,
-    \item '\&' - And,
-    \item '|' - Or
-  \end{itemize}
-  \item Các giá trị bao gồm ký tự thường - Literal(LiteralKind):
-    \begin{lstlisting}[language=Rust]
+  \item Các ký tự đơn: 
+  \begin{lstlisting}[]
+    pub enum TokenKind {
+      /* one char symbol */
+      /// :
+      Colon,
+      /// ,
+      Comma,
+      /// .
+      Dot,
+      /// ;
+      Semicolon,
+      /// ?
+      Question,
+      /// (
+      OpenParen,
+      /// )
+      CloseParen,
+      /// {
+      OpenBrace,
+      /// }
+      CloseBrace,
+      /// [
+      OpenBracket,
+      /// ]
+      CloseBracket,
+      /// `!`
+      Bang,
+      /// `=`
+      Eq,
+      /// `>`
+      Gt,
+      /// `<`
+      Lt,
+      /// `~`
+      Tilde,
+      /// `+`
+      Plus,
+      /// `-`
+      Minus,
+      /// `*`
+      Star,
+      /// `/`
+      Slash,
+      /// `%`
+      Percent,
+      /// `^`
+      Caret,
+      /// `&`
+      And,
+      /// `|`
+      Or,
+
+      ...
+    }
+  \end{lstlisting}
+  \item Các chuỗi ký tự - Literal(LiteralKind):
+  \begin{lstlisting}[]
+    pub enum TokenKind {
+      ...
+  
+      // Literal
+      Literal(LiteralKind),
+  
+      ...
+    }
+  \end{lstlisting}
+
+    LiteralKind được thể hiện như sau:
+
+    \begin{lstlisting}[]
     pub enum LiteralKind {
       /// `"abc"`, `"ab`, `"ab\"`, `"ab\""`.
       Str {
@@ -217,55 +174,103 @@ Cụ thể:
     }
     \end{lstlisting}
     \begin{itemize}
-      \item Chuỗi - Str. Từ tố này có thêm thuộc tính \textit{terminated} để xác định 
-      xem chuỗi có được đóng đúng cách hay không, ở đây chuỗi được đặt đúng cách là 
-      bên trong cặp nháy kép (").
-      \item Chuỗi thô - RawStr. Từ tố loại này bao gồm các chuỗi sẽ được hiểu chính xác 
-      như những gì có trong chuỗi bao gồm cả các ký tự đặc biệt như '\textbackslash', 
-      không như ở chuỗi thông thường, nếu muốn trình biên dịch hiểu được là 
-      '\textbackslash' thì ta cần truyền giá trị cho nó là '\textbackslash\textbackslash'
-      ; hoặc chuỗi thô sẽ hiểu "\textbackslash n" là chuỗi bao gồm 2 kí tự 
-      '\textbackslash' và 'n' nhưng ở chuỗi thông thường thì đây là kí tự xuống dòng; 
-      \dots\space Chuỗi thô sẽ được đặt trong cặp nháy kép (") bắt đầu với \textit{r\#}.
-      \\Từ tố này có thêm thuộc tính \textit{n\_hashes} để ... TODO!
-      \item Số nguyên - Int. Từ tố này có thêm 2 thuộc tính \textit{base} và 
-      \textit{empty\_int}. Thuộc tính \textit{base} dùng để xác định hệ cơ số của số 
-      nguyên (ở đây Pandora hỗ trợ 4 cơ số chính là thập phân, nhị phân, bát phân và 
-      thập lục phân). Thuộc tính \textit{empty\_int} ... để xác định xem số nguyên có 
-      hợp lệ hay không (ví dụ 0b, 0h, 0o).
-      \item Số thực - Float. Từ tố này có thêm 2 thuộc tính là \textit{base} và \\
-      \textit{empty\_exponent}. Thuộc tính \textit{base} tương tự như số nguyên, nó dùng 
-      để xác định hệ cơ số của số nguyên. Thuộc tính \textit{empty\_exponent} dùng để 
-      xác định xem số nguyên có hợp lệ hay không (phải có phần số mũ sau chữ \textit{e}, 
-      ví dụ: không hợp lệ - 314e, hợp lệ - 314e-2).
-      \item Ký tự - Char. Từ tố này có thêm thuộc tính \textit{terminated} để xác định 
-      xem kí tự có được đóng đúng cách hay không, ở đây kí tự được đặt đúng cách là 
-      bên trong cặp nháy đơn (').
+      \item Chuỗi (Str). Loại từ tố này có thêm thuộc tính \textit{terminated} để xác định xem chuỗi có được đóng đúng cách hay không, ở đây chuỗi được đặt đúng cách là bên trong cặp nháy kép (").
+      \item Chuỗi thô (RawStr). Loại từ tố này bao gồm các chuỗi sẽ được hiểu chính xác như những gì có trong chuỗi bao gồm cả các ký tự đặc biệt như '\textbackslash', không như ở chuỗi thông thường, nếu muốn trình biên dịch hiểu được là '\textbackslash' thì ta cần truyền giá trị cho nó là '\textbackslash\textbackslash'; hoặc chuỗi thô sẽ hiểu "\textbackslash n" là chuỗi bao gồm 2 ký tự '\textbackslash' và 'n' nhưng ở chuỗi thông thường thì đây là ký tự xuống dòng; \dots\space Chuỗi thô sẽ được đặt trong cặp nháy kép (") bắt đầu với \textit{r\#}.\\Loại từ tố này có thêm thuộc tính \textit{n\_hashes} để đếm số kí tự '\#' nằm giữa kí tự 'r' và '"'
+      \item Số nguyên (Int). Loại từ tố này có thêm 2 thuộc tính \textit{base} và \\\textit{empty\_int}. Thuộc tính \textit{base} dùng để xác định hệ cơ số của số nguyên (ở đây Pandora hỗ trợ 4 cơ số chính là thập phân, nhị phân, bát phân và thập lục phân). Thuộc tính \textit{empty\_int} ... để xác định xem số nguyên có hợp lệ hay không (ví dụ 0b, 0h, 0o).
+      \item Số thực (Float). Loại từ tố này có thêm 2 thuộc tính là \textit{base} và \\\textit{empty\_exponent}. Thuộc tính \textit{base} tương tự như số nguyên, nó dùng để xác định hệ cơ số của số thực. Thuộc tính \textit{empty\_exponent} dùng để xác định xem số nguyên có hợp lệ hay không (phải có phần số mũ sau chữ \textit{e}, ví dụ: không hợp lệ - 314e, hợp lệ - 314e-2).
+      \item Ký tự (Char). Loại từ tố này có thêm thuộc tính \textit{terminated} để xác định xem ký tự có được đóng đúng cách hay không, ở đây ký tự được đặt đúng cách là bên trong cặp nháy đơn (').
       
     \end{itemize}
-  \item Tên - Ident: Tên biến, hàm , \dots
-  \item Tên thô - RawIdent: tương tự như tên thông thường nhưng ở đây ta có thể sử dụng 
-        từ khóa để đặt tên.
-  \item Chú thích dòng - LineComment: Chú thích theo dòng. Từ tố này có thêm thuộc tính 
-  \textit{doc\_style} dùng để xác định kiểu của chú thích là bên trong hay bên ngoài 1 
-  khối lệnh.
-    \begin{lstlisting}[language=Rust]
-      pub enum DocStyle {
-        Inner,
-        Outer,
-      }
-    \end{lstlisting}
-  \item Chú thích - BlockComment:  Chú thích theo đoạn. Từ tố này có thêm 2 thuộc tính là
-  \textit{doc\_style} và \textit{terminated}. Thuộc tính \textit{doc\_style} có chức năng
-  tương tự như chú thích dòng, để xác định kiểu của chú thích. Thuộc tính \\ \textit{terminated}
-  dùng để xác định xem chú thích có được đóng đúng cách không.
+  \item Tên - Ident: Tên biến, hàm , \dots\space và từ khóa. Từ khóa và các tên thông thường sẽ được phân biệt ở giai đoạn sau.
+        \begin{lstlisting}[]
+          pub enum TokenKind {
+            ...
+        
+            // Identifier
+            Ident,
+        
+            ...
+          }
+        \end{lstlisting}
+  \item Tên thô - RawIdent: tương tự như tên thông thường nhưng ở đây ta có thể sử dụng từ khóa để đặt tên cho biến, hàm, \dots
+        \begin{lstlisting}[]
+          pub enum TokenKind {
+            ...
+        
+            // Raw identifier
+            RawIdent,
+        
+            ...
+          }
+        \end{lstlisting}
+  \item Chú thích dòng - LineComment: Chú thích theo dòng. 
+        \begin{lstlisting}[]
+          pub enum TokenKind {
+            ...
+        
+            // Comments
+            LineComment {
+                doc_style: Option<DocStyle>,
+            },
+
+            ...
+          }
+        \end{lstlisting}
+        Loại từ tố này có thêm thuộc tính \textit{doc\_style} dùng để xác định kiểu của chú thích là bên trong hay bên ngoài 1 khối lệnh.
+        \begin{lstlisting}[]
+          pub enum DocStyle {
+            Inner,
+            Outer,
+          }
+        \end{lstlisting}
+  \item Chú thích - BlockComment:  Chú thích theo đoạn. 
+        \begin{lstlisting}
+          pub enum TokenKind {
+            ...
+
+            BlockComment {
+                doc_style: Option<DocStyle>,
+                terminated: bool,
+            },
+
+            ...
+          }
+        \end{lstlisting}
+        Loại từ tố này có thêm 2 thuộc tính là \textit{doc\_style} và \textit{terminated}. Thuộc tính \textit{doc\_style} có chức năng tương tự như chú thích dòng, để xác định kiểu của chú thích. Thuộc tính \textit{terminated} dùng để xác định xem chú thích có được đóng đúng cách không.
   \item Khoảng trắng - Whitespace.
-  \item Kết thúc đầu vào - Eof.
+        \begin{lstlisting}
+          pub enum TokenKind {
+            ...
+
+            Whitespace,
+
+            ...
+          }
+        \end{lstlisting}
   \item Không xác định - Unknown.
+        \begin{lstlisting}
+          pub enum TokenKind {
+            ...
+            
+            // Unknown token's kind.
+            Unknown,
+            
+            ...
+          }
+        \end{lstlisting}
+  \item Kết thúc đầu vào - Eof.
+        \begin{lstlisting}
+          pub enum TokenKind {
+            ...
+            
+            /// End of input.
+            Eof,
+          }
+        \end{lstlisting}
 \end{itemize}
 
-Với các từ tố như trên, luồng kí tự sẽ được đọc và phân loại từ tố với hàm \textit{advance\_token} như sau:
-\begin{lstlisting}[language=Rust]
+Hàm \textit{advance\_token} được sử dụng để đọc từ tố tiếp theo trong chuỗi ký tự đầu vào như sau:
+\begin{lstlisting}[]
   pub fn advance_token(&mut self) -> Token {
     self.reset_bytes_eaten();
 
@@ -334,15 +339,10 @@ Với các từ tố như trên, luồng kí tự sẽ được đọc và phân
 
 Cụ thể:
 \begin{itemize}
-  \item Các ký tự đơn như ':', ',', \dots , '|' sẽ được chuyển trực tiếp thành các từ tố 
-  tương ứng.
-  \item Ký tự '/' đặc biệt hơn vì có thể nó sẽ là bắt đầu của 1 chú thích nên ta cần kiểm
-  tra ký tự ngay sau nó, nếu là '/' thì đây là từ tố \textit{line\_comment}, nếu là '*' 
-  thì đây là từ tố \textit{block\_comment}, ngược lại ký tự tiếp theo này là 1 ký tự khác 
-  thì đây là từ tố \textit{Slash}.
-  \item Nếu là số thì các từ tố số sẽ được xác định cụ thể là Int hay Float, cơ số nào bởi 
-  hàm \textit{number}.
-  % \begin{lstlisting}[language=Rust]
+  \item Các ký tự đơn như ':', ',', \dots , '|' sẽ được chuyển trực tiếp thành các loại từ tố tương ứng.
+  \item Ký tự '/' đặc biệt hơn vì có thể nó sẽ là bắt đầu của 1 chú thích nên ta cần kiểmtra ký tự ngay sau nó, nếu là '/' thì đây là loại từ tố \textit{line\_comment}, nếu là '*' thì đây là loại từ tố \textit{block\_comment}, ngược lại ký tự tiếp theo này là 1 ký tự khác thì đây là loại từ tố \textit{Slash}.
+  \item Nếu là số thì các loại từ tố số sẽ được xác định cụ thể là Int hay Float, cơ số nào bởi hàm \textit{number}.
+  % \begin{lstlisting}[]
   %   fn number(&mut self) -> TokenKind {
   %     debug_assert!('0' <= self.prev() && self.prev() <= '9');
 
@@ -447,26 +447,151 @@ Cụ thể:
   %     }
   %   }
   % \end{lstlisting}
-  \item Xử lí từ tố tên thô và chuỗi thô: Kí tự đang được đọc là 'r', ta sẽ xác định 2 kí 
-  tiếp theo ngay sau nó. Nếu cặp kí tự sau nó là '\#' và 1 kí tự bắt đầu tên thì xác định 
-  từ tố tên thô bằng hàm \textit{raw\_identifier}, nếu cặp kí tự sau nó là '\#' và 1 kí 
-  tự bất kì hoặc '"' và 1 kí tự bất kì thì xác định từ tố chuỗi thô bằng hàm 
-  \textit{raw\_double\_quote\_string}. Nếu kí tự ngay sau không phải là '\#' thì ta sẽ xác 
-  định từ tố tên bằng hàm \textit{identifier.}
-  \item Xử lí kí tự: Kí tự đang được đọc là dấu nháy đơn (') thì ta sẽ xác định từ tố kí 
-  tự bằng hàm \textit{single\_quote\_string}.
-  \item Xử lí chuỗi: Kí tự đang được đọc là dấu nháy kép (") thì ta sẽ xác định từ tố 
-  chuỗi bằng hàm \textit{double\_quote\_string}.
-  \item Nếu kí tự đang đọc là 1 kí tự bất kì nào khác mà là kí tự bắt đầu tên thì ta sẽ 
-  xác định từ tố tên bằng hàm \textit{identifier}.
-  \item Nếu kí tự đang đọc k thỏa mãn bất kì trường hợp nào trên thì sẽ là từ tố không 
-  xác định.
+  \item Xử lí loại từ tố tên thô và chuỗi thô: ký tự đang được đọc là 'r', ta sẽ xác định 2 ký tự tiếp theo ngay sau nó. Nếu ký tự tiếp theo là '\#', ký tự tiếp theo sau '\#' là ký tự bắt đầu tên hợp lệ thì xác định loại từ tố tên thô bằng hàm \textit{raw\_identifier}; Nếu ký tự tiếp theo là '\#' hoặc '"' thì xác định loại từ tố chuỗi thô bằng hàm \textit{raw\_double\_quote\_string}; Nếu ký tự tiếp theo không phải 2 trường hợp trên thì ta sẽ xác định loại từ tố tên bằng hàm \textit{identifier.}
+  % \begin{lstlisting}[]
+  %   fn raw_double_quote_string(&mut self) -> Result<u8, RawStrError> {
+  %     debug_assert!(self.prev() == 'r' && matches!(self.first(), '#' | '"'));
+
+  %     let start_pos = self.bytes_eaten();
+  %     let mut start_hashes = 0;
+
+  %     while self.first() == '#' {
+  %         self.eat();
+  %         start_hashes += 1;
+  %     }
+
+  %     match self.eat() {
+  %         Some('"') => {}
+  %         c => {
+  %             let bad_char = c.unwrap_or(EOF_CHAR);
+  %             return Err(RawStrError::InvalidStarter { bad_char });
+  %         }
+  %     }
+
+  %     let mut possible_terminator_offset: Option<u32> = None;
+  %     let mut max_end_hashes: u32 = 0;
+  %     let mut maybe_end_hashes: u32;
+
+  %     loop {
+  %         self.eat_while(|ch| ch != '"');
+  %         if self.is_eof() {
+  %             return Err(RawStrError::NoTerminator {
+  %                 expected: start_hashes,
+  %                 found: max_end_hashes,
+  %                 possible_terminator_offset,
+  %             });
+  %         }
+
+  %         self.eat();
+  %         maybe_end_hashes = 0;
+  %         while self.first() == '#' && maybe_end_hashes < start_hashes {
+  %             self.eat();
+  %             maybe_end_hashes += 1;
+  %         }
+
+  %         if maybe_end_hashes == start_hashes {
+  %             if maybe_end_hashes > 255 {
+  %                 return Err(RawStrError::TooManyHashes {
+  %                     found: maybe_end_hashes,
+  %                 });
+  %             }
+
+  %             return Ok(start_hashes as u8);
+  %         }
+
+  %         // end < start
+  %         if maybe_end_hashes > max_end_hashes {
+  %             max_end_hashes = maybe_end_hashes;
+  %             possible_terminator_offset =
+  %                 Some(self.bytes_eaten() - start_pos + 1 - max_end_hashes);
+  %         }
+  %     }
+  %   }
+  % \end{lstlisting}
+  \item Xử lí ký tự: ký tự đang được đọc là dấu nháy đơn (') thì ta sẽ xác định loại từ tố ký tự bằng hàm \textit{single\_quote\_string}.
+  % \begin{lstlisting}[]
+  %   fn single_quote_string(&mut self) -> TokenKind {
+  %     debug_assert!(self.prev() == '\'');
+
+  %     // If it only contains 1 symbol.
+  %     if self.first() != '\\' && self.second() == '\'' {
+  %         self.eat();
+  %         self.eat();
+  %         return TokenKind::Literal(LiteralKind::Char { terminated: true });
+  %     }
+
+  %     // This can contains more than 1 symbol.
+  %     let mut terminated = false;
+  %     while !self.is_eof() {
+  %         match self.first() {
+  %             '\'' => {
+  %                 terminated = true;
+  %                 self.eat();
+  %                 break;
+  %             }
+  %             // Probably beginning of the comment, which we don't want to include
+  %             // to the error report.
+  %             '/' => break,
+  %             // Newline without following '\'' means unclosed quote, stop parsing.
+  %             '\n' if self.second() != '\'' => break,
+  %             // Eats twice because \ will take the character after it.
+  %             '\\' => {
+  %                 self.eat();
+  %                 self.eat();
+  %             }
+  %             _ => {
+  %                 self.eat();
+  %             }
+  %         }
+  %     }
+
+  %     TokenKind::Literal(LiteralKind::Char { terminated })
+  %   }
+  % \end{lstlisting}
+  \item Xử lí chuỗi: ký tự đang được đọc là dấu nháy kép (") thì ta sẽ xác định loại từ tố chuỗi bằng hàm \textit{double\_quote\_string}.
+  % \begin{lstlisting}[]
+  %   fn double_quote_string(&mut self) -> TokenKind {
+  %     debug_assert!(self.prev() == '"');
+
+  %     let mut terminated = false;
+  %     while !self.is_eof() {
+  %         match self.first() {
+  %             // This will eat the character after it.
+  %             '\\' => {
+  %                 self.eat();
+  %                 self.eat();
+  %             }
+  %             '"' => {
+  %                 self.eat();
+  %                 terminated = true;
+  %                 break;
+  %             }
+  %             _ => {
+  %                 self.eat();
+  %             }
+  %         }
+  %     }
+
+  %     TokenKind::Literal(LiteralKind::Str { terminated })
+  %   }
+  % \end{lstlisting}
+  \item Nếu ký tự đang đọc là 1 ký tự bất kì nào khác mà là ký tự bắt đầu tên thì ta sẽ xác định loại từ tố tên bằng hàm \textit{identifier}.
+  % \begin{lstlisting}[]
+  %   fn identifier(&mut self) -> TokenKind {
+  %     // The first symbol is already eaten and checked so this must be true.
+  %     debug_assert!(is_id_start(self.prev()));
+
+  %     self.eat_while(|ch| is_id_continue(ch));
+
+  %     TokenKind::Ident
+  %   }
+  % \end{lstlisting}
+  \item Nếu ký tự đang đọc không thỏa mãn bất kì trường hợp nào trên thì sẽ là loại từ tố không xác định.
 \end{itemize}
 
 
 \textbf{Giai đoạn 2.} \textit{Phân tích từ tố thứ cấp}\\
 Ở giai đoạn này các từ tố sơ cấp sẽ được "\textit{nấu}" lên tạo thành các từ tố thứ cấp.
-
 
 
 

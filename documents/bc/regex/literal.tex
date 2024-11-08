@@ -40,11 +40,11 @@
 
     DEC\_LITERAL -> DEC\_DIGIT(DEC\_DIGIT | \w{\_})*
 
-    BIN\_LITERAL -> \w{0b}BIN\_DIGIT(BIN\_DIGIT | \w{\_})*
+    BIN\_LITERAL -> \w{0}\w{b}BIN\_DIGIT(BIN\_DIGIT | \w{\_})*
 
-    OCT\_LITERAL -> \w{0o}OCT\_DIGIT(OCT\_DIGIT | \w{\_})*
+    OCT\_LITERAL -> \w{0}\w{o}OCT\_DIGIT(OCT\_DIGIT | \w{\_})*
 
-    HEX\_LITERAL -> \w{0h}HEX\_DIGIT(HEX\_DIGIT | \w{\_})*
+    HEX\_LITERAL -> \w{0}\w{h}HEX\_DIGIT(HEX\_DIGIT | \w{\_})*
 
     DEC\_DIGIT -> \w{0} | \w{1} | ... | \w{9}
 
