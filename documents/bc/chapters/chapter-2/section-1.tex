@@ -592,9 +592,357 @@ Cụ thể:
 \end{itemize}
 
 
-\textbf{Giai đoạn 2.} \textit{Phân tích từ tố thứ cấp}\\
-Ở giai đoạn này các từ tố sơ cấp sẽ được "\textit{nấu}" lên tạo thành các từ tố thứ cấp.
+\textbf{Giai đoạn 2.} \textit{Phân tích từ tố thứ cấp}
+
+Từ tố thứ cấp bao gồm các thuộc tính là loại từ tố và vị trí của từ tố:
+\begin{lstlisting}
+  pub struct Token {
+    pub kind: TokenKind,
+    pub span: Span,
+  }
+\end{lstlisting}
+
+Ở giai đoạn này các từ tố sơ cấp sẽ được "\textit{nấu}" lên tạo thành các từ tố thứ cấp. Các loại từ tố thứ cấp được thể hiện như sau:
+\begin{lstlisting}
+  pub enum TokenKind {
+    /* Expression-operator symbols. */
+    /// `=`
+    Eq,
+    /// `<`
+    Lt,
+    /// `<=`
+    Le,
+    /// `==`
+    EqEq,
+    /// `!=`
+    Ne,
+    /// `>=`
+    Ge,
+    /// `>`
+    Gt,
+    /// `&&`
+    AndAnd,
+    /// `||`
+    OrOr,
+    /// `!`
+    Not,
+    /// `~`
+    Tilde,
+    BinOp(BinOpToken),
+    BinOpEq(BinOpToken),
+
+    /* Structural symbols */
+    /// `.`
+    Dot,
+    /// `,`
+    Comma,
+    /// `;`
+    Semicolon,
+    /// `:`
+    Colon,
+    /// `?`
+    Question,
+    /// An opening delimiter (e.g., `{`).
+    OpenDelim(Delimiter),
+    /// A closing delimiter (e.g., `}`).
+    CloseDelim(Delimiter),
+
+    /* Literals */
+    Literal(Lit),
+
+    Ident(Symbol, IdentIsRaw),
+
+    /// A doc comment token.
+    /// `Symbol` is the data of doc's comment excluding its "quotes" (`///`, `/**`, etc)
+    DocComment(CommentKind, Option<DocStyle>, Symbol),
+
+    /// End Of File.
+    Eof,
+  }
+\end{lstlisting} 
+
+Ngoài các loại từ tố đã được chú thích cụ thể ở trên, có 1 số loại từ tố cần được thể hiện thông qua 1 hoặc nhiều giá trị khác, cụ thể:
+\begin{itemize}
+  \item \textit{BinOp} là loại từ tố bao gồm các ký tự là phép toán (cộng, trừ, nhân, chia, chia lấy dư, and, or, xor, dịch trái, dịch phải) được thể hiện qua enum \textit{BinOpToken}:
+  \begin{lstlisting}
+  pub enum BinOpToken {
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Percent,
+    Caret,
+    And,
+    Or,
+    Shl,
+    Shr,
+  }
+  \end{lstlisting}
+  \item \textit{OpenDelim \emph{và} CloseDelim} là 2 loại từ tố tương ứng thể hiện kiểu mở và đóng ngoặc. Nó được thể hiện qua enum \textit{Delimiter}:
+  \begin{lstlisting}
+    pub enum Delimiter {
+      /// `( ... )`
+      Parenthesis,
+      /// `{ ... }`
+      Brace,
+      /// `[ ... ]`
+      Bracket,
+    }        
+  \end{lstlisting}
+  \item \textit{Literal} là loại từ tố xâu ký tự được thể hiện qua cấu trúc \textit{Lit} với 2 thuộc tính là \textit{kind} và \textit{symbol}. 
+  \\Thuộc tính \textit{kind} có kiểu \textit{LitKind} được thể hiện qua enum \textit{LitKind}: 
+  \begin{lstlisting}
+    pub enum LitKind {
+      Bool,
+      Char,
+      Int,
+      Float,
+      Str,
+      RawStr(u8), // raw string delimited by `n` hash symbols
+  
+      Err,
+    }
+  \end{lstlisting}
+  Thuộc tính \textit{symbol} có kiểu \textit{Symbol} là giá trị số được sinh ra từ giá trị của chuỗi:
+  \begin{lstlisting}
+    pub struct Symbol(u32);
+  \end{lstlisting}
 
 
+  \item \textit{Ident} là từ tố tên, được thể hiện bởi 2 giá trị là \textit{Symbol} lưu giá trị của tên dưới dạng số 32bit và \textit{IdentIsRaw} để xác định xem đây có phải là tên thô hay không:
+  \begin{lstlisting}
+    pub enum IdentIsRaw {
+      Yes,
+      No,
+    }
+  \end{lstlisting}
+  
+  \item \textit{DocComment} là từ tố chú thích tài liệu:
+  
+
+        Từ tố này thể hiện qua 3 giá trị. 
+        \\Thứ nhất là \textit{CommentKind} cho biết loại chú thích là chú thích dòng hay đoạn:
+  \begin{lstlisting}
+  pub enum CommentKind {
+    Line,
+    Block,
+  }
+  \end{lstlisting}
+        Thứ hai là \textit{Option<DocStyle>} cho biết kiểu chú thích là bên trong hay bên ngoài khối lệnh:
+  \begin{lstlisting}
+  pub enum DocStyle {
+    Inner,
+    Outer,
+  }
+  \end{lstlisting}
+        Thứ ba là \textit{Symbol} lưu giá trị của chú thích dưới dạng số.
+\end{itemize}
+
+Hàm \textit{next\_token} được sử dụng để đọc từ tố sơ cấp tiếp theo trong chuỗi ký tự đầu vào, sau đó "\textit{nấu}" chúng thành từ tố thứ cấp:
+
+\begin{lstlisting}
+  fn next_token(&mut self) -> Token {
+    // Skip trivial (whitespaces and comments) tokens.
+    loop {
+        let token = self.cursor.advance_token();
+        let start_pos = self.pos;
+        self.pos = self.pos + token.len as BytePos;
+
+        // Now "cook" the token, converting the simple `lexer::TokenKind` to rich `ast::TokenKind`.
+        // This also turn strings into interned symbols.
+        let kind = match token.kind {
+            lexer::TokenKind::LineComment { doc_style } => {
+                // Skip normal comment
+                let Some(doc_style) = doc_style else {
+                    continue;
+                };
+
+                let content_start = start_pos + 3; // skip "quotes" (//! or //@)
+                let content_end = self.pos;
+                let content = self.str_from_to(content_start, content_end);
+                self.cook_doc_comment(content, CommentKind::Line, doc_style)
+            }
+            lexer::TokenKind::BlockComment {
+                doc_style,
+                terminated,
+            } => {
+                if !terminated {
+                    self.report_unterminated_block_comment(start_pos, doc_style);
+                }
+
+                // Skip normal comment
+                let Some(doc_style) = doc_style else {
+                    continue;
+                };
+
+                let content_start = start_pos + 3; // skip "quotes" (/*! or /*@)
+                let content_end = self.pos - if terminated { 2 } else { 0 };
+                let content = self.str_from_to(content_start, content_end);
+                self.cook_doc_comment(content, CommentKind::Block, doc_style)
+            }
+            lexer::TokenKind::Whitespace => {
+                continue;
+            }
+            lexer::TokenKind::Ident => {
+                let content = self.str_from_to(start_pos, self.pos);
+                self.cook_ident(content)
+            }
+            lexer::TokenKind::RawIdent => {
+                let content = self.str_from_to(start_pos + 2, self.pos); // skip r#
+                self.cook_raw_ident(content)
+            }
+            lexer::TokenKind::Literal(kind) => self.cook_literal(start_pos, self.pos, kind),
+
+            lexer::TokenKind::Eq => TokenKind::Eq,
+            lexer::TokenKind::Lt => TokenKind::Lt,
+            lexer::TokenKind::Gt => TokenKind::Gt,
+            lexer::TokenKind::Bang => TokenKind::Not,
+            lexer::TokenKind::Tilde => TokenKind::Tilde,
+            lexer::TokenKind::Plus => TokenKind::BinOp(BinOpToken::Plus),
+            lexer::TokenKind::Minus => TokenKind::BinOp(BinOpToken::Minus),
+            lexer::TokenKind::Star => TokenKind::BinOp(BinOpToken::Star),
+            lexer::TokenKind::Slash => TokenKind::BinOp(BinOpToken::Slash),
+            lexer::TokenKind::Percent => TokenKind::BinOp(BinOpToken::Percent),
+            lexer::TokenKind::Caret => TokenKind::BinOp(BinOpToken::Caret),
+            lexer::TokenKind::And => TokenKind::BinOp(BinOpToken::And),
+            lexer::TokenKind::Or => TokenKind::BinOp(BinOpToken::Or),
+            lexer::TokenKind::Dot => TokenKind::Dot,
+            lexer::TokenKind::Comma => TokenKind::Comma,
+            lexer::TokenKind::Semicolon => TokenKind::Semicolon,
+            lexer::TokenKind::Colon => TokenKind::Colon,
+            lexer::TokenKind::Question => TokenKind::Question,
+            lexer::TokenKind::OpenParen => TokenKind::OpenDelim(Delimiter::Parenthesis),
+            lexer::TokenKind::CloseParen => TokenKind::CloseDelim(Delimiter::Parenthesis),
+            lexer::TokenKind::OpenBrace => TokenKind::OpenDelim(Delimiter::Brace),
+            lexer::TokenKind::CloseBrace => TokenKind::CloseDelim(Delimiter::Brace),
+            lexer::TokenKind::OpenBracket => TokenKind::OpenDelim(Delimiter::Bracket),
+            lexer::TokenKind::CloseBracket => TokenKind::CloseDelim(Delimiter::Bracket),
+
+            lexer::TokenKind::Unknown => {
+                self.report_unknown_symbol(start_pos, self.pos);
+                continue;
+            }
+
+            lexer::TokenKind::Eof => TokenKind::Eof,
+        };
+
+        let span = self.mk_sp(start_pos, (self.pos - start_pos) as usize);
+        return Token::new(kind, span);
+    }
+  }
+\end{lstlisting}
+
+Cụ thể:
+\begin{itemize}
+  \item Từ tố thứ cấp chú thích tài liệu dòng và đoạn: Nếu từ tố đang được đọc là từ tố sơ cấp chú thích dòng hoặc đoạn thì ta thực hiện loại bỏ các chú thích thông thường, sau đó chuyển phần chú thích tài liệu còn lại thành từ tố thứ cấp chú thích tài liệu dòng hoặc đoạn tương ứng.
+  \item Các khoảng trắng sẽ được bỏ qua.
+  \item Từ tố thứ cấp tên: Nếu từ tố đang được đọc là từ tố sơ cấp tên thì nó sẽ được chuyển thành từ tố thứ cấp tên thông qua hàm \textit{cook\_ident}; Nếu từ tố đang được đọc là từ tố sơ cấp tên thô thì nó sẽ được chuyển thành từ tố thứ cấp tên thông qua hàm \textit{cook\_raw\_ident}.
+  \item Từ tố xâu ký tự: Nếu từ tố đang được đọc là từ tố sơ cấp xâu kí tự thì nó sẽ được chuyển thành từ tố thứ cấp xâu kí tự với kiểu tương ứng thông qua hàm \textit{cook\_literal}.
+  \item Các ký tự đơn sẽ được chuyển từ từ tố sơ cấp thành từ tố thứ cấp tương ứng ngoại trừ ký tự '!' được đổi thành từ tố thứ cấp \textit{Not}.
+  \item Từ tố sơ cấp không xác định sẽ được bỏ qua và cảnh báo.
+  \item Từ tố sơ cấp kết thúc đầu vào cũng được chuyển thành từ tố thứ cấp tương ứng.
+\end{itemize}
 
 \textbf{Giai đoạn 3.} \textit{...}
+
+% \begin{lstlisting}
+%   pub enum TokenTree {
+%     /// A single token. Should never be `OpenDelim` or `CloseDelim`, because
+%     /// delimiters are implicitly represented by `Delimited`.
+%     Token(Token, Spacing),
+%     // A delimited sequence of token trees.
+%     Delimited(DelimSpan, Delimiter, TokenStream),
+%   }
+% \end{lstlisting}
+% Cụ thể:
+% \begin{itemize}
+%   \item \textit{Token} bao gồm 2 giá trị, thứ nhất là giá trị thuộc \textit{Token(từ tố sơ cấp được đoán nhận ở giai đoạn 1)}, thứ hai là giá trị \textit{Spacing}. \textit{Spacing} có 2 loại là \textit{Alone \emph{và} Joint}. \textit{Alone} được sử dụng khi theo sau từ tố là 1 từ tố khoảng trắng, từ tố này không thể kết hợp với từ tố khác. \textit{Joint} được sử dụng khi theo sau từ tố là 1 từ tố dấu câu cho phép chúng kết hợp đựợc với nhau (ví dụ '<' và'=' có thể kết hợp thành "<=", \dots).
+%         \begin{lstlisting}
+%           pub enum Spacing {
+%             /// The token cannot join with the following token to form a compound
+%             /// token.
+%             ///
+%             /// In token streams parsed from source code, the compiler will use `Alone`
+%             /// for any token immediately followed by whitespace, a non-doc comment, an identifier,
+%             /// literal, delimiter, doc comment or EOF.
+%             Alone,
+                
+%             /// The token can join with the following token to form a compound token.
+%             ///
+%             /// In token streams parsed from source code, the compiler will use `Joint`
+%             /// for any token immediately followed by punctuation (as determined by
+%             /// `Token::is_punct`).
+%             Joint,
+%           }
+%         \end{lstlisting}
+
+%   \item Delimiter là 1 chuỗi các từ tố thứ cấp được đặt trong 1 cặp đóng mở ngoặc, nó gồm 3 giá trị:
+%         \begin{itemize}
+%           \item DelimSpan lưu trữ giá trị của vị trí mở ngoặc và đóng ngoặc
+%                 \begin{lstlisting}
+%                   pub struct DelimSpan {
+%                     pub open: Span,
+%                     pub close: Span,
+%                   }
+%                 \end{lstlisting}
+%           \item Delimiter cho biết kiểu của ngoặc (ngoặc ngọn, ngoặc tròn, ngoặc vuông)
+%                 \begin{lstlisting}
+%                   pub enum Delimiter {
+%                     /// `( ... )`
+%                     Parenthesis,
+%                     /// `{ ... }`
+%                     Brace,
+%                     /// `[ ... ]`
+%                     Bracket,
+%                   }
+%                 \end{lstlisting}
+%           \item TokenStream con trỏ trỏ đến 1 danh sách các từ tố thứ cấp
+%                 \begin{lstlisting}
+%                   pub type TokenStream = Rc<Vec<TokenTree>>;
+%                 \end{lstlisting}
+%         \end{itemize}
+% \end{itemize}
+
+% Hàm \textit{lex\_token\_trees} sẽ đọc các từ tố sơ cấp nhận được từ giai đoạn 1 và "\textit{nấu}" chúng thành từ tố thứ cấp:
+% \begin{lstlisting}
+%   fn lex_token_trees(&mut self, is_delimited: bool) -> (TokenStream, bool) {
+%     // This can be the first token or open delim, can not glue.
+%     self.eat(false);
+
+%     let mut buf = Vec::new();
+%     loop {
+%         match self.token.kind {
+%             TokenKind::OpenDelim(delim) => match self.lex_token_tree_open_delim(delim) {
+%                 Some(val) => buf.push(val),
+%                 None => return (TokenStream::new(buf), false),
+%             },
+%             TokenKind::CloseDelim(_delim) => {
+%                 let mut no_err = true;
+%                 if !is_delimited {
+%                     no_err = false;
+%                     self.report_close_delim_error();
+%                 }
+%                 return (TokenStream::new(buf), no_err);
+%             }
+%             TokenKind::Eof => {
+%                 let mut no_err = true;
+%                 if is_delimited {
+%                     no_err = false;
+%                     self.report_eof_error();
+%                 }
+%                 return (TokenStream::new(buf), no_err);
+%             }
+%             _ => {
+%                 // Get the next normal token.
+%                 // We will have the previous token, so we can try to glue.
+%                 let (this_tok, this_spacing) = self.eat(true);
+%                 buf.push(TokenTree::Token(this_tok, this_spacing));
+%             }
+%         }
+%     }
+%   }
+% \end{lstlisting}
+% Cụ thể:
+% \begin{itemize}
+%   \item Nếu token đang được đọc là dấu mở ngoặc
+% \end{itemize}
