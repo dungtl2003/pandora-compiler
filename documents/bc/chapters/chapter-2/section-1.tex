@@ -62,7 +62,7 @@ Như trên đã trình bày, phần phân tích của chương trình dịch bao
 Phân tích từ vựng là phần đơn giản nhất của chương trình dịch. Tuy vậy, nó lại chiếm một phần khá lớn trong tổng số thời gian dịch (thường chiếm 20-40\%) do phải làm việc trực tiếp với chương trình nguồn ghi trên các thiết bị lưu trữ ngoài có tốc độ chậm (như ổ đĩa), điều đó cũng có nghĩa tác dụng cải tiến của nó đặc biệt quan trọng.
 
 \subsection{Các giai đoạn phân tích từ vựng}
-Quy trình phân tích cú pháp trong hệ thống của chúng em bao gồm ba giai đoạn chính. Đầu tiên, mã nguồn được chia nhỏ thành các từ tố sơ cấp (\textit{Token trong gói lexer}) – những phần tử cơ bản nhất như tên, toán tử, và ký tự đặc biệt, \dots Sau đó, ở giai đoạn tiếp theo, các token sơ cấp này được xử lý để tạo thành token thứ cấp (\textit{Token trong gói ast}) bằng cách loại bỏ các khoảng trắng, comment không cần thiết và kết hợp các token có thể ghép lại, ví dụ như '<' và '=' thành "<=". Cuối cùng, các token thứ cấp được nhóm lại để tạo thành cây từ tố (\textit{TokenTree trong gói ast::tokenstream}), giúp biểu diễn cấu trúc cú pháp của mã nguồn, tạo nền tảng cho quá trình phân tích cú pháp, phân tích ngữ nghĩa và biên dịch. Chi tiết sẽ được chúng em trình bày như dưới đây:
+Quy trình phân tích cú pháp trong hệ thống của chúng em bao gồm ba giai đoạn chính. Đầu tiên, mã nguồn được chia nhỏ thành các từ tố sơ cấp (\textit{Token trong gói lexer}) – những phần tử cơ bản nhất như tên, toán tử, và ký tự đặc biệt, \dots Sau đó, ở giai đoạn tiếp theo, các token sơ cấp này được xử lý để tạo thành token thứ cấp (\textit{Token trong gói ast}) bằng cách loại bỏ các khoảng trắng, comment không cần thiết. Cuối cùng, các token thứ cấp được nhóm lại (đồng thời kết hợp các token có thể ghép lại, ví dụ như '<' và '=' thành "<=") để tạo thành cây từ tố (\textit{TokenTree trong gói ast::tokenstream}), giúp biểu diễn cấu trúc cú pháp của mã nguồn, tạo nền tảng cho quá trình phân tích cú pháp, phân tích ngữ nghĩa và biên dịch. Chi tiết sẽ được chúng em trình bày như dưới đây:
 
 \textbf{Giai đoạn 1.} \textit{Phân tích từ tố sơ cấp}:
 
@@ -207,7 +207,7 @@ Từ tố sơ cấp bao gồm các thuộc tính là loại từ tố và độ 
             ...
           }
         \end{lstlisting}
-  \item Chú thích dòng - LineComment: Chú thích theo dòng. 
+  \item Chú thích dòng: Chú thích theo dòng. 
         \begin{lstlisting}[]
           pub enum TokenKind {
             ...
@@ -227,7 +227,7 @@ Từ tố sơ cấp bao gồm các thuộc tính là loại từ tố và độ 
             Outer,
           }
         \end{lstlisting}
-  \item Chú thích:  Chú thích theo đoạn. 
+  \item Chú thích đoạn:  Chú thích theo đoạn. 
         \begin{lstlisting}
           pub enum TokenKind {
             ...
@@ -274,324 +274,183 @@ Từ tố sơ cấp bao gồm các thuộc tính là loại từ tố và độ 
 \end{itemize}
 
 Hàm \textit{advance\_token} được sử dụng để đọc từ tố tiếp theo trong chuỗi ký tự đầu vào như sau:
-\begin{lstlisting}[]
-  pub fn advance_token(&mut self) -> Token {
-    self.reset_bytes_eaten();
 
-    let first_char = match self.eat() {
-        Some(c) => c,
-        None => return Token::new(TokenKind::Eof, 0),
-    };
-
-    let kind = match first_char {
-        c if is_whitespace(c) => self.whitespace(),
-
-        ':' => TokenKind::Colon,
-        ',' => TokenKind::Comma,
-        '.' => TokenKind::Dot,
-        ';' => TokenKind::Semicolon,
-        '?' => TokenKind::Question,
-        '(' => TokenKind::OpenParen,
-        ')' => TokenKind::CloseParen,
-        '[' => TokenKind::OpenBracket,
-        ']' => TokenKind::CloseBracket,
-        '{' => TokenKind::OpenBrace,
-        '}' => TokenKind::CloseBrace,
-        '!' => TokenKind::Bang,
-        '=' => TokenKind::Eq,
-        '>' => TokenKind::Gt,
-        '<' => TokenKind::Lt,
-        '~' => TokenKind::Tilde,
-        '+' => TokenKind::Plus,
-        '-' => TokenKind::Minus,
-        '*' => TokenKind::Star,
-        '%' => TokenKind::Percent,
-        '^' => TokenKind::Caret,
-        '&' => TokenKind::And,
-        '|' => TokenKind::Or,
-
-        // Slash, comment or block comment.
-        '/' => match self.first() {
-            '/' => self.line_comment(),
-            '*' => self.block_comment(),
-            _ => TokenKind::Slash,
-        },
-
-        '0'..='9' => self.number(),
-
-        // Raw identifier, Identifier, Raw double quote string
-        'r' => match (self.first(), self.second()) {
-            ('#', c1) if is_id_start(c1) => self.raw_identifier(),
-            ('#', _) | ('"', _) => {
-                let res = self.raw_double_quote_string();
-                TokenKind::Literal(LiteralKind::RawStr { n_hashes: res.ok() })
-            }
-            _ => self.identifier(),
-        },
-
-        '\'' => self.single_quote_string(),
-        '"' => self.double_quote_string(),
-
-        c if is_id_start(c) => self.identifier(),
-
-        _ => TokenKind::Unknown,
-    };
-
-    Token::new(kind, self.bytes_eaten())
-  } 
-\end{lstlisting}
-
-Cụ thể:
 \begin{itemize}
   \item Khoảng trắng sẽ được chuyển trực tiếp thành từ tố khoảng trắng.
+  \begin{lstlisting}[]
+    pub fn advance_token(&mut self) -> Token {
+      ...
+  
+      let kind = match first_char {
+          c if is_whitespace(c) => self.whitespace(),
+  
+          ...
+      };
+  
+      ...
+    } 
+  \end{lstlisting}
   \item Các ký tự đơn như ':', ',', \dots , '|' sẽ được chuyển trực tiếp thành các loại từ tố tương ứng.
+  \begin{lstlisting}[]
+    pub fn advance_token(&mut self) -> Token {
+      ...
+  
+      let kind = match first_char {
+          ...
+  
+          ':' => TokenKind::Colon,
+          ',' => TokenKind::Comma,
+          '.' => TokenKind::Dot,
+          ';' => TokenKind::Semicolon,
+          '?' => TokenKind::Question,
+          '(' => TokenKind::OpenParen,
+          ')' => TokenKind::CloseParen,
+          '[' => TokenKind::OpenBracket,
+          ']' => TokenKind::CloseBracket,
+          '{' => TokenKind::OpenBrace,
+          '}' => TokenKind::CloseBrace,
+          '!' => TokenKind::Bang,
+          '=' => TokenKind::Eq,
+          '>' => TokenKind::Gt,
+          '<' => TokenKind::Lt,
+          '~' => TokenKind::Tilde,
+          '+' => TokenKind::Plus,
+          '-' => TokenKind::Minus,
+          '*' => TokenKind::Star,
+          '%' => TokenKind::Percent,
+          '^' => TokenKind::Caret,
+          '&' => TokenKind::And,
+          '|' => TokenKind::Or,
+  
+          ...
+      };
+  
+      ...
+    } 
+  \end{lstlisting}
   \item Ký tự '/' đặc biệt hơn vì có thể nó sẽ là bắt đầu của 1 chú thích nên ta cần kiểm tra ký tự ngay sau nó, nếu là '/' thì đây là loại từ tố \textit{line\_comment}, nếu là '*' thì đây là loại từ tố \textit{block\_comment}, ngược lại ký tự tiếp theo này là 1 ký tự khác thì đây là loại từ tố \textit{Slash}.
+  \begin{lstlisting}[]
+    pub fn advance_token(&mut self) -> Token {
+      ...
+  
+      let kind = match first_char {
+          ...
+  
+          // Slash, comment or block comment.
+          '/' => match self.first() {
+              '/' => self.line_comment(),
+              '*' => self.block_comment(),
+              _ => TokenKind::Slash,
+          },
+  
+          ...
+      };
+  
+      ...
+    } 
+  \end{lstlisting}
   \item Nếu là số thì các loại từ tố số sẽ được xác định cụ thể là Int hay Float, cơ số nào bởi hàm \textit{number}.
-  % \begin{lstlisting}[]
-  %   fn number(&mut self) -> TokenKind {
-  %     debug_assert!('0' <= self.prev() && self.prev() <= '9');
-
-  %     let mut base: Base = Base::Decimal;
-  %     if self.prev() == '0' {
-  %         // Both binary and octal can have digit from 0 to 9 (for now). We will validate those
-  %         // when "cooking" tokens for better error diagnostic.
-  %         // If not error, we will not return result immediately to scan more.
-  %         match self.first() {
-  %             'b' | 'B' => {
-  %                 self.eat();
-  %                 base = Base::Binary;
-  %                 if !self.eat_decimal_digits() {
-  %                     return TokenKind::Literal(LiteralKind::Int {
-  %                         base,
-  %                         empty_int: true,
-  %                     });
-  %                 }
-  %             }
-  %             'o' | 'O' => {
-  %                 self.eat();
-  %                 base = Base::Octal;
-  %                 if !self.eat_decimal_digits() {
-  %                     return TokenKind::Literal(LiteralKind::Int {
-  %                         base,
-  %                         empty_int: true,
-  %                     });
-  %                 }
-  %             }
-  %             'h' | 'H' => {
-  %                 self.eat();
-  %                 base = Base::Hexadecimal;
-  %                 if !self.eat_hexa_digits() {
-  %                     return TokenKind::Literal(LiteralKind::Int {
-  %                         base,
-  %                         empty_int: true,
-  %                     });
-  %                 }
-  %             }
-
-  %             // Not a base prefix, eats all digits
-  %             '0'..='9' | '_' => {
-  %                 self.eat_decimal_digits();
-  %             }
-
-  %             '.' | 'e' | 'E' => {}
-
-  %             // Just 0.
-  %             _ => {
-  %                 return TokenKind::Literal(LiteralKind::Int {
-  %                     base,
-  %                     empty_int: false,
-  %                 });
-  %             }
-  %         }
-  %     } else {
-  %         self.eat_decimal_digits();
-  %     }
-
-  %     // Only Decimal base here, and the part before `.` or `e|E` has been eaten.
-  %     match self.first() {
-  %         // After '.' cannot be id_start because we might add method for primary type in the
-  %         // future.
-  %         '.' if !is_id_start(self.second()) => {
-  %             self.eat();
-
-  %             // If there is something after '.', it has to be a number. Else we will stop
-  %             // consumming (e.g. '3.').
-  %             if self.first().is_ascii_digit() {
-  %                 self.eat_decimal_digits();
-  %                 match self.first() {
-  %                     'e' | 'E' => {
-  %                         self.eat();
-  %                         return TokenKind::Literal(LiteralKind::Float {
-  %                             base,
-  %                             empty_exponent: !self.eat_exponent(),
-  %                         });
-  %                     }
-  %                     _ => (),
-  %                 }
-  %             }
-
-  %             TokenKind::Literal(LiteralKind::Float {
-  %                 base,
-  %                 empty_exponent: false,
-  %             })
-  %         }
-  %         'e' | 'E' => {
-  %             self.eat();
-  %             return TokenKind::Literal(LiteralKind::Float {
-  %                 base,
-  %                 empty_exponent: !self.eat_exponent(),
-  %             });
-  %         }
-  %         // Just a normal integer number.
-  %         _ => {
-  %             return TokenKind::Literal(LiteralKind::Int {
-  %                 base,
-  %                 empty_int: false,
-  %             })
-  %         }
-  %     }
-  %   }
-  % \end{lstlisting}
+  \begin{lstlisting}[]
+    pub fn advance_token(&mut self) -> Token {
+      ...
+  
+      let kind = match first_char {
+          ...
+  
+          '0'..='9' => self.number(),
+  
+          ...
+      };
+  
+      ...
+    } 
+  \end{lstlisting}
   \item Xử lí loại từ tố tên thô và chuỗi thô: ký tự đang được đọc là 'r', ta sẽ xác định 2 ký tự tiếp theo ngay sau nó. Nếu ký tự tiếp theo là '\#' và sau đó là ký tự bắt đầu tên hợp lệ thì xác định loại từ tố tên thô bằng hàm \textit{raw\_identifier}; Nếu ký tự tiếp theo là '\#' hoặc '"' thì xác định loại từ tố chuỗi thô bằng hàm \textit{raw\_double\_quote\_string}; Trường hợp còn lại thì ta sẽ xác định loại từ tố tên bằng hàm \textit{identifier.}
-  % \begin{lstlisting}[]
-  %   fn raw_double_quote_string(&mut self) -> Result<u8, RawStrError> {
-  %     debug_assert!(self.prev() == 'r' && matches!(self.first(), '#' | '"'));
+  \begin{lstlisting}[]
+    pub fn advance_token(&mut self) -> Token {
+      ...
+  
+      let kind = match first_char {
+          ...
+  
+          // Raw identifier, Identifier, Raw double quote string
+          'r' => match (self.first(), self.second()) {
+              ('#', c1) if is_id_start(c1) => self.raw_identifier(),
+              ('#', _) | ('"', _) => {
+                  let res = self.raw_double_quote_string();
+                  TokenKind::Literal(LiteralKind::RawStr { n_hashes: res.ok() })
+              }
+              _ => self.identifier(),
+          },
 
-  %     let start_pos = self.bytes_eaten();
-  %     let mut start_hashes = 0;
-
-  %     while self.first() == '#' {
-  %         self.eat();
-  %         start_hashes += 1;
-  %     }
-
-  %     match self.eat() {
-  %         Some('"') => {}
-  %         c => {
-  %             let bad_char = c.unwrap_or(EOF_CHAR);
-  %             return Err(RawStrError::InvalidStarter { bad_char });
-  %         }
-  %     }
-
-  %     let mut possible_terminator_offset: Option<u32> = None;
-  %     let mut max_end_hashes: u32 = 0;
-  %     let mut maybe_end_hashes: u32;
-
-  %     loop {
-  %         self.eat_while(|ch| ch != '"');
-  %         if self.is_eof() {
-  %             return Err(RawStrError::NoTerminator {
-  %                 expected: start_hashes,
-  %                 found: max_end_hashes,
-  %                 possible_terminator_offset,
-  %             });
-  %         }
-
-  %         self.eat();
-  %         maybe_end_hashes = 0;
-  %         while self.first() == '#' && maybe_end_hashes < start_hashes {
-  %             self.eat();
-  %             maybe_end_hashes += 1;
-  %         }
-
-  %         if maybe_end_hashes == start_hashes {
-  %             if maybe_end_hashes > 255 {
-  %                 return Err(RawStrError::TooManyHashes {
-  %                     found: maybe_end_hashes,
-  %                 });
-  %             }
-
-  %             return Ok(start_hashes as u8);
-  %         }
-
-  %         // end < start
-  %         if maybe_end_hashes > max_end_hashes {
-  %             max_end_hashes = maybe_end_hashes;
-  %             possible_terminator_offset =
-  %                 Some(self.bytes_eaten() - start_pos + 1 - max_end_hashes);
-  %         }
-  %     }
-  %   }
-  % \end{lstlisting}
+          ...
+      };
+  
+      ...
+    } 
+  \end{lstlisting}
   \item Xử lí ký tự: ký tự đang được đọc là dấu nháy đơn (') thì ta sẽ xác định loại từ tố ký tự bằng hàm \textit{single\_quote\_string}. Hàm này sẽ xử lí toàn bộ chuỗi kí tự năm giữa cặp nháy đơn (') do đó hàm vẫn mang tên \\\textit{single\_quote\_string} mà không phải là \textit{single\_quote\_char}, nếu chuỗi này nhiều hơn 1 ký tự, chương trình sẽ báo lỗi ở giai đoạn sau.
-  % \begin{lstlisting}[]
-  %   fn single_quote_string(&mut self) -> TokenKind {
-  %     debug_assert!(self.prev() == '\'');
-
-  %     // If it only contains 1 symbol.
-  %     if self.first() != '\\' && self.second() == '\'' {
-  %         self.eat();
-  %         self.eat();
-  %         return TokenKind::Literal(LiteralKind::Char { terminated: true });
-  %     }
-
-  %     // This can contains more than 1 symbol.
-  %     let mut terminated = false;
-  %     while !self.is_eof() {
-  %         match self.first() {
-  %             '\'' => {
-  %                 terminated = true;
-  %                 self.eat();
-  %                 break;
-  %             }
-  %             // Probably beginning of the comment, which we don't want to include
-  %             // to the error report.
-  %             '/' => break,
-  %             // Newline without following '\'' means unclosed quote, stop parsing.
-  %             '\n' if self.second() != '\'' => break,
-  %             // Eats twice because \ will take the character after it.
-  %             '\\' => {
-  %                 self.eat();
-  %                 self.eat();
-  %             }
-  %             _ => {
-  %                 self.eat();
-  %             }
-  %         }
-  %     }
-
-  %     TokenKind::Literal(LiteralKind::Char { terminated })
-  %   }
-  % \end{lstlisting}
+  \begin{lstlisting}[]
+    pub fn advance_token(&mut self) -> Token {
+      ...
+  
+      let kind = match first_char {
+          ...
+  
+          '\'' => self.single_quote_string(),
+ 
+          ...
+      };
+  
+      ...
+    } 
+  \end{lstlisting}
   \item Xử lí chuỗi: ký tự đang được đọc là dấu nháy kép (") thì ta sẽ xác định loại từ tố chuỗi bằng hàm \textit{double\_quote\_string}. 
-  % \begin{lstlisting}[]
-  %   fn double_quote_string(&mut self) -> TokenKind {
-  %     debug_assert!(self.prev() == '"');
-
-  %     let mut terminated = false;
-  %     while !self.is_eof() {
-  %         match self.first() {
-  %             // This will eat the character after it.
-  %             '\\' => {
-  %                 self.eat();
-  %                 self.eat();
-  %             }
-  %             '"' => {
-  %                 self.eat();
-  %                 terminated = true;
-  %                 break;
-  %             }
-  %             _ => {
-  %                 self.eat();
-  %             }
-  %         }
-  %     }
-
-  %     TokenKind::Literal(LiteralKind::Str { terminated })
-  %   }
-  % \end{lstlisting}
+  \begin{lstlisting}[]
+    pub fn advance_token(&mut self) -> Token {
+      ...
+  
+      let kind = match first_char {
+          ...
+  
+          '"' => self.double_quote_string(),
+  
+          ...
+      };
+  
+      ...
+    } 
+  \end{lstlisting}
   \item Nếu ký tự đang đọc là 1 ký tự bất kì nào khác mà là ký tự bắt đầu tên hợp lệ thì ta sẽ xác định loại từ tố tên bằng hàm \textit{identifier}. 
-  % \begin{lstlisting}[]
-  %   fn identifier(&mut self) -> TokenKind {
-  %     // The first symbol is already eaten and checked so this must be true.
-  %     debug_assert!(is_id_start(self.prev()));
-
-  %     self.eat_while(|ch| is_id_continue(ch));
-
-  %     TokenKind::Ident
-  %   }
-  % \end{lstlisting}
+  \begin{lstlisting}[]
+    pub fn advance_token(&mut self) -> Token {
+      ...
+  
+      let kind = match first_char {
+          ...
+  
+          c if is_id_start(c) => self.identifier(),
+  
+          ...
+      };
+  
+      ...
+    } 
+  \end{lstlisting}
   \item Nếu ký tự đang đọc không thỏa mãn bất kì trường hợp nào trên thì sẽ là loại từ tố không xác định.
+  \begin{lstlisting}[]
+    pub fn advance_token(&mut self) -> Token {
+      ...
+  
+      let kind = match first_char {
+          ...
+  
+          _ => TokenKind::Unknown,
+      };
+  
+      ...
+    } 
+  \end{lstlisting}
 \end{itemize}
 
 
@@ -950,7 +809,7 @@ Cây từ tố là cấp độ từ tố phức tạp hơn so với 2 cấp đ�
 
 Cụ thể:
 \begin{itemize}
-  \item Từ tố đơn (Token). Mỗi cây từ tố thuộc loại này bao gồm 2 giá trị: thứ nhất là giá trị thuộc \textit{Token} (từ tố thứ cấp được đoán nhận ở giai đoạn 2), thứ hai là giá trị \textit{Spacing}. \textit{Spacing} có 2 loại là \textit{Alone \emph{và} Joint}. \textit{Alone} được sử dụng khi theo sau từ tố là 1 từ tố khoảng trắng, từ tố này không thể kết hợp với từ tố khác. \textit{Joint} được sử dụng khi theo sau từ tố là 1 từ tố dấu câu cho phép chúng kết hợp đựợc với nhau (ví dụ '<' và'=' có thể kết hợp thành "<=", \dots).
+  \item Từ tố đơn (Token). Mỗi cây từ tố thuộc loại này bao gồm 2 giá trị: thứ nhất là giá trị thuộc \textit{Token} (từ tố thứ cấp được đoán nhận ở giai đoạn 2), thứ hai là giá trị \textit{Spacing}. \textit{Spacing} có 2 loại là \textit{Alone \emph{và} Joint}. \textit{Joint} được sử dụng khi theo sau từ tố là 1 từ tố dấu câu cho phép chúng kết hợp đựợc với nhau (ví dụ '<' và'=' có thể kết hợp thành "<=", \dots). \textit{Alone} được sử dụng cho các loại từ tố còn lại. 
   \begin{lstlisting}
   pub enum Spacing {
     /// The token cannot join with the following token to form a compound
@@ -999,7 +858,7 @@ Cụ thể:
 Hàm \textit{lex\_token\_trees} sẽ đọc các từ tố thứ cấp nhận được từ giai đoạn 2 và chuyển chúng thành cây từ tố như sau:
 
 \begin{itemize}
-  \item Nếu từ tố đang được đọc là dấu mở ngoặc, ta sẽ bắt đầu đoán nhận 1 cây từ tố loại \textit{Delimited} thông qua hàm \textit{lex\_token\_tree\_open\_delim}:
+  \item Nếu từ tố đang được đọc là dấu mở ngoặc, ta sẽ bắt đầu đoán nhận 1 cây từ tố loại \textit{Delimited} thông qua hàm \textit{lex\_token\_tree\_open\_delim}, đồng thời nếu trong quá trình đoán nhận này nếu có xuất hiện 1 cây từ tố con không được đóng đúng cách:
   \begin{lstlisting}
     fn lex_token_trees(&mut self, is_delimited: bool) -> (TokenStream, bool) {
       ...
@@ -1015,7 +874,7 @@ Hàm \textit{lex\_token\_trees} sẽ đọc các từ tố thứ cấp nhận đ
   
     }
   \end{lstlisting}
-  \item Nếu từ tố đang được đọc là dấu đóng ngoặc, sẽ trả về cây từ tố đã đọc được:
+  \item Nếu từ tố đang được đọc là dấu đóng ngoặc, sẽ trả về cây từ tố đã đọc được, đồng thời sẽ đưa ra cảnh báo nếu cây từ tố này không được đóng đúng cách:
   \begin{lstlisting}
     fn lex_token_trees(&mut self, is_delimited: bool) -> (TokenStream, bool) {
       ...
