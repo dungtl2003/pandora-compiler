@@ -12,7 +12,7 @@ Nhiệm vụ chính của phần phân tích từ vựng là đọc các ký t�
     \node[squarednode,text width=2.5cm,align=center](lexer){Phân tích từ vựng};
     \node[text width=3cm,align=center](source)[left=of lexer]{Chương trình nguồn};
     \node[squarednode,text width=3cm,align=center](parser)[right=of lexer,xshift = 2cm] {Phân tích cú pháp};
-    \node[squarednode,text width=3cm,align=center](tableofsymbols)[below=of lexer, xshift = 3cm] {Bảng ký hiệu};
+    \node[squarednode,text width=3cm,align=center](tableofsymbols)[below=of lexer, xshift = 3cm, yshift = -0.5cm] {Bảng ký hiệu};
     \node[](nothing)[right=of parser]{}; 
     \node[text width=5cm,align=center](textabove)[above=of lexer,xshift = 3cm, yshift = -1.2cm]{Yêu cầu lấy từ tố tiếp theo}; 
     \node[text width=3cm,align=center](textbelow)[below=of lexer,xshift = 3cm, yshift = 1.2cm]{Từ tố}; 
@@ -22,7 +22,7 @@ Nhiệm vụ chính của phần phân tích từ vựng là đọc các ký t�
     \draw[->] ([yshift = 2mm]lexer.east) -- ([yshift = 2mm]parser.west);
     \draw[<->] (lexer.south) -- ([yshift = 2mm]tableofsymbols.west);
     \draw[->] ([yshift = -2mm]parser.west) -- ([yshift = -2mm]lexer.east) ;
-    \draw[<->] (tableofsymbols.east) -- ([xshift = 3cm]parser.south);
+    \draw[<->] (tableofsymbols.east)  -- (nothing.south);
     \draw[->,dashed] (parser.east) -- (nothing.west) ;
 \end{tikzpicture}
 \vspace{1cm}
@@ -185,7 +185,7 @@ Từ tố sơ cấp bao gồm các thuộc tính là loại từ tố và độ 
       \item Ký tự (Char). Loại từ tố này có thêm thuộc tính \textit{terminated} để xác định xem ký tự có được đóng đúng cách hay không, ở đây ký tự được đặt đúng cách là bên trong cặp nháy đơn (').
       
     \end{itemize}
-  \item Tên: Tên biến, hàm , \dots\space và từ khóa. (Từ khóa và các tên thông thường sẽ được phân biệt ở giai đoạn sau)
+  \item Tên: Tên biến, hàm , \dots\space và từ khóa. Từ khóa và các tên thông thường sẽ được phân biệt ở giai đoạn sau
         \begin{lstlisting}[]
           pub enum TokenKind {
             ...
@@ -389,7 +389,7 @@ Hàm \textit{advance\_token} được sử dụng để đọc từ tố tiếp 
       ...
     } 
   \end{lstlisting}
-  \item Xử lí ký tự: ký tự đang được đọc là dấu nháy đơn (') thì ta sẽ xác định loại từ tố ký tự bằng hàm \textit{single\_quote\_string}. Hàm này sẽ xử lí toàn bộ chuỗi kí tự năm giữa cặp nháy đơn (') do đó hàm vẫn mang tên \\\textit{single\_quote\_string} mà không phải là \textit{single\_quote\_char}, nếu chuỗi này nhiều hơn 1 ký tự, chương trình sẽ báo lỗi ở giai đoạn sau.
+  \item Xử lí ký tự: ký tự đang được đọc là dấu nháy đơn (') thì ta sẽ xác định loại từ tố ký tự bằng hàm \textit{single\_quote\_string}. Hàm này sẽ xử lí toàn bộ chuỗi kí tự nằm giữa cặp nháy đơn (') do đó hàm vẫn mang tên \\\textit{single\_quote\_string} mà không phải là \textit{single\_quote\_char}, nếu chuỗi này nhiều hơn 1 ký tự, chương trình sẽ báo lỗi ở giai đoạn sau.
   \begin{lstlisting}[]
     pub fn advance_token(&mut self) -> Token {
       ...
@@ -848,7 +848,7 @@ Cụ thể:
               Bracket,
             }
           \end{lstlisting}
-    \item TokenStream con trỏ trỏ đến 1 danh sách các cây từ tố con
+    \item TokenStream con trỏ trỏ đến 1 danh sách các cây từ tố con %TODO!
           \begin{lstlisting}
             pub type TokenStream = Rc<Vec<TokenTree>>;
           \end{lstlisting}
