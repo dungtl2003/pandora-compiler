@@ -4,15 +4,25 @@ use crate::span_encoding::Span;
 
 use super::{Delimiter, Token};
 
-pub type TokenStream = Rc<Vec<TokenTree>>;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TokenStream(Rc<Vec<TokenTree>>);
 
-pub fn pretty_print(stream: &TokenStream) {
+impl TokenStream {
+    pub fn new(buf: Vec<TokenTree>) -> Self {
+        TokenStream(Rc::new(buf))
+    }
+    pub fn into_trees(self) -> TokenTreeCursor {
+        TokenTreeCursor::new(self)
+    }
+}
+
+pub fn pprint(stream: &TokenStream) {
     print_recursive(stream, 0);
 }
 
 fn print_recursive(stream: &TokenStream, depth: u32) {
     let spaces = " ".repeat((depth * 4) as usize);
-    for tt in stream.iter() {
+    for tt in stream.0.iter() {
         match tt {
             TokenTree::Token(tok, _) => {
                 println!(
@@ -72,5 +82,31 @@ pub struct DelimSpan {
 impl DelimSpan {
     pub fn from_pair(open: Span, close: Span) -> Self {
         DelimSpan { open, close }
+    }
+}
+
+/// Owning by-value iterator over a [`TokenStream`], that produces `&TokenTree`
+/// items.
+#[derive(Clone, Debug)]
+pub struct TokenTreeCursor {
+    pub stream: TokenStream,
+    index: usize,
+}
+
+impl TokenTreeCursor {
+    fn new(stream: TokenStream) -> Self {
+        TokenTreeCursor { stream, index: 0 }
+    }
+
+    #[inline]
+    pub fn next_ref(&mut self) -> Option<&TokenTree> {
+        self.stream.0.get(self.index).map(|tree| {
+            self.index += 1;
+            tree
+        })
+    }
+
+    pub fn look_ahead(&self, n: usize) -> Option<&TokenTree> {
+        self.stream.0.get(self.index + n)
     }
 }

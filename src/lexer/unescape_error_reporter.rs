@@ -1,4 +1,4 @@
-use crate::error_handler::{ErrorEmitter, ERROR_CODE_URL};
+use crate::error_handler::{ErrorHandler, ERROR_CODE_URL};
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
@@ -59,7 +59,7 @@ struct EmptyCharLiteral {
     expected_char_span: SourceSpan,
 }
 
-impl ErrorEmitter {
+impl ErrorHandler {
     pub fn report_unknown_symbol(&self, sym: String, span: SourceSpan) {
         self.emit_err(UnknownSymbol { span, sym });
     }

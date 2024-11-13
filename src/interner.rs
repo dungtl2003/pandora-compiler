@@ -1,3 +1,5 @@
+use crate::kw;
+use crate::session_global::SessionGlobal;
 use string_interner::{backend::BucketBackend, symbol::SymbolU32, StringInterner, Symbol as Sym};
 
 pub struct Interner {
@@ -6,6 +8,13 @@ pub struct Interner {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Symbol(u32);
+
+impl Symbol {
+    pub fn is_keyword(&self) -> bool {
+        let string = SessionGlobal::instance().get(*self);
+        kw::is_keyword(&string)
+    }
+}
 
 impl Interner {
     pub fn new() -> Self {

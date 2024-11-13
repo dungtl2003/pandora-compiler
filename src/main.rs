@@ -17,7 +17,9 @@ use std::sync::Arc;
 fn main() {
     let file_path = "src/trash/".to_string();
     let file_names = vec![
-        "main.box",
+        "expr.box",
+        //"test.box",
+        //"main.box",
         //"unterminated_block_comment.box",
         //"number_literal_error.box",
         //"unterminated_raw_str.box",
@@ -32,15 +34,21 @@ fn main() {
             fs::read_to_string(file_path.clone() + file_name).expect("unable to read file"),
         );
         let source = NamedSource::new(file_name, Arc::clone(&data));
-        let emitter = ErrorEmitter {
+        let emitter = ErrorHandler {
             file: Arc::new(source),
         };
         let tokens = parse::lexer::lex_token_tree(&data, emitter);
-        ast::pretty_print(&tokens);
+        let mut parser = parse::parser::Parser::new(tokens);
+        let expr = parser.parse_expr().unwrap();
+        let mut printer = ast::pretty_print::Printer::new();
+        printer.print_expr(&expr);
+        println!("{}", printer.output);
+        //ast::pprint(&tokens);
         //let tokens = lexer::tokenize(&data);
         //for token in tokens.iter() {
         //    println!("{token:?}");
         //}
+        //
         println!("================ END ================");
     }
 }

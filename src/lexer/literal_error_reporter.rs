@@ -1,4 +1,4 @@
-use crate::error_handler::{ErrorEmitter, ERROR_CODE_URL};
+use crate::error_handler::{ErrorHandler, ERROR_CODE_URL};
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
@@ -73,7 +73,7 @@ struct RawStrUnterminated {
     expected: u32,
 }
 
-impl ErrorEmitter {
+impl ErrorHandler {
     pub fn report_raw_str_unterminated(
         &self,
         start_span: SourceSpan,
