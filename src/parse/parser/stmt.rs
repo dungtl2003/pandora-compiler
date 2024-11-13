@@ -1,8 +1,10 @@
+// program = statement* EOF
 // block_statement = { statement* }
 // statement = block_statement
 //             | declaration_statement
 //             | expression_statement
 //             | if_statement
+//             | print_statement (for testing only!)
 //
 // expression_statement = expression ';'
 // expression = assignment_expression

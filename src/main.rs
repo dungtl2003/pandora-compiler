@@ -17,8 +17,8 @@ use std::sync::Arc;
 fn main() {
     let file_path = "src/trash/".to_string();
     let file_names = vec![
-        "expr.box",
-        //"test.box",
+        //"expr.box",
+        "test.box",
         //"main.box",
         //"unterminated_block_comment.box",
         //"number_literal_error.box",

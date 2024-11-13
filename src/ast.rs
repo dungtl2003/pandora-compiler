@@ -6,6 +6,7 @@ mod tokenstream;
 use core::fmt;
 use std::fmt::{Display, Formatter};
 
+use ident::Ident;
 pub use tokenstream::{DelimSpan, Spacing, TokenStream, TokenTree, TokenTreeCursor};
 
 pub use token::{
@@ -13,6 +14,28 @@ pub use token::{
 };
 
 use crate::span_encoding::{Span, Spanned};
+
+pub struct Stmt {
+    pub kind: StmtKind,
+    pub span: Span,
+}
+
+pub enum StmtKind {
+    /// An expression statement: `expr;`.
+    Expr(Box<Expr>),
+    /// A block statement: `{ stmt* }`.
+    Block(Vec<Stmt>),
+    /// An `if` statement: 'if' expr block ('elif' expr block)* ('else' block)?
+    If(Vec<(Expr, Vec<Stmt>)>, Option<Vec<Stmt>>),
+    /// A 'break' statement.
+    Break,
+    /// A 'continue' statement.
+    Continue,
+    /// A 'return' statement: 'return' expr? ';'
+    Return(Option<Box<Expr>>),
+    /// A variable declaration: 'var' 'mut'? ident: type ('=' expr)? ';'
+    VarDecl(Ident, Option<Box<Expr>>),
+}
 
 #[derive(Debug)]
 pub struct Expr {
