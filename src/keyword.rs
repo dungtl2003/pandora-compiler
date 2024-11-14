@@ -20,16 +20,12 @@ pub enum Keyword {
     For,
     Pub,
     Impl,
-    Int,
-    Float,
-    Bool,
-    Char,
 }
 
 pub fn is_keyword(symbol: &str) -> bool {
     Keyword::from_str(symbol).is_ok()
 }
 
-pub fn from_symbol(symbol: &str) -> Result<Keyword, strum::ParseError> {
-    Keyword::from_str(symbol)
+pub fn from_str(s: &str) -> Result<Keyword, strum::ParseError> {
+    Keyword::from_str(s)
 }

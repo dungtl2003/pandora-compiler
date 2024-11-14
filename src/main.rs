@@ -18,7 +18,7 @@ fn main() {
     let file_path = "src/trash/".to_string();
     let file_names = vec![
         //"expr.box",
-        "test.box",
+        //"test.box",
         //"main.box",
         //"unterminated_block_comment.box",
         //"number_literal_error.box",
@@ -37,7 +37,7 @@ fn main() {
         let emitter = ErrorHandler {
             file: Arc::new(source),
         };
-        let tokens = parse::lexer::lex_token_tree(&data, emitter);
+        let tokens = parse::lexer::lex_token_tree(&data, emitter).unwrap();
         let mut parser = parse::parser::Parser::new(tokens);
         let expr = parser.parse_expr().unwrap();
         let mut printer = ast::pretty_print::Printer::new();

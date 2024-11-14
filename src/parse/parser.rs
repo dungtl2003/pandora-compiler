@@ -1,5 +1,7 @@
 mod expr;
+mod path;
 mod stmt;
+mod ty;
 
 use std::mem;
 
@@ -8,6 +10,8 @@ use crate::{
         DelimSpan, Delimiter, Spacing, Token, TokenKind, TokenStream, TokenTree, TokenTreeCursor,
     },
     interner::Symbol,
+    kw::{self, Keyword},
+    session_global::SessionGlobal,
     span_encoding::DUMMY_SP,
 };
 
@@ -68,6 +72,32 @@ impl Parser {
             i += 1;
         }
         looker(&token)
+    }
+
+    pub fn is_keyword_ahead(&self, kws: &[Keyword]) -> bool {
+        self.look_ahead(1, |tok| {
+            if let TokenKind::Ident(ident, _) = tok.kind {
+                kws.iter().any(|kw| {
+                    let name = SessionGlobal::instance().get(ident);
+                    let res = kw::from_str(name);
+                    if res.is_err() {
+                        return false;
+                    }
+
+                    *kw == res.unwrap()
+                })
+            } else {
+                false
+            }
+        })
+    }
+
+    fn expect(&mut self, expected: TokenKind) -> PResult<()> {
+        if self.token.kind == expected {
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 }
 
