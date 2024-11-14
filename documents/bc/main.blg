@@ -1,0 +1,60 @@
+This is BibTeX, Version 0.99d (TeX Live 2024/Arch Linux)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+A level-1 auxiliary file: custom/format.aux
+A level-1 auxiliary file: chapters/title/title.aux
+A level-1 auxiliary file: chapters/preface.aux
+A level-1 auxiliary file: chapters/undertaking.aux
+A level-1 auxiliary file: chapters/table-of-contents.aux
+A level-1 auxiliary file: chapters/table-of-symbols.aux
+A level-1 auxiliary file: chapters/list-of-tables.aux
+A level-1 auxiliary file: chapters/list-of-figure.aux
+A level-1 auxiliary file: chapters/chapter-1/chapter-1.aux
+The style file: plainurl.bst
+Reallocated glb_str_ptr (elt_size=8) to 20 items from 10.
+Reallocated global_strs (elt_size=200001) to 20 items from 10.
+Reallocated glb_str_end (elt_size=8) to 20 items from 10.
+Reallocated singl_function (elt_size=8) to 100 items from 50.
+Reallocated singl_function (elt_size=8) to 100 items from 50.
+Database file #1: refs.bib
+You've used 4 entries,
+            2943 wiz_defined-function locations,
+            668 strings with 6130 characters,
+and the built_in function-call counts, 2213 in all, are:
+= -- 218
+> -- 106
+< -- 2
++ -- 41
+- -- 36
+* -- 123
+:= -- 339
+add.period$ -- 13
+call.type$ -- 4
+change.case$ -- 29
+chr.to.int$ -- 0
+cite$ -- 4
+duplicate$ -- 61
+empty$ -- 186
+format.name$ -- 36
+if$ -- 548
+int.to.chr$ -- 0
+int.to.str$ -- 4
+missing$ -- 3
+newline$ -- 24
+num.names$ -- 8
+pop$ -- 57
+preamble$ -- 1
+purify$ -- 25
+quote$ -- 0
+skip$ -- 137
+stack$ -- 0
+substring$ -- 102
+swap$ -- 21
+text.length$ -- 2
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 16
+warning$ -- 0
+while$ -- 16
+width$ -- 5
+write$ -- 46

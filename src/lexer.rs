@@ -1,8 +1,10 @@
 mod cursor;
+mod literal_error_reporter;
 mod token;
 mod unescape;
+mod unescape_error_reporter;
 
-pub use cursor::Cursor;
+pub use cursor::{Cursor, EOF_CHAR};
 pub use token::{Base, DocStyle, LiteralKind, RawStrError, Token, TokenKind};
 pub use unescape::{unescape_char, unescape_str, EscapeError};
 use unicode_xid::UnicodeXID;
@@ -20,6 +22,18 @@ pub fn tokenize(source: &str) -> Vec<Token> {
             return tokens;
         }
     }
+}
+
+/// Validate a raw string literal.
+pub fn validate_raw_string(input: &str) -> Result<(), RawStrError> {
+    debug_assert!(!input.is_empty());
+
+    let mut cursor = Cursor::new(input);
+
+    // Skips r.
+    cursor.eat();
+
+    cursor.raw_double_quote_string().map(|_| ())
 }
 
 fn is_valid_emoji(c: char) -> bool {
@@ -84,27 +98,24 @@ impl Cursor<'_> {
             '.' => TokenKind::Dot,
             ';' => TokenKind::Semicolon,
             '?' => TokenKind::Question,
-
             '(' => TokenKind::OpenParen,
             ')' => TokenKind::CloseParen,
             '[' => TokenKind::OpenBracket,
             ']' => TokenKind::CloseBracket,
             '{' => TokenKind::OpenBrace,
             '}' => TokenKind::CloseBrace,
-
-            '!' => self.not_or_not_equal(),
-            '=' => self.assign_or_equal(),
-            '>' => self.greater_or_ge_or_shift_right(),
-            '<' => self.less_or_le_or_shift_left(),
-
+            '!' => TokenKind::Bang,
+            '=' => TokenKind::Eq,
+            '>' => TokenKind::Gt,
+            '<' => TokenKind::Lt,
             '~' => TokenKind::Tilde,
             '+' => TokenKind::Plus,
             '-' => TokenKind::Minus,
             '*' => TokenKind::Star,
             '%' => TokenKind::Percent,
             '^' => TokenKind::Caret,
-            '&' => self.and_or_and_and(),
-            '|' => self.or_or_or_or(),
+            '&' => TokenKind::And,
+            '|' => TokenKind::Or,
 
             // Slash, comment or block comment.
             '/' => match self.first() {
@@ -118,7 +129,7 @@ impl Cursor<'_> {
             // Raw identifier, Identifier, Raw double quote string
             'r' => match (self.first(), self.second()) {
                 ('#', c1) if is_id_start(c1) => self.raw_identifier(),
-                ('#', _) => {
+                ('#', _) | ('"', _) => {
                     let res = self.raw_double_quote_string();
                     TokenKind::Literal(LiteralKind::RawStr { n_hashes: res.ok() })
                 }
@@ -136,86 +147,6 @@ impl Cursor<'_> {
         Token::new(kind, self.bytes_eaten())
     }
 
-    /// 🗿🗿🗿
-    fn or_or_or_or(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '|');
-
-        match self.first() {
-            '|' => {
-                self.eat();
-                TokenKind::OrOr
-            }
-            _ => TokenKind::Or,
-        }
-    }
-
-    fn and_or_and_and(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '&');
-
-        match self.first() {
-            '&' => {
-                self.eat();
-                TokenKind::AndAnd
-            }
-            _ => TokenKind::And,
-        }
-    }
-
-    fn less_or_le_or_shift_left(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '<');
-
-        match self.first() {
-            '=' => {
-                self.eat();
-                TokenKind::Le
-            }
-            '<' => {
-                self.eat();
-                TokenKind::Shl
-            }
-            _ => TokenKind::Le,
-        }
-    }
-
-    fn greater_or_ge_or_shift_right(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '>');
-
-        match self.first() {
-            '=' => {
-                self.eat();
-                TokenKind::Ge
-            }
-            '>' => {
-                self.eat();
-                TokenKind::Shr
-            }
-            _ => TokenKind::Gt,
-        }
-    }
-
-    fn assign_or_equal(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '=');
-
-        match self.first() {
-            '=' => {
-                self.eat();
-                TokenKind::Eq
-            }
-            _ => TokenKind::Eq,
-        }
-    }
-
-    fn not_or_not_equal(&mut self) -> TokenKind {
-        debug_assert!(self.prev() == '!');
-        match self.first() {
-            '=' => {
-                self.eat();
-                TokenKind::BangEq
-            }
-            _ => TokenKind::Bang,
-        }
-    }
-
     // String because this will not guarantee that there is only 1 symbol.
     fn single_quote_string(&mut self) -> TokenKind {
         debug_assert!(self.prev() == '\'');
@@ -231,15 +162,20 @@ impl Cursor<'_> {
         let mut terminated = false;
         while !self.is_eof() {
             match self.first() {
-                // Eats twice because \ will take the character after it.
-                '\\' => {
-                    self.eat();
-                    self.eat();
-                }
                 '\'' => {
                     terminated = true;
                     self.eat();
                     break;
+                }
+                // Probably beginning of the comment, which we don't want to include
+                // to the error report.
+                '/' => break,
+                // Newline without following '\'' means unclosed quote, stop parsing.
+                '\n' if self.second() != '\'' => break,
+                // Eats twice because \ will take the character after it.
+                '\\' => {
+                    self.eat();
+                    self.eat();
                 }
                 _ => {
                     self.eat();
@@ -306,31 +242,41 @@ impl Cursor<'_> {
     fn number(&mut self) -> TokenKind {
         debug_assert!('0' <= self.prev() && self.prev() <= '9');
 
+        let mut base: Base = Base::Decimal;
         if self.prev() == '0' {
+            // Both binary and octal can have digit from 0 to 9 (for now). We will validate those
+            // when "cooking" tokens for better error diagnostic.
+            // If not error, we will not return result immediately to scan more.
             match self.first() {
-                'b' => {
+                'b' | 'B' => {
                     self.eat();
-                    return TokenKind::Literal(LiteralKind::Number {
-                        base: Base::Binary,
-                        empty_digit: !self.eat_binary_digits(),
-                        empty_exponent: false,
-                    });
+                    base = Base::Binary;
+                    if !self.eat_decimal_digits() {
+                        return TokenKind::Literal(LiteralKind::Int {
+                            base,
+                            empty_int: true,
+                        });
+                    }
                 }
-                'o' => {
+                'o' | 'O' => {
                     self.eat();
-                    return TokenKind::Literal(LiteralKind::Number {
-                        base: Base::Octal,
-                        empty_digit: !self.eat_octal_digits(),
-                        empty_exponent: false,
-                    });
+                    base = Base::Octal;
+                    if !self.eat_decimal_digits() {
+                        return TokenKind::Literal(LiteralKind::Int {
+                            base,
+                            empty_int: true,
+                        });
+                    }
                 }
-                'h' => {
+                'h' | 'H' => {
                     self.eat();
-                    return TokenKind::Literal(LiteralKind::Number {
-                        base: Base::Hexadecimal,
-                        empty_digit: !self.eat_hexa_digits(),
-                        empty_exponent: false,
-                    });
+                    base = Base::Hexadecimal;
+                    if !self.eat_hexa_digits() {
+                        return TokenKind::Literal(LiteralKind::Int {
+                            base,
+                            empty_int: true,
+                        });
+                    }
                 }
 
                 // Not a base prefix, eats all digits
@@ -338,15 +284,14 @@ impl Cursor<'_> {
                     self.eat_decimal_digits();
                 }
 
-                'e' | 'E' => {}
+                '.' | 'e' | 'E' => {}
 
                 // Just 0.
                 _ => {
-                    return TokenKind::Literal(LiteralKind::Number {
-                        base: Base::Decimal,
-                        empty_digit: false,
-                        empty_exponent: false,
-                    })
+                    return TokenKind::Literal(LiteralKind::Int {
+                        base,
+                        empty_int: false,
+                    });
                 }
             }
         } else {
@@ -357,76 +302,45 @@ impl Cursor<'_> {
         match self.first() {
             // After '.' cannot be id_start because we might add method for primary type in the
             // future.
-            // Funnily enough, method's name can be an emoji.
-            '.' if !is_id_start(self.second()) && !is_valid_emoji(self.second()) => {
+            '.' if !is_id_start(self.second()) => {
                 self.eat();
-                self.eat_decimal_digits();
 
-                match self.first() {
-                    'e' | 'E' => {
-                        self.eat();
-                        return TokenKind::Literal(LiteralKind::Number {
-                            base: Base::Decimal,
-                            empty_digit: false,
-                            empty_exponent: !self.eat_exponent(),
-                        });
+                // If there is something after '.', it has to be a number. Else we will stop
+                // consumming (e.g. '3.').
+                if self.first().is_ascii_digit() {
+                    self.eat_decimal_digits();
+                    match self.first() {
+                        'e' | 'E' => {
+                            self.eat();
+                            return TokenKind::Literal(LiteralKind::Float {
+                                base,
+                                empty_exponent: !self.eat_exponent(),
+                            });
+                        }
+                        _ => (),
                     }
-                    _ => {}
                 }
-            }
-            'e' | 'E' => {
-                self.eat();
-                return TokenKind::Literal(LiteralKind::Number {
-                    base: Base::Decimal,
-                    empty_digit: false,
-                    empty_exponent: !self.eat_exponent(),
-                });
-            }
-            _ => {
-                return TokenKind::Literal(LiteralKind::Number {
-                    base: Base::Decimal,
-                    empty_digit: false,
+
+                TokenKind::Literal(LiteralKind::Float {
+                    base,
                     empty_exponent: false,
                 })
             }
+            'e' | 'E' => {
+                self.eat();
+                return TokenKind::Literal(LiteralKind::Float {
+                    base,
+                    empty_exponent: !self.eat_exponent(),
+                });
+            }
+            // Just a normal integer number.
+            _ => {
+                return TokenKind::Literal(LiteralKind::Int {
+                    base,
+                    empty_int: false,
+                })
+            }
         }
-
-        // Just a normal number.
-        return TokenKind::Literal(LiteralKind::Number {
-            base: Base::Decimal,
-            empty_digit: false,
-            empty_exponent: false,
-        });
-    }
-
-    /// Eats all _, 0, 1 and return `true` if there is atleast 1 digit, return `false`
-    /// otherwise.
-    fn eat_binary_digits(&mut self) -> bool {
-        let mut has_digits = false;
-
-        self.eat_while(|ch| ch == '_');
-
-        if self.first() == '0' || self.first() == '1' {
-            has_digits = true;
-            self.eat_while(|ch| matches!(ch, '_' | '0' | '1'));
-        }
-
-        has_digits
-    }
-
-    /// Eats all _, 0-7 and return `true` if there is atleast 1 digit, return `false`
-    /// otherwise.
-    fn eat_octal_digits(&mut self) -> bool {
-        let mut has_digits = false;
-
-        self.eat_while(|ch| ch == '_');
-
-        if self.first() >= '0' && self.first() <= '7' {
-            has_digits = true;
-            self.eat_while(|ch| matches!(ch, '_' | '0'..='7'));
-        }
-
-        has_digits
     }
 
     /// Eats all _, 0-9 and return `true` if there is atleast 1 digit, return `false`
@@ -506,7 +420,7 @@ impl Cursor<'_> {
     }
 
     fn raw_double_quote_string(&mut self) -> Result<u8, RawStrError> {
-        debug_assert!(self.prev() == 'r' && self.first() == '#');
+        debug_assert!(self.prev() == 'r' && matches!(self.first(), '#' | '"'));
 
         let start_pos = self.bytes_eaten();
         let mut start_hashes = 0;
@@ -516,9 +430,12 @@ impl Cursor<'_> {
             start_hashes += 1;
         }
 
-        match self.first() {
-            '"' => {}
-            bad_char => return Err(RawStrError::InvalidStarter { bad_char }),
+        match self.eat() {
+            Some('"') => {}
+            c => {
+                let bad_char = c.unwrap_or(EOF_CHAR);
+                return Err(RawStrError::InvalidStarter { bad_char });
+            }
         }
 
         let mut possible_terminator_offset: Option<u32> = None;
@@ -536,32 +453,27 @@ impl Cursor<'_> {
             }
 
             self.eat();
-            match self.first() {
-                '#' => {
-                    maybe_end_hashes = 0;
-                    while self.first() == '#' && maybe_end_hashes < start_hashes {
-                        self.eat();
-                        maybe_end_hashes += 1;
-                    }
+            maybe_end_hashes = 0;
+            while self.first() == '#' && maybe_end_hashes < start_hashes {
+                self.eat();
+                maybe_end_hashes += 1;
+            }
 
-                    if maybe_end_hashes == start_hashes {
-                        if maybe_end_hashes > 255 {
-                            return Err(RawStrError::TooManyHashes {
-                                found: maybe_end_hashes,
-                            });
-                        }
-
-                        return Ok(start_hashes as u8);
-                    }
-
-                    // end < start
-                    if maybe_end_hashes > max_end_hashes {
-                        max_end_hashes = maybe_end_hashes;
-                        possible_terminator_offset =
-                            Some(self.bytes_eaten() - start_pos + 1 - max_end_hashes);
-                    }
+            if maybe_end_hashes == start_hashes {
+                if maybe_end_hashes > 255 {
+                    return Err(RawStrError::TooManyHashes {
+                        found: maybe_end_hashes,
+                    });
                 }
-                _ => {}
+
+                return Ok(start_hashes as u8);
+            }
+
+            // end < start
+            if maybe_end_hashes > max_end_hashes {
+                max_end_hashes = maybe_end_hashes;
+                possible_terminator_offset =
+                    Some(self.bytes_eaten() - start_pos + 1 - max_end_hashes);
             }
         }
     }
@@ -592,9 +504,9 @@ mod tests {
         let source = r#####"
 /*@ this is main function */
 fun main() {
-    let x: number = 9; // create x
-    let y: number = 8;
-    let z: number = x + y;
+    let x: int = 9; // create x
+    let y: int = 8;
+    let z: int = x + y;
     sysout("x + y = ${x + y}");
 }
 "#####;
@@ -654,7 +566,7 @@ fun main() {
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
         ); //
-        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 6))); // number
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 3))); // int
         assert_eq!(
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
@@ -667,10 +579,9 @@ fun main() {
         assert_eq!(
             tokens_iter.next(),
             Some(Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Decimal,
-                    empty_digit: false,
-                    empty_exponent: false
+                    empty_int: false,
                 }),
                 1
             ))
@@ -703,7 +614,7 @@ fun main() {
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
         ); //
-        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 6))); // number
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 3))); // int
         assert_eq!(
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
@@ -716,10 +627,9 @@ fun main() {
         assert_eq!(
             tokens_iter.next(),
             Some(Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Decimal,
-                    empty_digit: false,
-                    empty_exponent: false
+                    empty_int: false,
                 }),
                 1
             ))
@@ -743,7 +653,7 @@ fun main() {
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
         ); //
-        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 6))); // number
+        assert_eq!(tokens_iter.next(), Some(Token::new(TokenKind::Ident, 3))); // int
         assert_eq!(
             tokens_iter.next(),
             Some(Token::new(TokenKind::Whitespace, 1))
@@ -942,7 +852,7 @@ r####"a"#"ab"###"##
             cursor.advance_token(),
             Token::new(
                 TokenKind::Literal(LiteralKind::Char { terminated: false }),
-                7
+                6 // 'ab\'a(\n)
             )
         );
     }
@@ -1173,9 +1083,7 @@ customer_id_is_1
     fn tokenize_binary_number() {
         let source = r#"
 0b1011_1101_0010
-0b____
 0b
-0b_1___0_____
 "#;
 
         let mut cursor = Cursor::new(&source);
@@ -1185,26 +1093,11 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Binary,
-                    empty_digit: false,
-                    empty_exponent: false
+                    empty_int: false,
                 }),
                 16
-            )
-        );
-
-        //0b____
-        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
-        assert_eq!(
-            cursor.advance_token(),
-            Token::new(
-                TokenKind::Literal(LiteralKind::Number {
-                    base: Base::Binary,
-                    empty_digit: true,
-                    empty_exponent: false
-                }),
-                6
             )
         );
 
@@ -1213,26 +1106,11 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Binary,
-                    empty_digit: true,
-                    empty_exponent: false
+                    empty_int: true,
                 }),
                 2
-            )
-        );
-
-        //0b_1___0_____
-        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
-        assert_eq!(
-            cursor.advance_token(),
-            Token::new(
-                TokenKind::Literal(LiteralKind::Number {
-                    base: Base::Binary,
-                    empty_digit: false,
-                    empty_exponent: false
-                }),
-                13
             )
         );
     }
@@ -1242,8 +1120,6 @@ customer_id_is_1
         let source = r#"
 0o670_561_1
 0o
-0o_____
-0o__6___7__
 "#;
         let mut cursor = Cursor::new(&source);
 
@@ -1252,10 +1128,9 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Octal,
-                    empty_digit: false,
-                    empty_exponent: false
+                    empty_int: false,
                 }),
                 11
             )
@@ -1266,40 +1141,11 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Octal,
-                    empty_digit: true,
-                    empty_exponent: false
+                    empty_int: true,
                 }),
                 2
-            )
-        );
-
-        //0o_____
-        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
-        assert_eq!(
-            cursor.advance_token(),
-            Token::new(
-                TokenKind::Literal(LiteralKind::Number {
-                    base: Base::Octal,
-                    empty_digit: true,
-                    empty_exponent: false
-                }),
-                7
-            )
-        );
-
-        //0o__6___7__
-        assert_eq!(cursor.advance_token(), Token::new(TokenKind::Whitespace, 1));
-        assert_eq!(
-            cursor.advance_token(),
-            Token::new(
-                TokenKind::Literal(LiteralKind::Number {
-                    base: Base::Octal,
-                    empty_digit: false,
-                    empty_exponent: false
-                }),
-                11
             )
         );
     }
@@ -1320,10 +1166,9 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Hexadecimal,
-                    empty_digit: false,
-                    empty_exponent: false
+                    empty_int: false,
                 }),
                 13
             )
@@ -1334,10 +1179,9 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Hexadecimal,
-                    empty_digit: true,
-                    empty_exponent: false
+                    empty_int: true,
                 }),
                 2
             )
@@ -1348,10 +1192,9 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Hexadecimal,
-                    empty_digit: true,
-                    empty_exponent: false
+                    empty_int: true,
                 }),
                 8
             )
@@ -1362,10 +1205,9 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Hexadecimal,
-                    empty_digit: false,
-                    empty_exponent: false
+                    empty_int: false,
                 }),
                 11,
             )
@@ -1392,10 +1234,9 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Decimal,
-                    empty_digit: false,
-                    empty_exponent: false
+                    empty_int: false,
                 }),
                 9,
             )
@@ -1406,9 +1247,8 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Float {
                     base: Base::Decimal,
-                    empty_digit: false,
                     empty_exponent: false
                 }),
                 2,
@@ -1420,9 +1260,8 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Float {
                     base: Base::Decimal,
-                    empty_digit: false,
                     empty_exponent: false
                 }),
                 9,
@@ -1434,9 +1273,8 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Float {
                     base: Base::Decimal,
-                    empty_digit: false,
                     empty_exponent: false
                 }),
                 5,
@@ -1448,9 +1286,8 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Float {
                     base: Base::Decimal,
-                    empty_digit: false,
                     empty_exponent: false
                 }),
                 6,
@@ -1462,9 +1299,8 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Float {
                     base: Base::Decimal,
-                    empty_digit: false,
                     empty_exponent: false
                 }),
                 10,
@@ -1476,9 +1312,8 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Float {
                     base: Base::Decimal,
-                    empty_digit: false,
                     empty_exponent: true
                 }),
                 3,
@@ -1490,10 +1325,9 @@ customer_id_is_1
         assert_eq!(
             cursor.advance_token(),
             Token::new(
-                TokenKind::Literal(LiteralKind::Number {
+                TokenKind::Literal(LiteralKind::Int {
                     base: Base::Decimal,
-                    empty_digit: false,
-                    empty_exponent: false
+                    empty_int: false,
                 }),
                 1,
             )

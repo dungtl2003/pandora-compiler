@@ -14,8 +14,6 @@ pub enum EscapeError {
     LoneSlash,
     /// Invalid escape character (e.g. '\z').
     InvalidEscape,
-    /// Raw '\r' encountered.
-    BareCarriageReturn,
     /// Unescaped character that was expected to be escaped (e.g. raw '\t').
     EscapeOnlyChar,
 }
@@ -28,8 +26,7 @@ pub fn unescape_char(src: &str) -> Result<char, EscapeError> {
     let c = chars.next().ok_or(EscapeError::ZeroChars)?;
     let res = match c {
         '\\' => scan_escape(&mut chars),
-        '\n' | '\t' | '\'' => Err(EscapeError::EscapeOnlyChar),
-        '\r' => Err(EscapeError::BareCarriageReturn),
+        '\r' | '\n' | '\t' | '\'' => Err(EscapeError::EscapeOnlyChar),
         ch => Ok(ch),
     }?;
     if chars.next().is_some() {
@@ -39,37 +36,38 @@ pub fn unescape_char(src: &str) -> Result<char, EscapeError> {
 }
 
 pub fn unescape_str(src: &str) -> Result<String, EscapeError> {
-    let mut chars = src.chars().peekable();
-    let mut result = String::new();
+    let mut chars = src.chars();
+    let mut content = String::new();
 
-    while let Some(c1) = chars.next() {
-        match c1 {
+    while let Some(c) = chars.next() {
+        match c {
             '"' => return Err(EscapeError::EscapeOnlyChar),
-            '\\' => match chars.next().ok_or(EscapeError::LoneSlash)? {
-                '\n' | '\t' | '\r' => {}
-                '"' => result.push('"'),
-                'n' => result.push('\n'),
-                'r' => result.push('\r'),
-                't' => result.push('\t'),
-                '\\' => result.push('\\'),
-                '\'' => result.push('\''),
-                ch => result.push(ch),
-            },
-            '\n' => {
-                while let Some(c2) = chars.peek() {
-                    match c2 {
-                        ' ' => {
-                            chars.next();
-                        }
-                        _ => break,
+            '\\' => match chars.clone().next() {
+                Some('\n') => {
+                    skip_whitespace(&mut chars);
+                }
+                _ => {
+                    let res = scan_escape(&mut chars);
+                    match res {
+                        Err(e) => return Err(e),
+                        Ok(ch) => content.push(ch),
                     }
                 }
-            }
-            ch => result.push(ch),
+            },
+            ch => content.push(ch),
         };
     }
 
-    Ok(result)
+    Ok(content)
+}
+
+fn skip_whitespace(chars: &mut Chars<'_>) {
+    while let Some(c) = chars.next() {
+        match c {
+            c if super::is_whitespace(c) => {}
+            _ => return,
+        }
+    }
 }
 
 fn scan_escape<T: From<char>>(chars: &mut Chars<'_>) -> Result<T, EscapeError> {
@@ -79,6 +77,7 @@ fn scan_escape<T: From<char>>(chars: &mut Chars<'_>) -> Result<T, EscapeError> {
         'n' => '\n',
         'r' => '\r',
         't' => '\t',
+        '0' => '\0',
         '\\' => '\\',
         '\'' => '\'',
         _ => return Err(EscapeError::InvalidEscape),

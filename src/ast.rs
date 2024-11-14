@@ -1,29 +1,99 @@
+mod ident;
+pub mod pretty_print;
 mod token;
+mod tokenstream;
+
+use core::fmt;
+use std::fmt::{Display, Formatter};
+
+use ident::Ident;
+pub use tokenstream::{DelimSpan, Spacing, TokenStream, TokenTree, TokenTreeCursor};
 
 pub use token::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,
 };
 
+use crate::span_encoding::{Span, Spanned};
+
+pub struct Stmt {
+    pub kind: StmtKind,
+    pub span: Span,
+}
+
+pub enum StmtKind {
+    /// An expression statement: `expr;`.
+    Expr(Box<Expr>),
+    /// A block statement: `{ stmt* }`.
+    Block(Vec<Stmt>),
+    /// An `if` statement: 'if' expr block ('elif' expr block)* ('else' block)?
+    If(Vec<(Expr, Vec<Stmt>)>, Option<Vec<Stmt>>),
+    /// A 'break' statement.
+    Break,
+    /// A 'continue' statement.
+    Continue,
+    /// A 'return' statement: 'return' expr? ';'
+    Return(Option<Box<Expr>>),
+    /// A variable declaration: 'var' 'mut'? ident: type ('=' expr)? ';'
+    VarDecl(Ident, Option<Box<Expr>>),
+}
+
+#[derive(Debug)]
 pub struct Expr {
     pub kind: ExprKind,
+    pub span: Span,
 }
 
+#[derive(Debug)]
 pub enum ExprKind {
     /// A binary operation (e.g. `a + b`, `a * b`).
-    Binary(BinOpKind, Box<Expr>, Box<Expr>),
+    Binary(BinOp, Box<Expr>, Box<Expr>),
     /// An unary operation (e.g. `!a`, `-a`).
-    Unary(UnaryKind, Box<Expr>),
+    Unary(UnOp, Box<Expr>),
     /// A literal (e.g. `124`, `"foo"`).
     Literal(token::Lit),
+    /// An assignment (`a = foo()`).
+    /// The `Span` argument is the span of the `=` token.
+    Assign(Box<Expr>, Box<Expr>, Span),
+    /// An assignment with an operator.
+    ///
+    /// E.g., `a += 1`.
+    AssignOp(BinOp, Box<Expr>, Box<Expr>),
 }
 
-pub enum UnaryKind {
+impl Display for Expr {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match &self.kind {
+            ExprKind::Binary(op, ..) => {
+                write!(f, "Binary operation: {}", op)
+            }
+            ExprKind::Unary(op, _) => {
+                write!(f, "{:?}", op)
+            }
+            ExprKind::Literal(lit) => {
+                write!(f, "{}", lit)
+            }
+            _ => unimplemented!(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum UnOp {
     /// The `!` operator for logical inversion.
     Not,
     /// The `-` operator for negation.
     Ne,
 }
 
+pub type BinOp = Spanned<BinOpKind>;
+
+impl Display for BinOp {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.node)
+    }
+}
+
+#[derive(Debug)]
 pub enum BinOpKind {
     /// The `+` operator (addition).
     Add,

@@ -12,7 +12,7 @@ impl Token {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TokenKind {
-    /* one/two-char symbol */
+    /* one char symbol */
     /// :
     Colon,
     /// ,
@@ -37,20 +37,12 @@ pub enum TokenKind {
     CloseBracket,
     /// `!`
     Bang,
-    /// `!=`
-    BangEq,
     /// `=`
     Eq,
-    /// `==`
-    EqEq,
     /// `>`
     Gt,
-    /// `>=`
-    Ge,
     /// `<`
     Lt,
-    /// `<=`
-    Le,
     /// `~`
     Tilde,
     /// `+`
@@ -67,16 +59,8 @@ pub enum TokenKind {
     Caret,
     /// `&`
     And,
-    /// `&&`
-    AndAnd,
     /// `|`
     Or,
-    /// `||`
-    OrOr,
-    /// `<<`
-    Shl,
-    /// `>>`
-    Shr,
 
     // Literal
     Literal(LiteralKind),
@@ -114,18 +98,27 @@ pub enum DocStyle {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LiteralKind {
     /// `"abc"`, `"ab`, `"ab\"`, `"ab\""`.
-    Str { terminated: bool },
+    Str {
+        terminated: bool,
+    },
     /// `r#"abc"#`, `r###"ab"##c"###`, `r###"ab"######`, None means invalid.
-    RawStr { n_hashes: Option<u8> },
+    RawStr {
+        n_hashes: Option<u8>,
+    },
     /// `1_000`, `0b1101`, `0o657`, `0h1af9`.
-    Number {
+    Int {
         base: Base,
-        empty_digit: bool,
+        empty_int: bool,
+    },
+    Float {
+        base: Base,
         empty_exponent: bool,
     },
     // Although kind can be Char but it can be many symbols (error). Ex: 'abc' -> error.
     /// `'a'`, `'\''`, `'\\'`, `'abc'`, `'ab`.
-    Char { terminated: bool },
+    Char {
+        terminated: bool,
+    },
 }
 
 pub enum RawStrError {

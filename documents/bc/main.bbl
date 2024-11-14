@@ -1,0 +1,24 @@
+\begin{thebibliography}{1}
+
+\bibitem{allen2012unicode}
+Julie~D Allen, Deborah Anderson, Joe Becker, Richard Cook, Mark Davis, Peter Edberg, Michael Everson, Asmus Freytag, Laurentiu Iancu, Richard Ishida, et~al.
+\newblock The unicode standard.
+\newblock {\em Mountain view, CA}, pages 660--664, 2012.
+
+\bibitem{freydenberger2013extended}
+Dominik~D Freydenberger.
+\newblock Extended regular expressions: Succinctness and decidability.
+\newblock {\em Theory of Computing Systems}, 53:159--193, 2013.
+
+\bibitem{li2008regular}
+Yunyao Li, Rajasekar Krishnamurthy, Sriram Raghavan, Shivakumar Vaithyanathan, and HV~Jagadish.
+\newblock Regular expression learning for information extraction.
+\newblock In {\em Proceedings of the 2008 conference on empirical methods in natural language processing}, pages 21--30, 2008.
+
+\bibitem{web:unicode:report}
+Robin~Leroy Mark~Davis.
+\newblock Unicode identifiers and syntax.
+\newblock Last accessed 31 October 2024.
+\newblock URL: \url{https://www.unicode.org/reports/tr31}.
+
+\end{thebibliography}

@@ -6,9 +6,24 @@ use strum_macros::{AsRefStr, EnumString};
 pub enum Keyword {
     True,
     False,
-    Let,
-    When,
+    Var,
+    Mut,
+    If,
+    Elif,
     Else,
+    Fun,
+    Class,
+    Interface,
+    Enum,
+    Break,
+    Continue,
+    For,
+    Pub,
+    Impl,
+    Int,
+    Float,
+    Bool,
+    Char,
 }
 
 pub fn is_keyword(symbol: &str) -> bool {

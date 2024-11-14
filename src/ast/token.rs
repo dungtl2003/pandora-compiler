@@ -1,8 +1,19 @@
-use crate::interner::Symbol;
+use core::fmt;
+use std::fmt::{Display, Formatter};
+
+use crate::{
+    interner::Symbol,
+    span_encoding::{Span, DUMMY_SP},
+};
+
+use super::{ident::Ident, BinOpKind};
+use BinOpToken::*;
+use TokenKind::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Token {
     pub kind: TokenKind,
+    pub span: Span,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -31,6 +42,7 @@ pub enum TokenKind {
     /// `~`
     Tilde,
     BinOp(BinOpToken),
+    BinOpEq(BinOpToken),
 
     /* Structural symbols */
     /// `.`
@@ -97,11 +109,18 @@ pub struct Lit {
     pub symbol: Symbol,
 }
 
+impl Display for Lit {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.kind)
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum LitKind {
     Bool,
     Char,
-    Number,
+    Int,
+    Float,
     Str,
     RawStr(u8), // raw string delimited by `n` hash symbols
 
@@ -118,4 +137,143 @@ pub enum IdentIsRaw {
 pub enum DocStyle {
     Inner,
     Outer,
+}
+
+impl Token {
+    pub fn new(kind: TokenKind, span: Span) -> Token {
+        Token { kind, span }
+    }
+
+    pub fn to_ast_binop_kind(&self) -> Option<BinOpKind> {
+        match self.kind {
+            BinOp(Plus) => Some(BinOpKind::Add),
+            BinOp(Minus) => Some(BinOpKind::Sub),
+            BinOp(Star) => Some(BinOpKind::Mul),
+            BinOp(Slash) => Some(BinOpKind::Div),
+            BinOp(Percent) => Some(BinOpKind::Mod),
+            EqEq => Some(BinOpKind::Eq),
+            Ne => Some(BinOpKind::Ne),
+            Lt => Some(BinOpKind::Lt),
+            Le => Some(BinOpKind::Le),
+            Gt => Some(BinOpKind::Gt),
+            Ge => Some(BinOpKind::Ge),
+            AndAnd => Some(BinOpKind::And),
+            OrOr => Some(BinOpKind::Or),
+            BinOp(And) => Some(BinOpKind::BitAnd),
+            BinOp(Or) => Some(BinOpKind::BitOr),
+            BinOp(Caret) => Some(BinOpKind::BitXor),
+            BinOp(Shl) => Some(BinOpKind::Shl),
+            BinOp(Shr) => Some(BinOpKind::Shr),
+            _ => None,
+        }
+    }
+
+    pub fn glue(&self, joint: &Token) -> Option<Token> {
+        let kind = match self.kind {
+            Eq => match joint.kind {
+                Eq => EqEq,
+                _ => return None,
+            },
+            Not => match joint.kind {
+                Eq => Ne,
+                _ => return None,
+            },
+            Lt => match joint.kind {
+                Eq => Le,
+                Lt => BinOp(Shl),
+                Le => BinOpEq(Shl),
+                _ => return None,
+            },
+            Gt => match joint.kind {
+                Eq => Ge,
+                Gt => BinOp(Shr),
+                Ge => BinOpEq(Shr),
+                _ => return None,
+            },
+            BinOp(op) => match joint.kind {
+                Eq => BinOpEq(op),
+                BinOp(And) if op == And => AndAnd,
+                BinOp(Or) if op == Or => OrOr,
+                _ => return None,
+            },
+            Le | EqEq | Ne | Ge | AndAnd | OrOr | Tilde | BinOpEq(_) | Dot | Comma | Semicolon
+            | Colon | Question | OpenDelim(_) | CloseDelim(_) | Literal(_) | Ident(..)
+            | DocComment(..) | Eof => return None,
+        };
+
+        Some(Token {
+            kind,
+            span: Span {
+                offset: self.span.offset,
+                length: self.span.length + joint.span.length,
+            },
+        })
+    }
+
+    pub fn is_punct(&self) -> bool {
+        match self.kind {
+            Eq | Lt | Le | EqEq | Ne | Ge | Gt | AndAnd | OrOr | Not | Tilde | BinOp(_)
+            | BinOpEq(_) | Dot | Comma | Semicolon | Colon | Question => true,
+
+            OpenDelim(..) | CloseDelim(..) | Literal(..) | DocComment(..) | Ident(..) | Eof => {
+                false
+            }
+        }
+    }
+
+    pub fn can_begin_expr(&self) -> bool {
+        match self.kind {
+            Ident(name, is_raw)              =>
+                ident_can_begin_expr(name, self.span, is_raw), // value name or keyword
+            //OpenDelim(..)                     | // tuple, array or block
+            Literal(..)                       | // literal
+            Not                               | // operator not
+            BinOp(Minus)                      | // unary minus
+            BinOp(Star)                       | // dereference
+            BinOp(Or) | OrOr                  | // closure
+            BinOp(And)                        | // reference
+            AndAnd                            | // double reference
+            Lt | BinOp(Shl)                   | // associated path
+            _ => false,
+        }
+    }
+
+    /// Returns `true` if the token is a non-raw identifier for which `pred` holds.
+    pub fn is_non_raw_ident_where(&self, pred: impl FnOnce(Ident) -> bool) -> bool {
+        match self.ident() {
+            Some((id, IdentIsRaw::No)) => pred(id),
+            _ => false,
+        }
+    }
+
+    /// Returns an identifier if this token is an identifier.
+    #[inline]
+    pub fn ident(&self) -> Option<(Ident, IdentIsRaw)> {
+        // We avoid using `Token::uninterpolate` here because it's slow.
+        match self.kind {
+            Ident(name, is_raw) => Some((
+                Ident {
+                    name,
+                    span: self.span,
+                },
+                is_raw,
+            )),
+            _ => None,
+        }
+    }
+
+    /// Some token that will be thrown away later.
+    pub fn dummy() -> Self {
+        Token::new(TokenKind::Question, DUMMY_SP)
+    }
+
+    pub fn is_keyword(&self) -> bool {
+        self.is_non_raw_ident_where(Ident::is_keyword)
+    }
+}
+
+pub fn ident_can_begin_expr(name: Symbol, span: Span, is_raw: IdentIsRaw) -> bool {
+    let ident_token = Token::new(Ident(name, is_raw), span);
+
+    !ident_token.is_keyword()
 }
