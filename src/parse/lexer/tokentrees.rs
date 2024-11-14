@@ -1,5 +1,6 @@
 use crate::{
     ast::{DelimSpan, Delimiter, Spacing, Token, TokenKind, TokenStream, TokenTree},
+    parse::parser::PResult,
     span_encoding::Span,
 };
 
@@ -16,19 +17,19 @@ pub struct TokenTreesReader<'src> {
 }
 
 impl<'src> TokenTreesReader<'src> {
-    pub fn lex_all_token_trees(string_reader: StringReader<'src>) -> TokenStream {
+    pub fn lex_all_token_trees(string_reader: StringReader<'src>) -> (TokenStream, PResult<()>) {
         let mut tt_reader = TokenTreesReader {
             string_reader,
             token: Token::dummy(),
             open_delims: Vec::new(),
         };
 
-        tt_reader.lex_token_trees(false).0
+        tt_reader.lex_token_trees(false)
     }
 
     // Lex into a token stream. The `Spacing` in the result is that of the
-    // opening delimiter. Return `true` if not encounter any errors, return `false` otherwise.
-    fn lex_token_trees(&mut self, is_delimited: bool) -> (TokenStream, bool) {
+    // opening delimiter.
+    fn lex_token_trees(&mut self, is_delimited: bool) -> (TokenStream, PResult<()>) {
         // This can be the first token or open delim, can not glue.
         self.eat(false);
 
@@ -36,24 +37,20 @@ impl<'src> TokenTreesReader<'src> {
         loop {
             match self.token.kind {
                 TokenKind::OpenDelim(delim) => match self.lex_token_tree_open_delim(delim) {
-                    Some(val) => buf.push(val),
-                    None => return (TokenStream::new(buf), false),
+                    Ok(val) => buf.push(val),
+                    Err(err) => return (TokenStream::new(buf), Err(err)),
                 },
                 TokenKind::CloseDelim(_delim) => {
-                    let mut no_err = true;
                     if !is_delimited {
-                        no_err = false;
-                        self.report_close_delim_error();
+                        return (TokenStream::new(buf), Err(()));
                     }
-                    return (TokenStream::new(buf), no_err);
+                    return (TokenStream::new(buf), Ok(()));
                 }
                 TokenKind::Eof => {
-                    let mut no_err = true;
                     if is_delimited {
-                        no_err = false;
-                        self.report_eof_error();
+                        return (TokenStream::new(buf), Ok(()));
                     }
-                    return (TokenStream::new(buf), no_err);
+                    return (TokenStream::new(buf), Err(()));
                 }
                 _ => {
                     // Get the next normal token.
@@ -65,7 +62,7 @@ impl<'src> TokenTreesReader<'src> {
         }
     }
 
-    fn lex_token_tree_open_delim(&mut self, open_delim: Delimiter) -> Option<TokenTree> {
+    fn lex_token_tree_open_delim(&mut self, open_delim: Delimiter) -> PResult<TokenTree> {
         // The span for beginning of the delimited section.
         let pre_span = self.token.span;
 
@@ -74,9 +71,9 @@ impl<'src> TokenTreesReader<'src> {
         // Lex the token trees within the delimiters.
         // We stop at any delimiter so we can try to recover if the user
         // uses an incorrect delimiter.
-        let (tts, no_err) = self.lex_token_trees(/* is_delimited */ true);
-        if !no_err {
-            return None;
+        let (tts, res) = self.lex_token_trees(/* is_delimited */ true);
+        if res.is_err() {
+            return Err(());
         }
 
         // Expand to cover the entire delimited token tree.
@@ -114,7 +111,7 @@ impl<'src> TokenTreesReader<'src> {
             _ => unreachable!(),
         }
 
-        Some(TokenTree::Delimited(delim_span, open_delim, tts))
+        Ok(TokenTree::Delimited(delim_span, open_delim, tts))
     }
 
     // Move on to the next token, returning the current token and its spacing.
@@ -137,13 +134,5 @@ impl<'src> TokenTreesReader<'src> {
         };
         let this_tok = std::mem::replace(&mut self.token, next_tok);
         (this_tok, this_spacing)
-    }
-
-    fn report_close_delim_error(&self) {
-        unimplemented!();
-    }
-
-    fn report_eof_error(&self) {
-        unimplemented!();
     }
 }

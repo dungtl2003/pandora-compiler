@@ -1,6 +1,6 @@
 use crate::{interner::Symbol, span_encoding::Span};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Ident {
     pub name: Symbol,
     pub span: Span,

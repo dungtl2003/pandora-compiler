@@ -3,6 +3,8 @@ use std::fmt::{Display, Formatter};
 
 use crate::{
     interner::Symbol,
+    kw::{self, Keyword},
+    session_global::SessionGlobal,
     span_encoding::{Span, DUMMY_SP},
 };
 
@@ -53,6 +55,8 @@ pub enum TokenKind {
     Semicolon,
     /// `:`
     Colon,
+    /// `::`
+    ColonColon,
     /// `?`
     Question,
     /// An opening delimiter (e.g., `{`).
@@ -196,9 +200,13 @@ impl Token {
                 BinOp(Or) if op == Or => OrOr,
                 _ => return None,
             },
+            Colon => match joint.kind {
+                Colon => ColonColon,
+                _ => return None,
+            },
             Le | EqEq | Ne | Ge | AndAnd | OrOr | Tilde | BinOpEq(_) | Dot | Comma | Semicolon
-            | Colon | Question | OpenDelim(_) | CloseDelim(_) | Literal(_) | Ident(..)
-            | DocComment(..) | Eof => return None,
+            | Question | OpenDelim(_) | CloseDelim(_) | Literal(_) | Ident(..) | DocComment(..)
+            | ColonColon | Eof => return None,
         };
 
         Some(Token {
@@ -215,9 +223,8 @@ impl Token {
             Eq | Lt | Le | EqEq | Ne | Ge | Gt | AndAnd | OrOr | Not | Tilde | BinOp(_)
             | BinOpEq(_) | Dot | Comma | Semicolon | Colon | Question => true,
 
-            OpenDelim(..) | CloseDelim(..) | Literal(..) | DocComment(..) | Ident(..) | Eof => {
-                false
-            }
+            ColonColon | OpenDelim(..) | CloseDelim(..) | Literal(..) | DocComment(..)
+            | Ident(..) | Eof => false,
         }
     }
 
@@ -267,13 +274,28 @@ impl Token {
         Token::new(TokenKind::Question, DUMMY_SP)
     }
 
-    pub fn is_keyword(&self) -> bool {
-        self.is_non_raw_ident_where(Ident::is_keyword)
+    pub fn is_keyword(&self, keyword: Keyword) -> bool {
+        self.is_non_raw_ident_where(|ident| {
+            let name = SessionGlobal::instance().get(ident.name);
+            let res = kw::from_str(name);
+            if res.is_err() {
+                return false;
+            }
+
+            res.unwrap() == keyword
+        })
+    }
+
+    pub fn is_ident(&self) -> bool {
+        matches!(self.kind, Ident(..))
     }
 }
 
 pub fn ident_can_begin_expr(name: Symbol, span: Span, is_raw: IdentIsRaw) -> bool {
     let ident_token = Token::new(Ident(name, is_raw), span);
 
-    !ident_token.is_keyword()
+    ident_token.is_non_raw_ident_where(|ident| {
+        let name = SessionGlobal::instance().get(ident.name);
+        kw::is_keyword(name)
+    })
 }

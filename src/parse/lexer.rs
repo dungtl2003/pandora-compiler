@@ -11,10 +11,17 @@ use crate::lexer::{self, Base, Cursor, EscapeError, RawStrError};
 use crate::session_global::BytePos;
 use crate::span_encoding::Span;
 
-pub fn lex_token_tree<'src>(src: &'src str, emitter: ErrorHandler) -> TokenStream {
+use super::parser::PResult;
+
+pub fn lex_token_tree<'src>(src: &'src str, emitter: ErrorHandler) -> PResult<TokenStream> {
     let string_reader = StringReader::new(src, emitter);
 
-    tokentrees::TokenTreesReader::lex_all_token_trees(string_reader)
+    let (tokenstream, res) = tokentrees::TokenTreesReader::lex_all_token_trees(string_reader);
+    if res.is_err() {
+        return Err(());
+    }
+
+    Ok(tokenstream)
 }
 
 pub fn tokenize<'src>(src: &'src str, emitter: ErrorHandler) -> Vec<Token> {

@@ -130,14 +130,6 @@ impl Parser {
         }
     }
 
-    fn expect(&mut self, expected: TokenKind) -> PResult<()> {
-        if self.token.kind == expected {
-            Ok(())
-        } else {
-            Err(())
-        }
-    }
-
     fn mk_literal(&self, lit: Lit) -> ExprKind {
         ExprKind::Literal(lit)
     }

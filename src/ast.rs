@@ -6,7 +6,8 @@ mod tokenstream;
 use core::fmt;
 use std::fmt::{Display, Formatter};
 
-use ident::Ident;
+pub use ident::Ident;
+use strum_macros::{AsRefStr, EnumString};
 pub use tokenstream::{DelimSpan, Spacing, TokenStream, TokenTree, TokenTreeCursor};
 
 pub use token::{
@@ -14,6 +15,22 @@ pub use token::{
 };
 
 use crate::span_encoding::{Span, Spanned};
+
+pub struct BindingMode(pub Mutability);
+
+pub enum Mutability {
+    Immutable,
+    Mutable,
+}
+
+impl BindingMode {
+    pub fn prefix_str(self) -> &'static str {
+        match self.0 {
+            Mutability::Immutable => "",
+            Mutability::Mutable => "mut ",
+        }
+    }
+}
 
 pub struct Stmt {
     pub kind: StmtKind,
@@ -34,7 +51,105 @@ pub enum StmtKind {
     /// A 'return' statement: 'return' expr? ';'
     Return(Option<Box<Expr>>),
     /// A variable declaration: 'var' 'mut'? ident: type ('=' expr)? ';'
-    VarDecl(Ident, Option<Box<Expr>>),
+    Var(Box<Local>),
+}
+
+/// A "Path" is essentially Pandora's notion of a name.
+///
+/// It's represented as a sequence of identifiers,
+/// along with a bunch of supporting information.
+///
+/// E.g., `std::cmp::PartialEq`.
+#[derive(Debug)]
+pub struct Path {
+    pub span: Span,
+    /// The segments in the path: the things separated by `::`.
+    /// Global paths begin with `kw::PathRoot`.
+    pub segments: Vec<PathSegment>,
+}
+
+/// A segment of a path: an identifier and a set of types.
+///
+/// E.g., `std`, `String` or `Box<T>`.
+#[derive(Debug)]
+pub struct PathSegment {
+    /// The identifier portion of this path segment.
+    pub ident: Ident,
+    // TODO: add later.
+    //pub args: Option<Box<GenericArgs>>,
+}
+
+/// The generic arguments and associated item constraints of a path segment.
+///
+/// E.g., `<A, B>` as in `Foo<A, B>`.
+#[derive(Debug)]
+pub enum GenericArgs {
+    /// The `<A, B, C>` in `foo::bar::baz::<A, B, C>`.
+    AngleBracketed(AngleBracketedArgs),
+}
+
+/// A path like `Foo<T, E>`.
+#[derive(Debug)]
+pub struct AngleBracketedArgs {
+    /// The overall span.
+    pub span: Span,
+    /// The comma separated parts in the `<...>`.
+    pub args: Vec<AngleBracketedArg>,
+}
+
+/// Either an argument for a generic parameter or a constraint on an associated item.
+#[derive(Debug)]
+pub enum AngleBracketedArg {
+    /// A generic argument for a generic parameter.
+    Arg(GenericArg),
+}
+
+/// Concrete argument in the sequence of generic args.
+#[derive(Debug)]
+pub enum GenericArg {
+    /// `Bar` in `Foo<Bar>`.
+    Type(Box<Ty>),
+}
+
+#[derive(Debug)]
+pub struct Ty {
+    pub kind: TyKind,
+    pub span: Span,
+}
+
+#[derive(Debug)]
+pub enum TyKind {
+    /// A path (`module::module::...::Type`).
+    ///
+    /// Type parameters are stored in the `Path` itself.
+    Path(Path),
+}
+
+/// Local represents a `var` statement. e.g. `var mut <ident>:<ty> = <expr>;`.
+pub struct Local {
+    pub binding_mode: BindingMode,
+    pub ident: Ident,
+    pub ty: Option<Box<Ty>>,
+    pub kind: LocalKind,
+    pub span: Span,
+}
+
+pub enum LocalKind {
+    /// Local declaration.
+    /// Example: `let x: int;`
+    Decl,
+    /// Local declaration with an initializer.
+    /// Example: `let x: int = y;`
+    Init(Box<Expr>),
+}
+
+#[derive(Debug, EnumString, AsRefStr, PartialEq)]
+#[strum(serialize_all = "lowercase")] // This ensures matching with lowercase strings.
+pub enum PrimitiveTy {
+    Int,
+    Float,
+    Bool,
+    Char,
 }
 
 #[derive(Debug)]
