@@ -339,12 +339,12 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
 
     fn cook_raw_ident(&mut self, content: &'src str) -> TokenKind {
         let symbol: Symbol = content.into();
-        TokenKind::Ident(symbol, IdentIsRaw::No)
+        TokenKind::Ident(symbol, IdentIsRaw::Yes)
     }
 
     fn cook_ident(&mut self, content: &'src str) -> TokenKind {
         let symbol: Symbol = content.into();
-        TokenKind::Ident(symbol, IdentIsRaw::Yes)
+        TokenKind::Ident(symbol, IdentIsRaw::No)
     }
 
     fn cook_doc_comment(

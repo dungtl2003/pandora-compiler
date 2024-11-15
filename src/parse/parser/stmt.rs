@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Stmt, TokenKind},
+    ast::{BindingMode, Local, LocalKind, Mutability, Stmt, StmtKind, TokenKind},
     kw::Keyword,
 };
 
@@ -32,10 +32,12 @@ use super::{PResult, Parser};
 //
 impl Parser<'_> {
     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
-        if self.is_keyword_ahead(&[Keyword::Var]) {
+        if self.token.is_keyword(Keyword::Var) {
             self.parse_var_declaration_stmt()
+        } else if self.token.can_begin_expr() {
+            self.parse_stmt_expr()
         } else {
-            todo!();
+            unreachable!();
         }
     }
 
@@ -47,27 +49,71 @@ impl Parser<'_> {
         todo!();
     }
 
+    pub fn parse_stmt_expr(&mut self) -> PResult<Box<Stmt>> {
+        let expr = self.parse_expr()?;
+        let span = expr.span;
+        let stmt = Box::new(Stmt {
+            kind: StmtKind::Expr(expr),
+            span,
+        });
+        self.advance();
+        Ok(stmt)
+    }
+
     /// variable_declaration = 'var' 'mut'? identifier: type_specifier ('=' expression)? ';'
     pub fn parse_var_declaration_stmt(&mut self) -> PResult<Box<Stmt>> {
-        assert!(self.look_ahead(1, |tok| tok.is_keyword(Keyword::Var)));
-        self.advance(); // `var`
+        debug_assert!(self.token.is_keyword(Keyword::Var));
 
-        if self.look_ahead(1, |tok| tok.is_keyword(Keyword::Mut)) {
-            self.advance(); // `mut`
-        }
+        let start = self.token.span;
+        let binding_mode = if self.is_keyword_ahead(&[Keyword::Mut]) {
+            self.advance(); // 'mut'
+            BindingMode(Mutability::Mutable)
+        } else {
+            BindingMode(Mutability::Immutable)
+        };
 
-        if !self.look_ahead(1, |tok| tok.is_ident()) {
+        if !self.is_ident_ahead() {
             return Err("Expected identifier".into());
         }
         self.advance(); // identifier
-        let (ident, _) = self.token.ident().unwrap();
+        let ident = self.token.ident().unwrap().0;
 
         if !self.look_ahead(1, |tok| tok.kind == TokenKind::Colon) {
-            return Err("Expected `:`".into());
+            return Err("Expected ':'".into());
         }
+        self.advance(); // ':'
 
-        self.advance(); // `:`
+        self.advance(); // type
+        let ty = self.parse_ty()?;
 
-        todo!();
+        let init = if self.token.kind == TokenKind::Eq {
+            self.advance(); // expr
+            Some(self.parse_expr()?)
+        } else {
+            None
+        };
+
+        if self.token.kind != TokenKind::Semicolon {
+            return Err("Expected ';'".into());
+        }
+        let kind = if let Some(init) = init {
+            LocalKind::Init(init)
+        } else {
+            LocalKind::Decl
+        };
+        let span = start.to(self.token.span);
+        let local = Local {
+            binding_mode,
+            ident,
+            ty,
+            kind,
+            span,
+        };
+
+        self.advance();
+        Ok(Box::new(Stmt {
+            kind: StmtKind::Var(Box::new(local)),
+            span,
+        }))
     }
 }

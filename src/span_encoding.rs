@@ -49,6 +49,7 @@ impl Span {
 }
 
 impl Display for Span {
+    /// Formats the span as `[offset (inclusive), end (exclusive)]`.
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "[{}, {}]", self.offset, self.end())
     }

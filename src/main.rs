@@ -16,8 +16,10 @@ use std::sync::Arc;
 fn main() {
     let file_path = "src/trash/".to_string();
     let file_names = vec![
+        "program.box",
+        //"var_decl.box",
         //"path.box",
-        "expr.box",
+        //"expr.box",
         //"test.box",
         //"main.box",
         //"unterminated_block_comment.box",
@@ -38,10 +40,10 @@ fn main() {
             file: Arc::new(source),
         };
         let session = session_global::SessionGlobal::new();
-        //print_lex_2(&data,emitter);
+        //print_lex_2(&data, emitter, &session);
         //print_lex_3(&data, emitter);
-        print_parse_expr(&data, emitter, &session);
         //print_parse_path(&data, emitter);
+        print_parse_stmts(&data, emitter, &session);
         println!("================ END ================");
     }
 }
@@ -79,15 +81,14 @@ fn print_parse_path<'sess>(
     println!("{}", printer.output);
 }
 
-fn print_parse_expr<'sess>(
+fn print_parse_stmts<'sess>(
     data: &str,
     emitter: ErrorHandler,
     session: &'sess session_global::SessionGlobal,
 ) {
     let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
-    let mut parser = parse::parser::Parser::new(tokens, session);
-    let expr = parser.parse_expr().unwrap();
+    let stmts = parse::parser::parse(tokens, session).unwrap();
     let mut printer = ast::pretty_print::Printer::new();
-    printer.print_expr(&expr);
+    printer.print_stmts(&stmts);
     println!("{}", printer.output);
 }

@@ -8,12 +8,25 @@ use symbol::Symbol;
 
 use crate::{
     ast::{
-        DelimSpan, Delimiter, Spacing, Token, TokenKind, TokenStream, TokenTree, TokenTreeCursor,
+        DelimSpan, Delimiter, Spacing, Stmt, Token, TokenKind, TokenStream, TokenTree,
+        TokenTreeCursor,
     },
     kw::{self, Keyword},
     session_global::SessionGlobal,
     span_encoding::DUMMY_SP,
 };
+
+pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<Stmt>>> {
+    let mut stmts: Vec<Box<Stmt>> = Vec::new();
+    let mut parser = Parser::new(tokens, session);
+
+    while parser.token.kind != TokenKind::Eof {
+        let stmt = parser.parse_stmt()?;
+        stmts.push(stmt);
+    }
+
+    Ok(stmts)
+}
 
 pub struct Parser<'sess> {
     pub session: &'sess SessionGlobal,
@@ -91,6 +104,10 @@ impl<'sess> Parser<'sess> {
                 false
             }
         })
+    }
+
+    pub fn is_ident_ahead(&mut self) -> bool {
+        self.look_ahead(1, |tok| matches!(tok.kind, TokenKind::Ident(..)))
     }
 
     fn expect(&mut self, expected: TokenKind) -> PResult<()> {
