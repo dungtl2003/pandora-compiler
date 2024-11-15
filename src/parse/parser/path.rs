@@ -4,7 +4,7 @@ use crate::ast::{
 
 use super::{PResult, Parser};
 
-impl Parser {
+impl Parser<'_> {
     pub fn parse_path(&mut self) -> PResult<Box<Path>> {
         let start = self.token.span;
         let segments = self.parse_path_segments()?;

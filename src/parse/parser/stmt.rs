@@ -1,9 +1,6 @@
-use std::str::FromStr;
-
 use crate::{
-    ast::{Ident, PrimitiveTy, Stmt, TokenKind, Ty, TyKind},
+    ast::{Stmt, TokenKind},
     kw::Keyword,
-    session_global::SessionGlobal,
 };
 
 use super::{PResult, Parser};
@@ -33,7 +30,7 @@ use super::{PResult, Parser};
 //                block_statement
 //
 //
-impl Parser {
+impl Parser<'_> {
     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
         if self.is_keyword_ahead(&[Keyword::Var]) {
             self.parse_var_declaration_stmt()

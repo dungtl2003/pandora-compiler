@@ -2,7 +2,7 @@ use crate::ast::{Ty, TyKind};
 
 use super::{PResult, Parser};
 
-impl Parser {
+impl Parser<'_> {
     pub fn parse_ty(&mut self) -> PResult<Box<Ty>> {
         let path = self.parse_path()?;
         let span = path.span;

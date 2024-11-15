@@ -1,6 +1,5 @@
 mod ast;
 mod error_handler;
-mod interner;
 #[path = "keyword.rs"]
 mod kw;
 mod lexer;
@@ -38,29 +37,41 @@ fn main() {
         let emitter = ErrorHandler {
             file: Arc::new(source),
         };
+        let session = session_global::SessionGlobal::new();
         //print_lex_2(&data,emitter);
         //print_lex_3(&data, emitter);
-        print_parse_expr(&data, emitter);
+        print_parse_expr(&data, emitter, &session);
         //print_parse_path(&data, emitter);
         println!("================ END ================");
     }
 }
 
-fn print_lex_2(data: &str, emitter: ErrorHandler) {
-    let tokens = parse::lexer::tokenize(data, emitter);
+fn print_lex_2<'sess>(
+    data: &str,
+    emitter: ErrorHandler,
+    session: &'sess session_global::SessionGlobal,
+) {
+    let tokens = parse::lexer::tokenize(data, emitter, session);
     for token in tokens {
         println!("{:?}", token);
     }
 }
 
-fn print_lex_3(data: &str, emitter: ErrorHandler) {
-    let tokens = parse::lexer::lex_token_tree(&data, emitter).unwrap();
+fn print_lex_3<'sess>(
+    data: &str,
+    emitter: ErrorHandler,
+    session: &'sess session_global::SessionGlobal,
+) {
+    let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
     crate::ast::pprint(&tokens);
 }
 
-fn print_parse_path(data: &str, emitter: ErrorHandler) {
-    let session = session_global::SessionGlobal::new();
-    let tokens = parse::lexer::lex_token_tree(&data, emitter).unwrap();
+fn print_parse_path<'sess>(
+    data: &str,
+    emitter: ErrorHandler,
+    session: &'sess session_global::SessionGlobal,
+) {
+    let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
     let mut parser = parse::parser::Parser::new(tokens, session);
     let path = parser.parse_path().unwrap();
     let mut printer = ast::pretty_print::Printer::new();
@@ -68,9 +79,12 @@ fn print_parse_path(data: &str, emitter: ErrorHandler) {
     println!("{}", printer.output);
 }
 
-fn print_parse_expr(data: &str, emitter: ErrorHandler) {
-    let session = session_global::SessionGlobal::new();
-    let tokens = parse::lexer::lex_token_tree(&data, emitter).unwrap();
+fn print_parse_expr<'sess>(
+    data: &str,
+    emitter: ErrorHandler,
+    session: &'sess session_global::SessionGlobal,
+) {
+    let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
     let mut parser = parse::parser::Parser::new(tokens, session);
     let expr = parser.parse_expr().unwrap();
     let mut printer = ast::pretty_print::Printer::new();
