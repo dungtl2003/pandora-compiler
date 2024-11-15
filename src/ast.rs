@@ -41,9 +41,9 @@ pub enum StmtKind {
     /// An expression statement: `expr;`.
     Expr(Box<Expr>),
     /// A block statement: `{ stmt* }`.
-    Block(Vec<Stmt>),
+    Block(Vec<Box<Stmt>>),
     /// An `if` statement: 'if' expr block ('elif' expr block)* ('else' block)?
-    If(Vec<(Expr, Vec<Stmt>)>, Option<Vec<Stmt>>),
+    If(Vec<(Box<Expr>, Vec<Box<Stmt>>)>, Option<Vec<Box<Stmt>>>),
     /// A 'break' statement.
     Break,
     /// A 'continue' statement.

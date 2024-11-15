@@ -1,12 +1,14 @@
 use crate::ast::{
     AngleBracketedArg, AngleBracketedArgs, Expr, ExprKind, GenericArg, GenericArgs, Path,
-    PathSegment, Ty, TyKind,
+    PathSegment, Ty, TyKind, Stmt
 };
+use crate::span_encoding::Span;
 
 pub trait Visitor<'ast>: Sized {
     fn visit_expr(&mut self, expr: &'ast Expr) {
         walk_expr(self, expr);
     }
+
 
     fn visit_path(&mut self, path: &'ast Path) {
         walk_path(self, path);
@@ -35,6 +37,10 @@ pub trait Visitor<'ast>: Sized {
     fn visit_ty(&mut self, ty: &'ast Ty) {
         walk_ty(self, ty);
     }
+
+    fn visit_stmt(&mut self, stmt: &'ast Stmt);
+    fn visit_stmt_if(&mut self, if_branch: &Vec<(Box<Expr>, Vec<Box<Stmt>>)>, else_branch: &Option<Vec<Box<Stmt>>>, span: &Span);
+    fn visit_stmt_block(&mut self, stmt: &Vec<Box<Stmt>>);
 }
 
 pub fn walk_path<'ast, V: Visitor<'ast>>(visitor: &mut V, path: &'ast Path) {
@@ -85,6 +91,7 @@ pub fn walk_ty<'ast, V: Visitor<'ast>>(visitor: &mut V, ty: &'ast Ty) {
     match &ty.kind {
         TyKind::Path(path) => visitor.visit_path(path),
     }
+
 }
 
 pub fn walk_expr<'ast, V: Visitor<'ast>>(visitor: &mut V, expression: &'ast Expr) {

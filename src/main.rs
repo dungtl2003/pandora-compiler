@@ -27,6 +27,7 @@ fn main() {
         //"too_many_hashes_raw_str.box",
         //"unterminated_char.box",
         //"unescape_error.box",
+        "if_stmt.box",
     ];
 
     for file_name in file_names {
@@ -42,6 +43,21 @@ fn main() {
         //print_lex_3(&data, emitter);
         print_parse_expr(&data, emitter);
         //print_parse_path(&data, emitter);
+        
+        // let tokens = parse::lexer::lex_token_tree(&data, emitter).unwrap();
+        // let mut parser = parse::parser::Parser::new(tokens);
+        // // let expr = parser.parse_expr().unwrap();
+        // let stmt = parser.parse_stmt().unwrap();
+        // let mut printer = ast::pretty_print::Printer::new();
+        // printer.print_stmt(&stmt);
+        // println!("{}", printer.output);
+
+        //ast::pprint(&tokens);
+        // let tokens = lexer::tokenize(&data);
+        // for token in tokens.iter() {
+        //    println!("{token:?}");
+        // }
+        //
         println!("================ END ================");
     }
 }

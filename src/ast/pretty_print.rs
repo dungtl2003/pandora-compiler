@@ -1,6 +1,11 @@
 use crate::{session_global::SessionGlobal, visitor::Visitor};
 
 use super::{Expr, ExprKind, GenericArgs, Path, PathSegment, Ty};
+use std::os::linux::raw::stat;
+use crate::span_encoding::Span;
+use crate::visitor::Visitor;
+
+use super::{Expr, ExprKind, Stmt, StmtKind};
 
 pub struct Printer {
     pub output: String,
@@ -23,6 +28,10 @@ impl Printer {
 
     pub fn print_path(&mut self, path: &Path) {
         self.visit_path(path);
+    }
+    
+    pub fn print_stmt(&mut self, stmt: &super::Stmt) {
+        self.visit_stmt(stmt);
     }
 }
 
@@ -116,6 +125,75 @@ impl<'ast> Visitor<'ast> for Printer {
             super::TyKind::Path(path) => {
                 self.visit_path(path);
             }
+        }
+        self.indent -= self.indent_spaces;
+    }
+
+    fn visit_stmt(&mut self, stmt: &'ast Stmt) {
+        let Stmt { kind, span } = stmt;
+
+        match kind {
+            StmtKind::If(if_branch, else_branch) => self.visit_stmt_if(if_branch,else_branch,span),
+            StmtKind::Expr(_) => {}
+            StmtKind::Block(block) => self.visit_stmt_block(block),
+            StmtKind::Break => {}
+            StmtKind::Continue => {}
+            StmtKind::Return(_) => {}
+            StmtKind::Var(_) => {}
+        }
+    }
+
+    fn visit_stmt_if(&mut self, if_branch: &Vec<(Box<Expr>, Vec<Box<Stmt>>)>, else_branch: &Option<Vec<Box<Stmt>>>, span: &Span) {
+        let mut if_branch_iter = if_branch.iter();
+        let Some(first_item) = if_branch_iter.next() else { return };
+
+        self.output
+            .push_str(&format!("{}If statement: {} \n", " ".repeat(self.indent),span));
+
+        self.indent += self.indent_spaces;
+
+        self.output
+            .push_str(&format!("{}If branch: \n", " ".repeat(self.indent)));
+
+        self.indent += self.indent_spaces;
+
+        self.output
+            .push_str(&format!("{}Condition: ", " ".repeat(self.indent)));
+        self.visit_expr(&first_item.0);
+        self.output
+            .push_str(&format!("{}Block: \n", " ".repeat(self.indent)));
+        self.visit_stmt_block(&first_item.1);
+
+        self.indent -= self.indent_spaces;
+
+        while let Some(item) = if_branch_iter.next() {
+            self.output
+                .push_str(&format!("{}Elif branch: \n", " ".repeat(self.indent)));
+
+            self.indent += self.indent_spaces;
+
+            self.output
+                .push_str(&format!("{}Condition: ", " ".repeat(self.indent)));
+            self.visit_expr(&item.0);
+            self.output
+                .push_str(&format!("{}Block: \n", " ".repeat(self.indent)));
+            self.visit_stmt_block(&item.1);
+
+            self.indent -= self.indent_spaces;
+        }
+
+        if let Some(else_block) = else_branch {
+            self.output
+                .push_str(&format!("{}Else branches: \n", " ".repeat(self.indent)));
+            self.visit_stmt_block(else_block);
+        }
+        self.indent -= self.indent_spaces;
+    }
+
+    fn visit_stmt_block(&mut self, stmt: &Vec<Box<Stmt>>) {
+        self.indent += self.indent_spaces;
+        for stmt in stmt{
+            self.visit_stmt(stmt);
         }
         self.indent -= self.indent_spaces;
     }
