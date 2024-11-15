@@ -60,15 +60,13 @@ impl Parser {
         }
 
         if !self.look_ahead(1, |tok| tok.is_ident()) {
-            println!("Expected an identifier");
-            return Err(());
+            return Err("Expected identifier".into());
         }
         self.advance(); // identifier
         let (ident, _) = self.token.ident().unwrap();
 
         if !self.look_ahead(1, |tok| tok.kind == TokenKind::Colon) {
-            println!("Expected `:`");
-            return Err(());
+            return Err("Expected `:`".into());
         }
 
         self.advance(); // `:`

@@ -18,38 +18,79 @@ impl Parser {
         loop {
             let segment = self.parse_path_segment()?;
             segments.push(segment);
-            if !self.look_ahead(1, |tok| tok.kind == TokenKind::ColonColon) {
-                break;
+            match self.token.kind {
+                TokenKind::ColonColon => self.advance(), // `::`
+                _ => break,
             }
-            self.advance(); // `::`
         }
 
         Ok(segments)
     }
 
     fn parse_path_segment(&mut self) -> PResult<PathSegment> {
-        if !self.look_ahead(1, |tok| tok.is_ident()) {
-            return Err(());
+        match self.token.kind {
+            TokenKind::Ident(..) => {}
+            _ => return Err("Expected identifier".into()),
         }
+
         self.advance(); // identifier
-        Ok(PathSegment {
-            ident: self.token.ident().unwrap().0,
-        })
+        let ident = self.prev_token.ident().unwrap().0;
+        let args = if self.look_ahead(1, |tok| tok.kind == TokenKind::Lt) {
+            // `<`
+            Some(self.parse_generic_args()?)
+        } else {
+            None
+        };
+
+        Ok(PathSegment { ident, args })
     }
 
     fn parse_generic_args(&mut self) -> PResult<Box<GenericArgs>> {
-        unimplemented!();
+        debug_assert!(self.look_ahead(1, |tok| tok.kind == TokenKind::Lt)); // `<`
+        self.parse_angle_brackets_args()
+            .map(|args| Box::new(GenericArgs::AngleBracketed(args)))
     }
 
     fn parse_angle_brackets_args(&mut self) -> PResult<AngleBracketedArgs> {
-        unimplemented!();
+        debug_assert!(self.look_ahead(1, |tok| tok.kind == TokenKind::Lt)); // `<`
+        let start = self.token.span;
+        self.advance();
+        let mut args: Vec<AngleBracketedArg> = Vec::new();
+
+        loop {
+            if self.look_ahead(1, |tok| tok.kind == TokenKind::Eof) {
+                return Err("Unexpected EOF".into());
+            }
+            if self.look_ahead(1, |tok| tok.kind == TokenKind::Gt) {
+                break;
+            }
+
+            let arg = self.parse_angle_bracketed_arg()?;
+            args.push(arg);
+            if !self.look_ahead(1, |tok| tok.kind == TokenKind::Comma) {
+                break;
+            }
+            self.advance(); // `,`
+        }
+
+        if !self.look_ahead(1, |tok| tok.kind == TokenKind::Gt) {
+            // `>`
+            return Err("Expected `>`".into());
+        }
+
+        self.advance(); // `>`
+        let span = start.to(self.prev_token.span);
+        Ok(AngleBracketedArgs { span, args })
     }
 
     fn parse_angle_bracketed_arg(&mut self) -> PResult<AngleBracketedArg> {
-        unimplemented!();
+        let arg = self.parse_generic_arg()?;
+        Ok(AngleBracketedArg::Arg(arg))
     }
 
     fn parse_generic_arg(&mut self) -> PResult<GenericArg> {
-        unimplemented!();
+        let ty = self.parse_ty()?;
+
+        Ok(GenericArg::Type(ty))
     }
 }

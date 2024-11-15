@@ -17,6 +17,7 @@ use std::sync::Arc;
 fn main() {
     let file_path = "src/trash/".to_string();
     let file_names = vec![
+        "path.box",
         //"expr.box",
         //"test.box",
         //"main.box",
@@ -37,18 +38,30 @@ fn main() {
         let emitter = ErrorHandler {
             file: Arc::new(source),
         };
-        let tokens = parse::lexer::lex_token_tree(&data, emitter).unwrap();
-        let mut parser = parse::parser::Parser::new(tokens);
-        let expr = parser.parse_expr().unwrap();
-        let mut printer = ast::pretty_print::Printer::new();
-        printer.print_expr(&expr);
-        println!("{}", printer.output);
-        //ast::pprint(&tokens);
-        //let tokens = lexer::tokenize(&data);
-        //for token in tokens.iter() {
-        //    println!("{token:?}");
-        //}
-        //
+        //print_lex_2(&data,emitter);
+        //print_lex_3(&data, emitter);
+        print_parse_path(&data, emitter);
         println!("================ END ================");
     }
+}
+
+fn print_lex_2(data: &str, emitter: ErrorHandler) {
+    let tokens = parse::lexer::tokenize(data, emitter);
+    for token in tokens {
+        println!("{:?}", token);
+    }
+}
+
+fn print_lex_3(data: &str, emitter: ErrorHandler) {
+    let tokens = parse::lexer::lex_token_tree(&data, emitter).unwrap();
+    crate::ast::pprint(&tokens);
+}
+
+fn print_parse_path(data: &str, emitter: ErrorHandler) {
+    let tokens = parse::lexer::lex_token_tree(&data, emitter).unwrap();
+    let mut parser = parse::parser::Parser::new(tokens);
+    let path = parser.parse_path().unwrap();
+    let mut printer = ast::pretty_print::Printer::new();
+    printer.print_path(&path);
+    println!("{}", printer.output);
 }

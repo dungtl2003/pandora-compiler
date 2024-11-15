@@ -2,6 +2,7 @@ use crate::kw;
 use crate::session_global::SessionGlobal;
 use string_interner::{backend::BucketBackend, symbol::SymbolU32, StringInterner, Symbol as Sym};
 
+#[derive(Debug)]
 pub struct Interner {
     string_interner: StringInterner<BucketBackend<SymbolU32>>,
 }

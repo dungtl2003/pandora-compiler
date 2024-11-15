@@ -42,15 +42,18 @@ impl<'src> TokenTreesReader<'src> {
                 },
                 TokenKind::CloseDelim(_delim) => {
                     if !is_delimited {
-                        return (TokenStream::new(buf), Err(()));
+                        return (
+                            TokenStream::new(buf),
+                            Err("unexpected closing delimiter".into()),
+                        );
                     }
                     return (TokenStream::new(buf), Ok(()));
                 }
                 TokenKind::Eof => {
                     if is_delimited {
-                        return (TokenStream::new(buf), Ok(()));
+                        return (TokenStream::new(buf), Err("unexpected EOF".into()));
                     }
-                    return (TokenStream::new(buf), Err(()));
+                    return (TokenStream::new(buf), Ok(()));
                 }
                 _ => {
                     // Get the next normal token.
@@ -73,7 +76,7 @@ impl<'src> TokenTreesReader<'src> {
         // uses an incorrect delimiter.
         let (tts, res) = self.lex_token_trees(/* is_delimited */ true);
         if res.is_err() {
-            return Err(());
+            return Err(res.unwrap_err());
         }
 
         // Expand to cover the entire delimited token tree.

@@ -18,7 +18,7 @@ pub fn lex_token_tree<'src>(src: &'src str, emitter: ErrorHandler) -> PResult<To
 
     let (tokenstream, res) = tokentrees::TokenTreesReader::lex_all_token_trees(string_reader);
     if res.is_err() {
-        return Err(());
+        return Err(res.unwrap_err());
     }
 
     Ok(tokenstream)

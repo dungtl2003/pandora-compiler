@@ -8,7 +8,7 @@ use std::fmt::{Display, Formatter};
 
 pub use ident::Ident;
 use strum_macros::{AsRefStr, EnumString};
-pub use tokenstream::{DelimSpan, Spacing, TokenStream, TokenTree, TokenTreeCursor};
+pub use tokenstream::{pprint, DelimSpan, Spacing, TokenStream, TokenTree, TokenTreeCursor};
 
 pub use token::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,
@@ -75,8 +75,7 @@ pub struct Path {
 pub struct PathSegment {
     /// The identifier portion of this path segment.
     pub ident: Ident,
-    // TODO: add later.
-    //pub args: Option<Box<GenericArgs>>,
+    pub args: Option<Box<GenericArgs>>,
 }
 
 /// The generic arguments and associated item constraints of a path segment.

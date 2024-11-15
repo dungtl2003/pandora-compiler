@@ -254,9 +254,7 @@ impl Token {
     }
 
     /// Returns an identifier if this token is an identifier.
-    #[inline]
     pub fn ident(&self) -> Option<(Ident, IdentIsRaw)> {
-        // We avoid using `Token::uninterpolate` here because it's slow.
         match self.kind {
             Ident(name, is_raw) => Some((
                 Ident {

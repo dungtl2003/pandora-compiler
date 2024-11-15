@@ -96,7 +96,10 @@ impl Parser {
         if self.token.kind == expected {
             Ok(())
         } else {
-            Err(())
+            Err(format!(
+                "expected {:?}, found {:?}",
+                expected, self.token.kind
+            ))
         }
     }
 }
@@ -169,5 +172,5 @@ impl TokenCursor {
 }
 
 // TODO: Update later.
-pub type PError = ();
+pub type PError = String;
 pub type PResult<T> = Result<T, PError>;

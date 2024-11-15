@@ -6,12 +6,14 @@ use crate::interner::{Interner, Symbol};
 use miette::NamedSource;
 use std::sync::Once;
 
+#[derive(Debug)]
 pub struct SessionGlobal {
     pub source_map: SourceMap,
     pub interner: Interner,
     pub has_errors: bool,
 }
 
+#[derive(Debug)]
 pub struct SourceMap {
     pub files: Vec<SourceFile>,
 }
@@ -33,6 +35,7 @@ impl SessionGlobal {
                     has_errors: false,
                 };
 
+                println!("SessionGlobal: {:?}", session_global);
                 SESSION_GLOBAL.write(session_global);
             });
 
@@ -41,10 +44,12 @@ impl SessionGlobal {
     }
 
     pub fn intern(&mut self, string: &str) -> interner::Symbol {
+        println!("Interning: {}", string);
         self.interner.intern(string)
     }
 
     pub fn get(&mut self, symbol: Symbol) -> &str {
+        println!("Getting: {:?}", symbol);
         self.interner.get(symbol)
     }
 }
