@@ -16,6 +16,7 @@ use crate::{
 };
 
 pub struct Parser {
+    pub session: SessionGlobal,
     /// The current token.
     pub token: Token,
     /// The spacing for the current token.
@@ -27,8 +28,9 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(stream: TokenStream) -> Self {
+    pub fn new(stream: TokenStream, session: SessionGlobal) -> Self {
         let mut parser = Parser {
+            session,
             token: Token::dummy(),
             token_spacing: Spacing::Alone,
             prev_token: Token::dummy(),
@@ -74,12 +76,11 @@ impl Parser {
         looker(&token)
     }
 
-    pub fn is_keyword_ahead(&self, kws: &[Keyword]) -> bool {
+    pub fn is_keyword_ahead(&mut self, kws: &[Keyword]) -> bool {
         self.look_ahead(1, |tok| {
             if let TokenKind::Ident(ident, _) = tok.kind {
                 kws.iter().any(|kw| {
-                    let name = SessionGlobal::instance().get(ident);
-                    let res = kw::from_str(name);
+                    let res = kw::from_str(&ident);
                     if res.is_err() {
                         return false;
                     }
@@ -96,7 +97,10 @@ impl Parser {
         if self.token.kind == expected {
             Ok(())
         } else {
-            Err(())
+            Err(format!(
+                "expected {:?}, found {:?}",
+                expected, self.token.kind
+            ))
         }
     }
 }
@@ -169,5 +173,5 @@ impl TokenCursor {
 }
 
 // TODO: Update later.
-pub type PError = ();
+pub type PError = String;
 pub type PResult<T> = Result<T, PError>;

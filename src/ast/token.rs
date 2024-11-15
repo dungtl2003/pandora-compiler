@@ -1,10 +1,9 @@
 use core::fmt;
 use std::fmt::{Display, Formatter};
+use symbol::Symbol;
 
 use crate::{
-    interner::Symbol,
     kw::{self, Keyword},
-    session_global::SessionGlobal,
     span_encoding::{Span, DUMMY_SP},
 };
 
@@ -254,9 +253,7 @@ impl Token {
     }
 
     /// Returns an identifier if this token is an identifier.
-    #[inline]
     pub fn ident(&self) -> Option<(Ident, IdentIsRaw)> {
-        // We avoid using `Token::uninterpolate` here because it's slow.
         match self.kind {
             Ident(name, is_raw) => Some((
                 Ident {
@@ -276,13 +273,12 @@ impl Token {
 
     pub fn is_keyword(&self, keyword: Keyword) -> bool {
         self.is_non_raw_ident_where(|ident| {
-            let name = SessionGlobal::instance().get(ident.name);
-            let res = kw::from_str(name);
+            let res = kw::from_str(&ident.name);
             if res.is_err() {
                 return false;
             }
 
-            res.unwrap() == keyword
+            keyword == res.unwrap()
         })
     }
 
@@ -294,8 +290,5 @@ impl Token {
 pub fn ident_can_begin_expr(name: Symbol, span: Span, is_raw: IdentIsRaw) -> bool {
     let ident_token = Token::new(Ident(name, is_raw), span);
 
-    ident_token.is_non_raw_ident_where(|ident| {
-        let name = SessionGlobal::instance().get(ident.name);
-        kw::is_keyword(name)
-    })
+    ident_token.is_non_raw_ident_where(|ident| kw::is_keyword(&ident.name))
 }

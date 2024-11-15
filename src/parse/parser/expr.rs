@@ -125,7 +125,7 @@ impl Parser {
             }
             _ => {
                 println!("Unexpected token: {:?}", self.token);
-                Err(())
+                Err("Unexpected token".into())
             }
         }
     }
