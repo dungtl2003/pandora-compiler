@@ -1,0 +1,2 @@
+var name: std::String = "Dung Tran";
+var age: int = 18 + 3;

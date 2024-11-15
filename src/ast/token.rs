@@ -231,15 +231,9 @@ impl Token {
         match self.kind {
             Ident(name, is_raw)              =>
                 ident_can_begin_expr(name, self.span, is_raw), // value name or keyword
-            //OpenDelim(..)                     | // tuple, array or block
             Literal(..)                       | // literal
             Not                               | // operator not
-            BinOp(Minus)                      | // unary minus
-            BinOp(Star)                       | // dereference
-            BinOp(Or) | OrOr                  | // closure
-            BinOp(And)                        | // reference
-            AndAnd                            | // double reference
-            Lt | BinOp(Shl)                   | // associated path
+            BinOp(Minus)                      => true, // unary minus
             _ => false,
         }
     }

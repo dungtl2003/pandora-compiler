@@ -4,7 +4,7 @@ use crate::ast::{
 
 use super::{PResult, Parser};
 
-impl Parser {
+impl Parser<'_> {
     pub fn parse_path(&mut self) -> PResult<Box<Path>> {
         let start = self.token.span;
         let segments = self.parse_path_segments()?;
@@ -33,10 +33,9 @@ impl Parser {
             _ => return Err("Expected identifier".into()),
         }
 
-        self.advance(); // identifier
-        let ident = self.prev_token.ident().unwrap().0;
-        let args = if self.look_ahead(1, |tok| tok.kind == TokenKind::Lt) {
-            // `<`
+        let ident = self.token.ident().unwrap().0;
+        self.advance();
+        let args = if self.token.kind == TokenKind::Lt {
             Some(self.parse_generic_args()?)
         } else {
             None
@@ -46,40 +45,38 @@ impl Parser {
     }
 
     fn parse_generic_args(&mut self) -> PResult<Box<GenericArgs>> {
-        debug_assert!(self.look_ahead(1, |tok| tok.kind == TokenKind::Lt)); // `<`
+        debug_assert!(self.token.kind == TokenKind::Lt); // `<`
         self.parse_angle_brackets_args()
             .map(|args| Box::new(GenericArgs::AngleBracketed(args)))
     }
 
     fn parse_angle_brackets_args(&mut self) -> PResult<AngleBracketedArgs> {
-        debug_assert!(self.look_ahead(1, |tok| tok.kind == TokenKind::Lt)); // `<`
+        debug_assert!(self.token.kind == TokenKind::Lt); // `<`
         let start = self.token.span;
-        self.advance();
         let mut args: Vec<AngleBracketedArg> = Vec::new();
 
         loop {
-            if self.look_ahead(1, |tok| tok.kind == TokenKind::Eof) {
+            self.advance();
+            if self.token.kind == TokenKind::Eof {
                 return Err("Unexpected EOF".into());
             }
-            if self.look_ahead(1, |tok| tok.kind == TokenKind::Gt) {
+            if self.token.kind == TokenKind::Gt {
                 break;
             }
 
             let arg = self.parse_angle_bracketed_arg()?;
             args.push(arg);
-            if !self.look_ahead(1, |tok| tok.kind == TokenKind::Comma) {
+            if self.token.kind == TokenKind::Comma {
                 break;
             }
-            self.advance(); // `,`
         }
 
-        if !self.look_ahead(1, |tok| tok.kind == TokenKind::Gt) {
-            // `>`
+        if self.token.kind != TokenKind::Gt {
             return Err("Expected `>`".into());
         }
 
-        self.advance(); // `>`
-        let span = start.to(self.prev_token.span);
+        let span = start.to(self.token.span);
+        self.advance();
         Ok(AngleBracketedArgs { span, args })
     }
 

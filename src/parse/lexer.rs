@@ -7,15 +7,18 @@ use crate::ast::{
     TokenStream,
 };
 use crate::error_handler::ErrorHandler;
-use crate::interner::Interner;
 use crate::lexer::{self, Base, Cursor, EscapeError, RawStrError};
-use crate::session_global::BytePos;
+use crate::session_global::{BytePos, SessionGlobal};
 use crate::span_encoding::Span;
 
 use super::parser::PResult;
 
-pub fn lex_token_tree<'src>(src: &'src str, emitter: ErrorHandler) -> PResult<TokenStream> {
-    let string_reader = StringReader::new(src, emitter);
+pub fn lex_token_tree<'sess, 'src>(
+    src: &'src str,
+    emitter: ErrorHandler,
+    session: &'sess SessionGlobal,
+) -> PResult<TokenStream> {
+    let string_reader = StringReader::new(src, session, emitter);
 
     let (tokenstream, res) = tokentrees::TokenTreesReader::lex_all_token_trees(string_reader);
     if res.is_err() {
@@ -25,9 +28,13 @@ pub fn lex_token_tree<'src>(src: &'src str, emitter: ErrorHandler) -> PResult<To
     Ok(tokenstream)
 }
 
-pub fn tokenize<'src>(src: &'src str, emitter: ErrorHandler) -> Vec<Token> {
+pub fn tokenize<'sess, 'src>(
+    src: &'src str,
+    emitter: ErrorHandler,
+    session: &'sess SessionGlobal,
+) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
-    let mut string_reader = StringReader::new(src, emitter);
+    let mut string_reader = StringReader::new(src, session, emitter);
 
     loop {
         let token = string_reader.next_token();
@@ -40,21 +47,25 @@ pub fn tokenize<'src>(src: &'src str, emitter: ErrorHandler) -> Vec<Token> {
     }
 }
 
-struct StringReader<'src> {
+struct StringReader<'sess, 'src> {
     src: &'src str,
     pos: BytePos,
     cursor: Cursor<'src>,
-    intener: Interner,
+    session: &'sess SessionGlobal,
     emitter: ErrorHandler,
 }
 
-impl<'src> StringReader<'src> {
-    fn new(src: &'src str, emitter: ErrorHandler) -> StringReader {
+impl<'sess, 'src> StringReader<'sess, 'src> {
+    fn new(
+        src: &'src str,
+        session: &'sess SessionGlobal,
+        emitter: ErrorHandler,
+    ) -> StringReader<'sess, 'src> {
         StringReader {
             src,
             pos: 0,
             cursor: Cursor::new(src),
-            intener: Interner::new(),
+            session,
             emitter,
         }
     }
@@ -328,12 +339,12 @@ impl<'src> StringReader<'src> {
 
     fn cook_raw_ident(&mut self, content: &'src str) -> TokenKind {
         let symbol: Symbol = content.into();
-        TokenKind::Ident(symbol, IdentIsRaw::No)
+        TokenKind::Ident(symbol, IdentIsRaw::Yes)
     }
 
     fn cook_ident(&mut self, content: &'src str) -> TokenKind {
         let symbol: Symbol = content.into();
-        TokenKind::Ident(symbol, IdentIsRaw::Yes)
+        TokenKind::Ident(symbol, IdentIsRaw::No)
     }
 
     fn cook_doc_comment(

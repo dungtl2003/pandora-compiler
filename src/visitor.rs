@@ -1,6 +1,6 @@
 use crate::ast::{
-    AngleBracketedArg, AngleBracketedArgs, Expr, ExprKind, GenericArg, GenericArgs, Path,
-    PathSegment, Ty, TyKind, Stmt
+    AngleBracketedArg, AngleBracketedArgs, Expr, ExprKind, GenericArg, GenericArgs, Local,
+    LocalKind, Path, PathSegment, Stmt, StmtKind, Ty, TyKind,
 };
 use crate::span_encoding::Span;
 
@@ -38,9 +38,49 @@ pub trait Visitor<'ast>: Sized {
         walk_ty(self, ty);
     }
 
-    fn visit_stmt(&mut self, stmt: &'ast Stmt);
     fn visit_stmt_if(&mut self, if_branch: &Vec<(Box<Expr>, Vec<Box<Stmt>>)>, else_branch: &Option<Vec<Box<Stmt>>>, span: &Span);
     fn visit_stmt_block(&mut self, stmt: &Vec<Box<Stmt>>);
+    fn visit_stmt(&mut self, stmt: &'ast Stmt) {
+        walk_stmt(self, stmt);
+    }
+
+    fn visit_stmt_var(&mut self, local: &'ast Local) {
+        walk_stmt_var(self, local);
+    }
+
+    fn visit_stmt_expr(&mut self, expr: &'ast Expr) {
+        walk_stmt_expr(self, expr);
+    }
+}
+
+pub fn walk_stmt<'ast, V: Visitor<'ast>>(visitor: &mut V, stmt: &'ast Stmt) {
+    let Stmt { kind, span: _ } = stmt;
+    match kind {
+        StmtKind::Expr(expr) => visitor.visit_expr(expr),
+        StmtKind::Var(local) => visitor.visit_stmt_var(local),
+        _ => {}
+    }
+}
+
+pub fn walk_stmt_expr<'ast, V: Visitor<'ast>>(visitor: &mut V, expr: &'ast Expr) {
+    visitor.visit_expr(expr);
+}
+
+pub fn walk_stmt_var<'ast, V: Visitor<'ast>>(visitor: &mut V, local: &'ast Local) {
+    let Local {
+        binding_mode: _,
+        ident: _,
+        ty,
+        kind,
+        span: _,
+    } = local;
+
+    visitor.visit_ty(ty);
+
+    match kind {
+        LocalKind::Init(expr) => visitor.visit_expr(expr),
+        LocalKind::Decl => {}
+    }
 }
 
 pub fn walk_path<'ast, V: Visitor<'ast>>(visitor: &mut V, path: &'ast Path) {

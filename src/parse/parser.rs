@@ -4,19 +4,32 @@ mod stmt;
 mod ty;
 
 use std::mem;
+use symbol::Symbol;
 
 use crate::{
     ast::{
-        DelimSpan, Delimiter, Spacing, Token, TokenKind, TokenStream, TokenTree, TokenTreeCursor,
+        DelimSpan, Delimiter, Spacing, Stmt, Token, TokenKind, TokenStream, TokenTree,
+        TokenTreeCursor,
     },
-    interner::Symbol,
     kw::{self, Keyword},
     session_global::SessionGlobal,
     span_encoding::DUMMY_SP,
 };
 
-pub struct Parser {
-    pub session: SessionGlobal,
+pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<Stmt>>> {
+    let mut stmts: Vec<Box<Stmt>> = Vec::new();
+    let mut parser = Parser::new(tokens, session);
+
+    while parser.token.kind != TokenKind::Eof {
+        let stmt = parser.parse_stmt()?;
+        stmts.push(stmt);
+    }
+
+    Ok(stmts)
+}
+
+pub struct Parser<'sess> {
+    pub session: &'sess SessionGlobal,
     /// The current token.
     pub token: Token,
     /// The spacing for the current token.
@@ -27,8 +40,8 @@ pub struct Parser {
     token_cursor: TokenCursor,
 }
 
-impl Parser {
-    pub fn new(stream: TokenStream, session: SessionGlobal) -> Self {
+impl<'sess> Parser<'sess> {
+    pub fn new(stream: TokenStream, session: &'sess SessionGlobal) -> Self {
         let mut parser = Parser {
             session,
             token: Token::dummy(),
@@ -91,6 +104,10 @@ impl Parser {
                 false
             }
         })
+    }
+
+    pub fn is_ident_ahead(&mut self) -> bool {
+        self.look_ahead(1, |tok| matches!(tok.kind, TokenKind::Ident(..)))
     }
 
     fn expect(&mut self, expected: TokenKind) -> PResult<()> {

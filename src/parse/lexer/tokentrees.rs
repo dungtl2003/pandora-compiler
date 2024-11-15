@@ -6,8 +6,8 @@ use crate::{
 
 use super::StringReader;
 
-pub struct TokenTreesReader<'src> {
-    string_reader: StringReader<'src>,
+pub struct TokenTreesReader<'sess, 'src> {
+    string_reader: StringReader<'sess, 'src>,
     /// The "next" token, which has been obtained from the `StringReader` but
     /// not yet handled by the `TokenTreesReader`.
     token: Token,
@@ -16,8 +16,10 @@ pub struct TokenTreesReader<'src> {
     open_delims: Vec<(Delimiter, Span)>,
 }
 
-impl<'src> TokenTreesReader<'src> {
-    pub fn lex_all_token_trees(string_reader: StringReader<'src>) -> (TokenStream, PResult<()>) {
+impl<'sess, 'src> TokenTreesReader<'sess, 'src> {
+    pub fn lex_all_token_trees(
+        string_reader: StringReader<'sess, 'src>,
+    ) -> (TokenStream, PResult<()>) {
         let mut tt_reader = TokenTreesReader {
             string_reader,
             token: Token::dummy(),

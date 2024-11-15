@@ -1,11 +1,12 @@
-use crate::{session_global::SessionGlobal, visitor::Visitor};
-
-use super::{Expr, ExprKind, GenericArgs, Path, PathSegment, Ty};
-use std::os::linux::raw::stat;
-use crate::span_encoding::Span;
 use crate::visitor::Visitor;
 
-use super::{Expr, ExprKind, Stmt, StmtKind};
+use std::os::linux::raw::stat;
+use crate::span_encoding::Span;
+
+use super::{
+    AngleBracketedArgs, Expr, ExprKind, GenericArgs, Local, LocalKind, Path, PathSegment, Stmt,
+    StmtKind, Ty, TyKind,
+};
 
 pub struct Printer {
     pub output: String,
@@ -18,12 +19,14 @@ impl Printer {
         Printer {
             output: String::new(),
             indent: 0,
-            indent_spaces: 4,
+            indent_spaces: 2,
         }
     }
 
-    pub fn print_expr(&mut self, expr: &super::Expr) {
-        self.visit_expr(expr);
+    pub fn print_stmts(&mut self, stmts: &Vec<Box<Stmt>>) {
+        for stmt in stmts {
+            self.print_stmt(&stmt);
+        }
     }
 
     pub fn print_path(&mut self, path: &Path) {
@@ -36,20 +39,76 @@ impl Printer {
 }
 
 impl<'ast> Visitor<'ast> for Printer {
+    fn visit_stmt_expr(&mut self, expr: &'ast Expr) {
+        self.output.push_str(&format!(
+            "{}Expr statement: {}\n",
+            space(self.indent),
+            expr.span
+        ));
+        self.visit_expr(expr);
+    }
+    fn visit_stmt_var(&mut self, local: &'ast super::Local) {
+        self.output.push_str(&format!(
+            "{}Var statement: {}\n",
+            space(self.indent),
+            local.span
+        ));
+
+        self.indent += self.indent_spaces;
+
+        let Local {
+            kind,
+            ident,
+            binding_mode,
+            ty,
+            ..
+        } = local;
+
+        self.output.push_str(&format!(
+            "{}Binding mode: {}\n",
+            space(self.indent),
+            binding_mode,
+        ));
+        self.output.push_str(&format!(
+            "{}Identifier: {} {}\n",
+            space(self.indent),
+            ident.name,
+            ident.span
+        ));
+        self.visit_ty(ty);
+
+        match kind {
+            LocalKind::Init(expr) => {
+                self.output
+                    .push_str(&format!("{}Init expression:\n", space(self.indent)));
+                self.visit_expr(expr);
+            }
+            LocalKind::Decl => {}
+        }
+
+        self.indent -= self.indent_spaces;
+    }
+
     fn visit_expr(&mut self, expr: &'ast super::Expr) {
         let Expr { kind, span } = expr;
 
         self.indent += self.indent_spaces;
         match kind {
             ExprKind::Binary(op, left_expression, right_expression) => {
+                self.output.push_str(&format!(
+                    "{}Binary operation: {} {}\n",
+                    space(self.indent),
+                    op,
+                    span
+                ));
+                self.indent += self.indent_spaces;
                 self.output
-                    .push_str(&format!("Binary operation: {} {}\n", op, span));
-                self.output
-                    .push_str(&format!("{}Left: ", " ".repeat(self.indent)));
+                    .push_str(&format!("{}Left:\n", space(self.indent)));
                 self.visit_expr(left_expression);
                 self.output
-                    .push_str(&format!("{}Right: ", " ".repeat(self.indent)));
+                    .push_str(&format!("{}Right:\n", space(self.indent)));
                 self.visit_expr(right_expression);
+                self.indent -= self.indent_spaces;
             }
 
             ExprKind::Unary(_op, subexpression) => {
@@ -65,14 +124,21 @@ impl<'ast> Visitor<'ast> for Printer {
                 self.visit_expr(_rhs);
             }
             ExprKind::Literal(token) => {
-                self.output.push_str(&format!("{}\n", token.symbol));
+                self.output.push_str(&format!(
+                    "{}{} {}\n",
+                    space(self.indent),
+                    token.symbol,
+                    span
+                ));
             }
         }
         self.indent -= self.indent_spaces;
     }
 
     fn visit_path(&mut self, path: &'ast Path) {
-        self.output.push_str(&format!("Path: {}\n", path.span));
+        self.output
+            .push_str(&format!("{}Path {}\n", space(self.indent), path.span));
+
         self.indent += self.indent_spaces;
         for segment in &path.segments {
             self.visit_path_segment(segment);
@@ -84,7 +150,7 @@ impl<'ast> Visitor<'ast> for Printer {
         let PathSegment { ident, args } = segment;
         self.output.push_str(&format!(
             "{}Segment: {} {}\n",
-            " ".repeat(self.indent),
+            space(self.indent),
             ident.name,
             ident.span
         ));
@@ -101,7 +167,7 @@ impl<'ast> Visitor<'ast> for Printer {
             GenericArgs::AngleBracketed(args) => {
                 self.output.push_str(&format!(
                     "{}GenericArgs: {}\n",
-                    " ".repeat(self.indent),
+                    space(self.indent),
                     args.span
                 ));
                 self.visit_angle_bracketed_args(args);
@@ -109,7 +175,7 @@ impl<'ast> Visitor<'ast> for Printer {
         }
     }
 
-    fn visit_angle_bracketed_args(&mut self, args: &'ast super::AngleBracketedArgs) {
+    fn visit_angle_bracketed_args(&mut self, args: &'ast AngleBracketedArgs) {
         self.indent += self.indent_spaces;
         for arg in &args.args {
             self.visit_angle_bracketed_arg(arg);
@@ -119,10 +185,10 @@ impl<'ast> Visitor<'ast> for Printer {
 
     fn visit_ty(&mut self, ty: &'ast Ty) {
         self.output
-            .push_str(&format!("{}Type: {}\n", " ".repeat(self.indent), ty.span));
+            .push_str(&format!("{}Type:\n", space(self.indent)));
         self.indent += self.indent_spaces;
         match &ty.kind {
-            super::TyKind::Path(path) => {
+            TyKind::Path(path) => {
                 self.visit_path(path);
             }
         }
@@ -197,4 +263,8 @@ impl<'ast> Visitor<'ast> for Printer {
         }
         self.indent -= self.indent_spaces;
     }
+}
+
+fn space(n: usize) -> String {
+    " ".repeat(n)
 }

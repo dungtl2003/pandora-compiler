@@ -18,9 +18,24 @@ use crate::span_encoding::{Span, Spanned};
 
 pub struct BindingMode(pub Mutability);
 
+impl Display for BindingMode {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 pub enum Mutability {
     Immutable,
     Mutable,
+}
+
+impl Display for Mutability {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Mutability::Immutable => write!(f, "immutable"),
+            Mutability::Mutable => write!(f, "mutable"),
+        }
+    }
 }
 
 impl BindingMode {
@@ -128,7 +143,7 @@ pub enum TyKind {
 pub struct Local {
     pub binding_mode: BindingMode,
     pub ident: Ident,
-    pub ty: Option<Box<Ty>>,
+    pub ty: Box<Ty>,
     pub kind: LocalKind,
     pub span: Span,
 }

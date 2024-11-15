@@ -7,7 +7,7 @@ use crate::{
 use super::{PResult, Parser, TokenType};
 use crate::span_encoding;
 
-impl Parser {
+impl Parser<'_> {
     pub fn parse_expr(&mut self) -> PResult<Box<Expr>> {
         let lhs = self.parse_expr_prefix()?;
         self.parse_expr_rest(0, lhs)
