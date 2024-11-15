@@ -1,12 +1,13 @@
 mod tokentrees;
 
+use symbol::Symbol;
+
 use crate::ast::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,
     TokenStream,
 };
 use crate::error_handler::ErrorHandler;
 use crate::interner::Interner;
-use crate::interner::Symbol;
 use crate::lexer::{self, Base, Cursor, EscapeError, RawStrError};
 use crate::session_global::BytePos;
 use crate::span_encoding::Span;
@@ -319,19 +320,19 @@ impl<'src> StringReader<'src> {
             Ok(c) => {
                 return TokenKind::Literal(Lit {
                     kind: LitKind::Char,
-                    symbol: self.intener.intern(c.to_string().as_str()),
+                    symbol: c.to_string().as_str().into(),
                 })
             }
         }
     }
 
     fn cook_raw_ident(&mut self, content: &'src str) -> TokenKind {
-        let symbol = self.intener.intern(content);
+        let symbol: Symbol = content.into();
         TokenKind::Ident(symbol, IdentIsRaw::No)
     }
 
     fn cook_ident(&mut self, content: &'src str) -> TokenKind {
-        let symbol = self.intener.intern(content);
+        let symbol: Symbol = content.into();
         TokenKind::Ident(symbol, IdentIsRaw::Yes)
     }
 
@@ -341,7 +342,7 @@ impl<'src> StringReader<'src> {
         comment_kind: CommentKind,
         doc_style: lexer::DocStyle,
     ) -> TokenKind {
-        let symbol = self.intener.intern(content);
+        let symbol: Symbol = content.into();
         let doc_style = match doc_style {
             lexer::DocStyle::Inner => Some(DocStyle::Inner),
             lexer::DocStyle::Outer => Some(DocStyle::Outer),
@@ -370,7 +371,7 @@ impl<'src> StringReader<'src> {
     /// Symbol from start (inclusive) to end (exclusive).
     fn symbol_from_to(&mut self, start: BytePos, end: BytePos) -> Symbol {
         let content = self.str_from_to(start, end);
-        self.intener.intern(content)
+        content.into()
     }
 
     fn report_unterminated_block_comment(

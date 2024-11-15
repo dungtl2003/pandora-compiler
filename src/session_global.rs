@@ -1,10 +1,8 @@
 use crate::interner;
-use std::mem::MaybeUninit;
 use std::sync::Arc;
 
 use crate::interner::{Interner, Symbol};
 use miette::NamedSource;
-use std::sync::Once;
 
 #[derive(Debug)]
 pub struct SessionGlobal {
@@ -23,23 +21,11 @@ pub type BytePos = u32;
 pub type SourceFile = NamedSource<Arc<String>>;
 
 impl SessionGlobal {
-    pub fn instance() -> &'static mut Self {
-        static mut SESSION_GLOBAL: MaybeUninit<SessionGlobal> = MaybeUninit::uninit();
-        static ONCE: Once = Once::new();
-
-        unsafe {
-            ONCE.call_once(|| {
-                let session_global = SessionGlobal {
-                    source_map: SourceMap { files: Vec::new() },
-                    interner: Interner::new(),
-                    has_errors: false,
-                };
-
-                println!("SessionGlobal: {:?}", session_global);
-                SESSION_GLOBAL.write(session_global);
-            });
-
-            SESSION_GLOBAL.assume_init_mut()
+    pub fn new() -> Self {
+        Self {
+            source_map: SourceMap { files: Vec::new() },
+            interner: Interner::new(),
+            has_errors: false,
         }
     }
 

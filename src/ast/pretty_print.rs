@@ -56,8 +56,7 @@ impl<'ast> Visitor<'ast> for Printer {
                 self.visit_expr(_rhs);
             }
             ExprKind::Literal(token) => {
-                self.output
-                    .push_str(&format!("Literal({}) {}\n", token, span));
+                self.output.push_str(&format!("{}\n", token.symbol));
             }
         }
         self.indent -= self.indent_spaces;
@@ -74,10 +73,10 @@ impl<'ast> Visitor<'ast> for Printer {
 
     fn visit_path_segment(&mut self, segment: &'ast PathSegment) {
         let PathSegment { ident, args } = segment;
-        let value = SessionGlobal::instance().get(ident.name);
         self.output.push_str(&format!(
-            "{}Segment: {}\n",
+            "{}Segment: {} {}\n",
             " ".repeat(self.indent),
+            ident.name,
             ident.span
         ));
 

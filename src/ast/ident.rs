@@ -1,4 +1,5 @@
-use crate::{interner::Symbol, span_encoding::Span};
+use crate::{kw, span_encoding::Span};
+use symbol::Symbol;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Ident {
@@ -12,6 +13,6 @@ impl Ident {
     }
 
     pub fn is_keyword(self) -> bool {
-        self.name.is_keyword()
+        kw::is_keyword(&self.name)
     }
 }
