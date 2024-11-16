@@ -19,7 +19,7 @@ grammar/*.lot
 
 documents/*/*.aux
 documents/*/*.bbl
-documents/*/*.bcf
+documents/*/*.bcf*
 documents/*/*.blg
 documents/*/*.dvi
 documents/*/*.fdb_latexmk

@@ -1,0 +1,77 @@
+\newcommand{\regexstmt}{
+    \begin{rg}
+    STATEMENT -> DECLARATION\_STATEMENT
+
+    \hspace{3.2cm}| EXPRESSION\_STATEMENT
+
+    \hspace{3.2cm}| BLOCK\_STATEMENT
+
+    \hspace{3.2cm}| IF\_STATEMENT
+
+    \hspace{3.2cm}| LOOP\_STATEMENT
+    \end{rg}
+}
+
+\newcommand{\regexdeclstmt}{
+    \begin{rg}
+    DECLARATION\_STATEMENT -> VARIABLE\_DECL\_STATEMENT
+
+    \hspace{6.75cm}| FUNCTION\_DECL\_STATEMENT
+
+    \hspace{6.75cm}| CLASS\_DECL\_STATEMENT
+
+    \hspace{6.75cm}| INTERFACE\_DECL\_STATEMENT
+    \end{rg}
+}
+
+\newcommand{\regexvardeclstmt}{
+    \begin{rg}
+    VARIABLE\_DECL\_STATEMENT -> \w{var}\w{mut}?
+
+    \hspace{2.75cm}IDENTIFIER\w{:}TYPE\_SPECIFIER(\w{=}EXPRESSION)?\w{;}
+    \end{rg}
+}
+
+\newcommand{\regexblockstmt}{
+    \begin{rg}
+    BLOCK\_STATEMENT -> \w{\{} (STATEMENT)* \w{\}}
+    \end{rg}
+}
+
+\newcommand{\regexifstmt}{
+    \begin{rg}
+    IF\_STATEMENT -> \w{if} EXPRESSION BLOCK\_STATEMENT
+
+    \hspace{3cm}(\w{else} (BLOCK\_STATEMENT | IF\_STATEMENT))?
+    \end{rg}
+}
+
+\newcommand{\regexloopstmt}{
+    \begin{rg}
+    LOOP\_STATEMENT -> PRED\_LOOP\_STATEMENT
+
+    \hspace{4.65cm}| ITER\_LOOP\_STATEMENT
+    \end{rg}
+}
+
+\newcommand{\regexpredloopstmt}{
+    \begin{rg}
+    PRED\_LOOP\_STATEMENT -> \w{while} EXPRESSION 
+
+    \hspace{6.8cm}BLOCK\_STATEMENT
+    \end{rg}
+}
+
+\newcommand{\regexiterloopstmt}{
+    \begin{rg}
+    ITER\_LOOP\_STATEMENT -> \w{for} IDENTIFIER \w{in}
+
+    \hspace{6cm}EXPRESSION BLOCK\_STATEMENT
+    \end{rg}
+}
+
+\newcommand{\regexexprstmt}{
+    \begin{rg}
+    EXPRESSION\_STATEMENT -> EXPRESSION\w{;}
+    \end{rg}
+}

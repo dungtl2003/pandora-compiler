@@ -1,0 +1,46 @@
+\subsubsection{Biểu thức (\textit{Expression})}
+
+\regexexpr
+
+Biểu thức là một thành phần quan trọng trong ngôn ngữ lập trình Pandora. Một biểu thức là một giá trị hoặc bất cứ thứ gì thực thi và kết thúc là một giá trị. Biểu thức có thể là một hằng số, một biến, một lời gọi hàm hay một phép toán giữa các biểu thức khác. Biểu thức có thể được sử dụng trong nhiều ngữ cảnh khác nhau như gán giá trị cho biến, truyền tham số cho hàm, điều kiện, vòng lặp, ...
+
+Độ ưu tiên của các toán tử và biểu thức Pandora được sắp xếp như sau, từ mạnh đến yếu. 
+
+\begin{longtable}{| l | l |}
+    \caption{Bảng mức độ ưu tiên toán tử / biểu thức} \\
+\hline
+\textbf{\textit{Toán tử / Biểu thức}} & \textbf{\textit{Tính kết hợp}} \\
+\hline
+Method calls & \\
+\hline
+Function calls & \\
+\hline
+\w{$-$}(unary) \w{$*$} \w{$!$} & \\
+\hline
+\w{$*$} \w{$/$} \w{$\%$} & left to right \\
+\hline
+\w{$+$} \w{$-$} & left to right \\
+\hline
+\w{$<<$} \w{$>>$} & left to right \\
+\hline
+\w{$\&$} & left to right \\
+\hline
+\w{$\wedge$} & left to right \\
+\hline
+\w{$|$} & left to right \\
+\hline
+\w{$==$} \w{$!=$} \w{$<$} \w{$>$} \w{$<=$} \w{$>=$} & left to right \\
+\hline
+\w{$\&\&$} & left to right \\
+\hline
+\w{$||$} & left to right \\
+\hline
+\w{$=$} \w{$+=$} \w{$-=$} \w{$*=$} \w{$/=$} \w{$\%=$} \w{$<<=$} \w{$>>=$} \w{$\&=$} \w{$\wedge=$} \w{$|=$} & right to left \\
+\hline
+\end{longtable}
+
+\paragraph{Biểu thức hằng (\textit{Literal expression})}
+
+\regexlitexpr
+
+Biểu thức hằng là một biểu thức mà giá trị của nó không thay đổi trong suốt quá trình thực thi chương trình. Biểu thức hằng có thể là một hằng số nguyên, hằng số thực, hằng số chuỗi hoặc hằng số boolean. Biểu thức hằng chỉ chứa đúng 1 từ tố.
