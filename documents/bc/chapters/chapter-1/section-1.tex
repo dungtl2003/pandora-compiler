@@ -1,0 +1,124 @@
+\section{Giới thiệu về ngôn ngữ Pandora}
+Nguồn gốc tên Pandora: 
+    Tên gọi Pandora bắt nguồn từ thần thoại 
+    Hy Lạp cổ đại. Trong câu chuyện, Pandora là người phụ nữ đầu tiên được 
+    các vị thần tạo ra, người đã mở chiếc hộp chứa đựng mọi điều xấu xa tràn 
+    vào thế giới, nhưng đồng thời hy vọng vẫn còn ở lại trong đó.
+
+Ý nghĩa và lí do chọn Pandora để đặt tên cho ngôn ngữ: 
+    Chiếc hộp Pandora là biểu tượng của sự tò mò, những điều không thể 
+    lường trước, và cũng là khởi đầu cho những thay đổi to lớn. Nhóm chúng 
+    em chọn tên Pandora cho ngôn ngữ lập trình mới này để truyền tải ý 
+    tưởng về những thử thách, khó khăn và rủi ro tiềm ẩn khi khám phá một 
+    ngôn ngữ hoàn toàn mới. Tuy nhiên, ẩn sau đó cũng là hy vọng cho một 
+    khởi đầu mới mẻ, một hành trình đi tìm tri thức và giải pháp sáng tạo.
+
+
+\subsection{Mô tả ngôn ngữ Pandora}
+\subsection{Định nghĩa ngôn ngữ Pandora}
+\subsubsection{Từ tố (\textit{token})}
+Định nghĩa từ tố thường được biểu diễn ở dạng biểu thức chính quy\cite{li2008regular}. Ở đây, ta sẽ sử dụng 1 số quy ước cú pháp của biểu thức chính quy mở rộng (Extended regular expression \cite{freydenberger2013extended}).
+
+\textbf{\textit{Quy ước của biểu thức chính quy mở rộng:}}
+
+\begin{itemize}
+    \item{$|$ nghĩa là hoặc (or)}
+    \item{( ) nhóm các thành phần}
+    \item{[ ] khớp bất kì 1 thành phần nào bên trong nó}
+    \item{$^\wedge$ để phủ định thành phần}
+    \item{[$^\wedge$ ] khớp bất kì 1 thành phần nào không bên trong nó}
+    \item{* lặp lại không hoặc nhiều lần}
+    \item{. khớp với 1 ký tự bất kì}
+    \item{? để chỉ thành phần trước nó có thể có hoặc không}
+\end{itemize}
+
+    Những từ tố đơn giản được định nghĩa bằng cách đưa trực tiếp mẫu của
+nó (như các định nghĩa về từ khoá, dấu toán học, ...). Những từ tố phức tạp
+hơn sẽ được định nghĩa bằng biểu thức chính quy như tên, xâu, số và chú thích.
+Phần phân tích từ vựng (lexical analyzer) phải có khả năng phân tích chương trình nguồn
+và đưa ra được các từ tố như sau:
+
+\input{chapters/chapter-1/table-of-symbols.tex}
+
+    Từ vựng của Pandora được xác định không chỉ từ chữ cái (alphabet) và chữ số (digit), mà là hầu hết các ký tự trong bảng mã Unicode \cite{allen2012unicode}, cụ thể như sau:
+
+    \regexdigit
+
+    \regexalphabet
+
+\noindent và các ký tự khác trong bảng mã Unicode.
+
+    Khoảng trắng (\textbf{whitespace}) là bất kỳ chuỗi không trống nào chỉ chứa các ký tự có thuộc tính Unicode Pattern\_White\_Space \cite{web:unicode:report}, cụ thể là:
+    \begin{itemize}
+        \item{U+0009 (horizontal tab, '\textbackslash t')}
+        \item{U+000A (line feed, '\textbackslash n')}
+        \item{U+000B (vertical tab)}
+        \item{U+000C (form feed)}
+        \item{U+000D (carriage return, '\textbackslash r')}
+        \item{U+0020 (space, ' ')}
+        \item{U+0085 (next line)}
+        \item{U+200E (left-to-right mark)}
+        \item{U+200F (right-to-left mark)}
+        \item{U+2028 (line separator)}
+        \item{U+2029 (paragraph separator)}
+    \end{itemize}
+\noindent Pandora là một ngôn ngữ "dạng tự do", có nghĩa là tất cả các dạng khoảng trắng chỉ dùng để phân tách các từ tố trong ngữ pháp và không có ý nghĩa ngữ nghĩa.
+
+    Tên \textbf{\textit{identifier}} trong Pandora được phân làm 2 loại: \textbf{non keyword identifier} hoặc \textbf{raw identifier}. \textbf{non keyword identifier} được tạo thành từ tập các kí tự nêu trên và không được là từ khóa (keyword). Trong khi đó, \textbf{raw identifier} có thể là tên hoặc từ khóa (có \textbf{r\#} ở phía trước để phân biệt với tên thường hay từ khóa), cụ thể như sau:
+
+    \regexidentifier
+
+\noindent Trong đó \textbf{XID\_Start} và \textbf{XID\_Continue} là các thuộc tính của ký tự trong Unicode liên quan đến tên (định danh). Chúng thường được sử dụng để xác định liệu một ký tự có thể là phần đầu hoặc phần thân của 1 định danh trong các ngôn ngữ lập trình hay không. Ngoài ra, 1 tên còn có thể chứa các biểu tượng cảm xúc (\textbf{EMOJI\_SYMBOL}).
+
+    1 ký tự chữ (\textbf{character}) là 1 ký tự Unicode đơn được đặt trong 2 ký tự ' (dấu nháy đơn - U+0027), ngoại trừ chính U+0027, ký tự này phải được thoát bằng ký tự U+005C trước đó (\textbackslash), cụ thể như sau:
+
+    \regexcharliteral
+
+    Chuỗi ký tự (\textbf{string literal}) là một chuỗi gồm bất kỳ ký tự Unicode nào được đặt trong hai ký tự U+0022 (dấu ngoặc kép), ngoại trừ chính U+0022, ký tự này phải được thoát bằng ký tự U+005C trước đó (\textbackslash). Chuỗi ký tự cho phép có các line-breaks (cho phép ngắt dòng, được biểu thị bởi ký tự U+000A). Khi ký tự U+005C không thoát (\textbackslash) xuất hiện ngay trước ngắt dòng, ngắt dòng sẽ không xuất hiện trong xâu được biểu diễn trong từ tố, cụ thể như sau:
+
+    \regexstringliteral
+
+    Ta có thể thấy, các ký tự chữ hoặc các xâu có thể chứa 1 hoặc 1 vài loại \textbf{escape} (thoát ký tự). Một escape bắt đầu bằng U+005C (\textbackslash) và tiếp tục bằng một trong các dạng sau:
+
+    \begin{itemize}
+    \item{\textbf{Whitespace escape} (thoát khoảng trắng) là 1 trong các ký tự U+006E (n), U+0072 (r) hoặc U+0074 (t), biểu thị các giá trị Unicode U+000A (LF), U+000D (CR) hoặc U+ 0009 (HT) tương ứng}
+    \item{\textbf{Null escape} (thoát null) là ký tự U+0030 (0) và biểu thị giá trị Unicode U+0000 (NUL)}
+    \item{\textbf{Backslash escape} (thoát gạch chéo ngược) là ký tự U+005C (\textbackslash) phải được thoát để biểu thị chính nó}
+    \end{itemize}
+
+    Chuỗi ký tự thô (\textbf{raw string literal}) không xử lý bất kỳ escape nào. Chúng bắt đầu bằng ký tự U+0072 (r), theo sau là ít hơn 256 ký tự U+0023 (\#) và ký tự U+0022 (dấu nháy kép). Raw string có thể chứa chuỗi bất kì các ký tự nào trong Unicode. Nó chỉ được kết thúc bởi một ký tự U+0022 (dấu nháy kép) khác, theo sau là các ký tự U+0023 (\#) có số lượng giống với các ký tự U+0023 (\#) đứng trước ký tự U+0022 (dấu nháy kép) mở đầu. Tất cả các ký tự Unicode đều có trong phần thân raw string thể hiện chính chúng, các ký tự U+0022 (dấu nháy kép) (trừ khi được theo sau bởi ít nhất nhiều ký tự U+0023 (\#) như đã được sử dụng để bắt đầu raw string) hoặc U+005C (\textbackslash) không có ý nghĩa gì đặc biệt. Cụ thể như sau:
+
+    \regexrawstringliteral
+
+    Một hằng số nguyên (\textbf{integer literal}) có một trong bốn dạng sau:
+
+    \begin{itemize}
+        \item{Một hằng thập phân bắt đầu bằng một chữ số thập phân và tiếp tục bằng bất kỳ hỗn hợp nào của các chữ số thập phân và dấu gạch dưới}
+        \item{Một hằng thập lục phân bắt đầu bằng chuỗi ký tự U+0030 U+0078 (0x) và tiếp tục dưới dạng bất kỳ hỗn hợp nào (có ít nhất một chữ số) gồm các chữ số thập lục phân và dấu gạch dưới}
+        \item{Một chữ bát phân bắt đầu bằng chuỗi ký tự U+0030 U+006F (0o) và tiếp tục dưới dạng bất kỳ hỗn hợp nào (có ít nhất một chữ số) gồm các chữ số bát phân và dấu gạch dưới}
+        \item{Một chữ số nhị phân bắt đầu bằng chuỗi ký tự U+0030 U+0062 (0b) và tiếp tục dưới dạng bất kỳ hỗn hợp nào (có ít nhất một chữ số) gồm các chữ số nhị phân và dấu gạch dưới}
+    \end{itemize}
+
+    \regexintegerliteral
+
+    Một hằng số thực (\textbf{float literal}) có một trong hai dạng:
+    \begin{itemize}
+        \item{Một số thập phân theo sau là ký tự dấu chấm U+002E (.). Theo sau có thể là một số thập phân khác (sau số thập phân đó có thể có số mũ}
+        \item{Một số thập phân theo sau là số mũ}
+    \end{itemize}
+
+    \regexfloatliteral
+
+    Chú thích không phải tài liệu (\textbf{non-doc comment}) có thể là dòng (//) hoặc là khối (/* ... */). Pandora có hỗ trợ các chú thích khối lồng nhau. Các chú thích kiểu này được hiểu là một dạng khoảng trắng.
+
+    Chú thích tài liệu (\textbf{doc comment}) được chia làm 2 loại chính: chú thích tài liệu ngoài (\textbf{outer doc comment}) và chú thích tài liệu trong (\textbf{inner doc comment}). Chú thích tài liệu dòng bên ngoài sẽ bắt đầu bằng //@, còn khối bên ngoài sẽ có dạng /*@ ... */. Trong khi đó, chú thích tài liệu dòng bên trong là //!, khối bên trong có dạng /*! ... */.
+
+    Các chú thích được biểu diễn như sau:
+
+    \regexlinecomment
+
+    \regexblockcomment
+
+    \regexdoc
+
+\subsubsection{Cú pháp và ngữ nghĩa}

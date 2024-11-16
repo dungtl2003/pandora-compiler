@@ -1,0 +1,35 @@
+\documentclass[14pt,a4paper]{extreport}
+\usepackage{import}
+\input{preamble}
+
+\begin{document}
+
+\include{custom/format}
+\input{regex/regex}
+
+\pagenumbering{gobble}  %remove number of page
+
+\include{chapters/title/title}
+ 
+\fontsizedefault
+
+\include{chapters/preface}
+\include{chapters/undertaking}
+\include{chapters/table-of-contents}
+
+\clearpage
+\pagenumbering{roman}   %i,ii,iii,...
+\include{chapters/table-of-symbols}
+\include{chapters/list-of-tables}
+\include{chapters/list-of-figure}
+
+
+\clearpage
+\pagenumbering{arabic}  %1,2,3,...
+\include{chapters/chapter-1/chapter-1}
+\include{chapters/chapter-2/chapter-2}
+
+% \bibliographystyle{plainurl} \bibliography{refs} % reference
+\printbibliography[heading=bibintoc,title={TÀI LIỆU THAM KHẢO}] % reference
+
+\end{document}

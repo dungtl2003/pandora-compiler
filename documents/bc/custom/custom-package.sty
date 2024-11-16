@@ -1,0 +1,14 @@
+\newcommand\fontsizedefault{\fontsize{14}{16.8pt}\selectfont}
+\newcommand\fontdefault{\fontfamily{ptm}\selectfont} 
+% \newcommand\loopcommand[2]{\if\minindex#2 \minindex #2 true \else \loopcommand{#1}{} \fi}
+\newcommand\loopcommand[2]{\foreach \n in {1,...,#2}{#1}}
+
+\renewcommand{\cftchapaftersnum}{.}
+\renewcommand{\cftsecaftersnum}{.}
+\renewcommand{\cftsubsecaftersnum}{.}
+\renewcommand{\cftsubsubsecaftersnum}{.}
+
+\renewcommand{\cfttabaftersnum}{.}
+\renewcommand{\cftfigaftersnum}{.}
+
+\newcommand{\verbfont}{\fontfamily{\ttdefault}\selectfont} % use if u want to use font of \verb

@@ -1,0 +1,36 @@
+% Define a gray box command for normal characters
+% inline code blocks
+\newcommand\mystrut{\rule[-1pt]{0pt}{.8em}}
+\newcommand{\w}[1]{%
+    {\tcbox[
+    colback=gray!30, 
+    colframe=gray!30, 
+    boxrule=1pt, 
+    boxsep=0pt, 
+    left=1pt, 
+    right=1pt, 
+    top=1pt, 
+    bottom=1pt, 
+    on line,
+fontupper={\mystrut}]{#1}}%
+}
+
+\newenvironment{rg}{\fontfamily{\ttdefault}\selectfont}{\par}
+
+\newcommand{\rnot}{%
+    $^\wedge$%
+}
+
+\newcommand{\rbe}[1]{% braket expression
+    {\Large{[}}#1{\Large{]}}%
+}
+
+\newcommand{\rcg}[1]{% capturing group
+    {\Large{(}}#1{\Large{)}}%
+}
+
+\input{regex/digit}
+\input{regex/alphabet}
+\input{regex/identifier}
+\input{regex/literal}
+\input{regex/comment}
