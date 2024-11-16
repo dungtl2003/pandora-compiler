@@ -108,3 +108,13 @@ fn print_parse_stmts<'sess>(
     printer.print_stmts(&stmts);
     println!("{}", printer.output);
 }
+
+fn print_parse_stmt(data: &str, emitter: ErrorHandler) {
+    let session = session_global::SessionGlobal::new();
+    let tokens = parse::lexer::lex_token_tree(&data, emitter).unwrap();
+    let mut parser = parse::parser::Parser::new(tokens, session);
+    let stmt = parser.parse_stmt().unwrap();
+    let mut printer = ast::pretty_print::Printer::new();
+    printer.print_stmt(&stmt);
+    println!("{}", printer.output);
+}
