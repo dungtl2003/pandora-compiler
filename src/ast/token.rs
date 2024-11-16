@@ -1,10 +1,10 @@
 use core::fmt;
 use std::fmt::{Display, Formatter};
-use symbol::Symbol;
 
 use crate::{
     kw::{self, Keyword},
     span_encoding::{Span, DUMMY_SP},
+    symbol::Symbol,
 };
 
 use super::{ident::Ident, BinOpKind};
@@ -267,7 +267,7 @@ impl Token {
 
     pub fn is_keyword(&self, keyword: Keyword) -> bool {
         self.is_non_raw_ident_where(|ident| {
-            let res = kw::from_str(&ident.name);
+            let res = kw::from_str(ident.name.as_str());
             if res.is_err() {
                 return false;
             }
@@ -284,5 +284,5 @@ impl Token {
 pub fn ident_can_begin_expr(name: Symbol, span: Span, is_raw: IdentIsRaw) -> bool {
     let ident_token = Token::new(Ident(name, is_raw), span);
 
-    !ident_token.is_non_raw_ident_where(|ident| kw::is_keyword(&ident.name))
+    !ident_token.is_non_raw_ident_where(|ident| kw::is_keyword(ident.name))
 }

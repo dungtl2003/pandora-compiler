@@ -1,7 +1,5 @@
 mod tokentrees;
 
-use symbol::Symbol;
-
 use crate::ast::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,
     TokenStream,
@@ -10,6 +8,7 @@ use crate::error_handler::ErrorHandler;
 use crate::lexer::{self, Base, Cursor, EscapeError, RawStrError};
 use crate::session_global::{BytePos, SessionGlobal};
 use crate::span_encoding::Span;
+use crate::symbol::Symbol;
 
 use super::parser::PResult;
 

@@ -217,5 +217,6 @@ pub fn walk_expr<'ast, V: Visitor<'ast>>(visitor: &mut V, expression: &'ast Expr
             visitor.visit_expr(_rhs);
         }
         ExprKind::Literal(_token) => {}
+        ExprKind::Var(_ident) => {}
     }
 }

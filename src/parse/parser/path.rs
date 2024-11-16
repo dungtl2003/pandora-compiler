@@ -30,7 +30,13 @@ impl Parser<'_> {
     fn parse_path_segment(&mut self) -> PResult<PathSegment> {
         match self.token.kind {
             TokenKind::Ident(..) => {}
-            _ => return Err("Expected identifier".into()),
+            _ => {
+                return Err(format!(
+                    "Expected identifier in path segment, found {:?}",
+                    self.token
+                )
+                .into())
+            }
         }
 
         let ident = self.token.ident().unwrap().0;

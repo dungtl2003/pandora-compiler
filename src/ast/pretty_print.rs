@@ -195,6 +195,14 @@ impl<'ast> Visitor<'ast> for Printer {
                     span
                 ));
             }
+            ExprKind::Var(ident) => {
+                self.output.push_str(&format!(
+                    "{}Variable: {} {}\n",
+                    space(self.indent),
+                    ident.name,
+                    span
+                ));
+            }
         }
         self.indent -= self.indent_spaces;
     }

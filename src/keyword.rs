@@ -1,6 +1,8 @@
 use std::str::FromStr;
 use strum_macros::{AsRefStr, EnumString};
 
+use crate::symbol::Symbol;
+
 #[derive(EnumString, AsRefStr, Debug, PartialEq)]
 #[strum(serialize_all = "lowercase")] // This ensures matching with lowercase strings.
 pub enum Keyword {
@@ -23,8 +25,8 @@ pub enum Keyword {
     Impl,
 }
 
-pub fn is_keyword(symbol: &str) -> bool {
-    Keyword::from_str(symbol).is_ok()
+pub fn is_keyword(symbol: Symbol) -> bool {
+    Keyword::from_str(symbol.as_str()).is_ok()
 }
 
 pub fn from_str(s: &str) -> Result<Keyword, strum::ParseError> {

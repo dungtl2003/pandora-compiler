@@ -6,6 +6,7 @@ mod lexer;
 mod parse;
 mod session_global;
 mod span_encoding;
+mod symbol;
 mod visitor;
 
 use crate::error_handler::*;

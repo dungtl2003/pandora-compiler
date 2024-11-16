@@ -117,7 +117,7 @@ impl Parser<'_> {
     /// if_statement = 'if' expression block_statement ('else' (block_statement | if_statement))?
     pub fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::If) {
-            return Err("Expected 'if'".into());
+            return Err(format!("Expected 'if', found {:?}", self.token).into());
         }
 
         let start_span = self.token.span;
@@ -155,7 +155,7 @@ impl Parser<'_> {
     /// block_statement = '{' statement* '}'
     pub fn parse_stmt_block(&mut self) -> PResult<Box<Stmt>> {
         if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
-            return Err("Expected '{'".into());
+            return Err(format!("Expected '{{' in block statement, found {:?}", self.token).into());
         }
 
         let start = self.token.span;

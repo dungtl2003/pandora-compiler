@@ -93,7 +93,7 @@ impl<'sess> Parser<'sess> {
         self.look_ahead(1, |tok| {
             if let TokenKind::Ident(ident, _) = tok.kind {
                 kws.iter().any(|kw| {
-                    let res = kw::from_str(&ident);
+                    let res = kw::from_str(ident.as_str());
                     if res.is_err() {
                         return false;
                     }

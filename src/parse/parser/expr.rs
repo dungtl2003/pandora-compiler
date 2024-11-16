@@ -1,6 +1,5 @@
 use crate::{
     ast::{BinOp, BinOpKind, BinOpToken, Delimiter, Expr, ExprKind, Lit, LitKind, TokenKind, UnOp},
-    kw::Keyword,
     parse::util::parser::{AssocOp, Fixity},
     span_encoding::Span,
 };
@@ -103,32 +102,49 @@ impl Parser<'_> {
                 let expr = self.mk_unary(UnOp::Ne, expr);
                 Ok(self.mk_expr(expr, span))
             }
-            _ => self.parse_expr_primary(),
+            _ => self.parse_expr_bottom(),
         }
     }
 
     /// Highest precedence level.
-    fn parse_expr_primary(&mut self) -> PResult<Box<Expr>> {
+    fn parse_expr_bottom(&mut self) -> PResult<Box<Expr>> {
         match self.token.kind {
-            TokenKind::Literal(_) | TokenKind::Ident(..) => {
-                let lit = self.parse_token_lit()?;
-                let span = self.prev_token.span;
-                let expr = self.mk_literal(lit);
-                Ok(self.mk_expr(expr, span))
-            }
-
+            TokenKind::Literal(_) => self.parse_expr_lit(),
+            TokenKind::Ident(_, _) => self.parse_expr_var(),
             TokenKind::OpenDelim(Delimiter::Parenthesis) => {
-                self.advance();
-                let expr = self.parse_expr()?;
-                self.expect(TokenKind::CloseDelim(Delimiter::Parenthesis))?;
-                self.advance(); // Eat ')'
-                Ok(expr)
+                self.parse_expr_repeat(Delimiter::Parenthesis)
             }
-            _ => {
-                println!("Unexpected token: {:?}", self.token);
-                Err("Unexpected token".into())
-            }
+            _ => Err("Unexpected token".into()),
         }
+    }
+
+    fn parse_expr_var(&mut self) -> PResult<Box<Expr>> {
+        let res = self.parse_expr_lit(); // Maybe this can be a literal.
+        if res.is_err() {
+            let (ident, _) = self.token.ident().unwrap();
+            let span = self.token.span;
+            let kind = ExprKind::Var(ident);
+            self.advance();
+            Ok(self.mk_expr(kind, span))
+        } else {
+            res
+        }
+    }
+
+    fn parse_expr_repeat(&mut self, delim: Delimiter) -> PResult<Box<Expr>> {
+        self.advance();
+        let expr = self.parse_expr()?;
+        self.expect(TokenKind::CloseDelim(delim))?;
+        self.advance();
+        Ok(expr)
+    }
+
+    /// Parses a literal expression. Lit = true | false | token_lit~
+    fn parse_expr_lit(&mut self) -> PResult<Box<Expr>> {
+        let lit = self.parse_token_lit()?;
+        let span = self.prev_token.span;
+        let expr = self.mk_literal(lit);
+        Ok(self.mk_expr(expr, span))
     }
 
     fn parse_token_lit(&mut self) -> PResult<Lit> {
@@ -138,7 +154,7 @@ impl Parser<'_> {
                 Ok(lit)
             }
             TokenKind::Ident(sym, _) => {
-                if sym == Keyword::True || sym == Keyword::False {
+                if sym.is_bool_lit() {
                     let kind = LitKind::Bool;
                     let symbol = sym;
                     self.advance();

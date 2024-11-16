@@ -191,6 +191,9 @@ pub enum ExprKind {
     ///
     /// E.g., `a += 1`.
     AssignOp(BinOp, Box<Expr>, Box<Expr>),
+    // TODO: make this a path (stuck on case `age < 18`, misunderstood a path: `age<18>`, not a
+    // binary op)
+    Var(Ident),
 }
 
 impl Display for Expr {
