@@ -9,7 +9,6 @@ pub enum Keyword {
     Var,
     Mut,
     If,
-    Elif,
     Else,
     Fun,
     Class,
@@ -18,6 +17,8 @@ pub enum Keyword {
     Break,
     Continue,
     For,
+    In,
+    While,
     Pub,
     Impl,
 }

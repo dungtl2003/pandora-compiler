@@ -108,4 +108,3 @@ fn print_parse_stmts<'sess>(
     printer.print_stmts(&stmts);
     println!("{}", printer.output);
 }
-

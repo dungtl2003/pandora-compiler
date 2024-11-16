@@ -57,8 +57,8 @@ pub enum StmtKind {
     Expr(Box<Expr>),
     /// A block statement: `{ stmt* }`.
     Block(Vec<Box<Stmt>>),
-    /// An `if` statement: 'if' expr block ('elif' expr block)* ('else' block)?
-    If(Vec<(Box<Expr>, Vec<Box<Stmt>>)>, Option<Vec<Box<Stmt>>>),
+    /// An `if` statement: `if expr block_stmt (else (block_stmt | if_stmt))?`.
+    If(Box<Expr>, Box<Stmt>, Option<Box<Stmt>>),
     /// A 'break' statement.
     Break,
     /// A 'continue' statement.
@@ -67,6 +67,10 @@ pub enum StmtKind {
     Return(Option<Box<Expr>>),
     /// A variable declaration: 'var' 'mut'? ident: type ('=' expr)? ';'
     Var(Box<Local>),
+    /// A while loop: 'while' expr block_stmt
+    While(Box<Expr>, Box<Stmt>),
+    /// A for loop: 'for' ident 'in' expr block_stmt
+    For(Ident, Box<Expr>, Box<Stmt>),
 }
 
 /// A "Path" is essentially Pandora's notion of a name.

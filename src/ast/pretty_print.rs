@@ -1,13 +1,8 @@
-use std::os::linux::raw::stat;
-use crate::span_encoding::Span;
-
 use super::{
-    AngleBracketedArgs, Expr, ExprKind, GenericArgs, Local, LocalKind, Path, PathSegment, Stmt,
-    StmtKind, Ty, TyKind,
+    AngleBracketedArgs, Expr, ExprKind, GenericArgs, Ident, Local, LocalKind, Path, PathSegment,
+    Stmt, Ty, TyKind,
 };
-use crate::{session_global::SessionGlobal, visitor::Visitor};
-
-
+use crate::visitor::Visitor;
 
 pub struct Printer {
     pub output: String,
@@ -33,13 +28,80 @@ impl Printer {
     pub fn print_path(&mut self, path: &Path) {
         self.visit_path(path);
     }
-    
-    pub fn print_stmt(&mut self, stmt: &super::Stmt) {
+
+    pub fn print_stmt(&mut self, stmt: &Stmt) {
         self.visit_stmt(stmt);
     }
 }
 
 impl<'ast> Visitor<'ast> for Printer {
+    fn visit_stmt_for(&mut self, ident: &'ast Ident, expr: &'ast Expr, block: &'ast Stmt) {
+        self.output
+            .push_str(&format!("{}For statement:\n", space(self.indent)));
+        self.indent += self.indent_spaces;
+        self.output.push_str(&format!(
+            "{}Identifier: {}\n",
+            space(self.indent),
+            ident.name
+        ));
+
+        self.output
+            .push_str(&format!("{}Expression:\n", space(self.indent)));
+        self.visit_expr(expr);
+
+        self.output
+            .push_str(&format!("{}Block:\n", space(self.indent)));
+        self.indent += self.indent_spaces;
+        self.visit_stmt(block);
+        self.indent -= self.indent_spaces;
+        self.indent -= self.indent_spaces;
+    }
+
+    fn visit_stmt_while(&mut self, condition: &'ast Expr, block: &'ast Stmt) {
+        self.output
+            .push_str(&format!("{}While statement:\n", space(self.indent),));
+        self.indent += self.indent_spaces;
+        self.output
+            .push_str(&format!("{}Condition:\n", space(self.indent)));
+        self.visit_expr(condition);
+
+        self.output
+            .push_str(&format!("{}Block:\n", space(self.indent)));
+        self.indent += self.indent_spaces;
+        self.visit_stmt(block);
+        self.indent -= self.indent_spaces;
+        self.indent -= self.indent_spaces;
+    }
+
+    fn visit_stmt_if(
+        &mut self,
+        condition: &'ast Expr,
+        block: &'ast Stmt,
+        optional_else: Option<&'ast Stmt>,
+    ) {
+        self.output
+            .push_str(&format!("{}If statement:\n", space(self.indent),));
+        self.indent += self.indent_spaces;
+        self.output
+            .push_str(&format!("{}Condition:\n", space(self.indent)));
+        self.visit_expr(condition);
+
+        self.output
+            .push_str(&format!("{}Block:\n", space(self.indent)));
+        self.indent += self.indent_spaces;
+        self.visit_stmt(block);
+        self.indent -= self.indent_spaces;
+
+        if let Some(else_stmt) = optional_else {
+            self.output
+                .push_str(&format!("{}Else:\n", space(self.indent)));
+            self.indent += self.indent_spaces;
+            self.visit_stmt(else_stmt);
+            self.indent -= self.indent_spaces;
+        }
+        self.indent -= self.indent_spaces;
+    }
+
     fn visit_stmt_expr(&mut self, expr: &'ast Expr) {
         self.output.push_str(&format!(
             "{}Expr statement: {}\n",
@@ -48,7 +110,8 @@ impl<'ast> Visitor<'ast> for Printer {
         ));
         self.visit_expr(expr);
     }
-    fn visit_stmt_var(&mut self, local: &'ast super::Local) {
+
+    fn visit_stmt_var(&mut self, local: &'ast Local) {
         self.output.push_str(&format!(
             "{}Var statement: {}\n",
             space(self.indent),
@@ -90,7 +153,7 @@ impl<'ast> Visitor<'ast> for Printer {
         self.indent -= self.indent_spaces;
     }
 
-    fn visit_expr(&mut self, expr: &'ast super::Expr) {
+    fn visit_expr(&mut self, expr: &'ast Expr) {
         let Expr { kind, span } = expr;
 
         self.indent += self.indent_spaces;
@@ -192,111 +255,6 @@ impl<'ast> Visitor<'ast> for Printer {
             TyKind::Path(path) => {
                 self.visit_path(path);
             }
-        }
-        self.indent -= self.indent_spaces;
-    }
-
-    fn visit_stmt(&mut self, stmt: &'ast Stmt) {
-        let Stmt { kind, span } = stmt;
-
-        match kind {
-            StmtKind::If(if_branch, else_branch) => self.visit_stmt_if(if_branch,else_branch,span),
-            StmtKind::Expr(_) => {}
-            StmtKind::Block(block) => self.visit_stmt_block(block),
-            StmtKind::Break => {}
-            StmtKind::Continue => {}
-            StmtKind::Return(_) => {}
-            StmtKind::Var(_) => {}
-        }
-    }
-
-    fn visit_stmt_if(&mut self, if_branch: &Vec<(Box<Expr>, Vec<Box<Stmt>>)>, else_branch: &Option<Vec<Box<Stmt>>>, span: &Span) {
-        let mut if_branch_iter = if_branch.iter();
-        let Some(first_item) = if_branch_iter.next() else { return };
-
-        self.output
-            .push_str(&format!("{}If statement: {} \n", " ".repeat(self.indent),span));
-
-        self.indent += self.indent_spaces;
-
-        self.output
-            .push_str(&format!("{}If branch: ", " ".repeat(self.indent)));
-        if first_item.1.is_empty() {
-            self.output
-                .push_str(&format!("{}\n", first_item.0.span));
-        } else {
-            self.output
-                .push_str(&format!("{}\n", first_item.0.span.to(first_item.1.last().unwrap().span)));
-        }
-
-        self.indent += self.indent_spaces;
-
-        self.output
-            .push_str(&format!("{}Condition: \n", " ".repeat(self.indent)));
-        self.visit_expr(&first_item.0);
-        self.output
-            .push_str(&format!("{}Block: ", " ".repeat(self.indent)));
-        if first_item.1.is_empty() {
-            self.output
-                .push_str(&"[]\n".to_string());
-        } else {
-            self.output
-                .push_str(&format!("{}\n", first_item.1.first().unwrap().span.to(first_item.1.last().unwrap().span)));
-        }
-        self.visit_stmt_block(&first_item.1);
-
-        self.indent -= self.indent_spaces;
-
-        while let Some(item) = if_branch_iter.next() {
-            self.output
-                .push_str(&format!("{}Elif branch: ", " ".repeat(self.indent)));
-            if item.1.is_empty() {
-                self.output
-                    .push_str(&format!("{}\n", item.0.span));
-            } else {
-                self.output
-                    .push_str(&format!("{}\n", item.0.span.to(item.1.last().unwrap().span)));
-            }
-
-
-            self.indent += self.indent_spaces;
-
-            self.output
-                .push_str(&format!("{}Condition: \n", " ".repeat(self.indent)));
-            self.visit_expr(&item.0);
-            self.output
-                .push_str(&format!("{}Block: ", " ".repeat(self.indent)));
-            if item.1.is_empty() {
-                self.output
-                    .push_str(&"[]\n".to_string());
-            } else {
-                self.output
-                    .push_str(&format!("{}\n", item.1.first().unwrap().span.to(item.1.last().unwrap().span)));
-            }
-            self.visit_stmt_block(&item.1);
-
-            self.indent -= self.indent_spaces;
-        }
-
-        if let Some(else_block) = else_branch {
-            self.output
-                .push_str(&format!("{}Else branch: ", " ".repeat(self.indent)));
-            if else_block.is_empty() {
-                self.output
-                    .push_str(&"[]\n".to_string());
-            } else {
-                self.output
-                    .push_str(&format!("{}\n ", else_block.first().unwrap().span.to(else_block.last().unwrap().span)));
-            }
-            self.visit_stmt_block(else_block);
-        }
-        self.indent -= self.indent_spaces;
-    }
-
-    fn visit_stmt_block(&mut self, stmt: &Vec<Box<Stmt>>) {
-        self.indent += self.indent_spaces;
-        for stmt in stmt{
-            self.visit_stmt(stmt);
         }
         self.indent -= self.indent_spaces;
     }

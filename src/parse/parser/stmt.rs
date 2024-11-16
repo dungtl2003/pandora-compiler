@@ -1,25 +1,33 @@
-use std::str::FromStr;
-
-use crate::{ast::{BindingMode, Local, LocalKind, Mutability, Ident, PrimitiveTy, Stmt, StmtKind, TokenKind, Ty, TyKind}, kw, kw::Keyword, session_global::SessionGlobal, span_encoding::Span};
-use crate::ast::{Delimiter, Expr};
-use crate::kw::is_keyword;
+use crate::ast::Delimiter;
+use crate::{
+    ast::{BindingMode, Local, LocalKind, Mutability, Stmt, StmtKind, TokenKind},
+    kw::Keyword,
+};
 
 // use crate::interner::Interner;
-use super::{PResult, Parser, TokenType};
+use super::{PResult, Parser};
 
-// program = statement* EOF
 // block_statement = { statement* }
 // statement = block_statement
 //             | declaration_statement
 //             | expression_statement
 //             | if_statement
-//             | print_statement (for testing only!)
+//             | loop_statement
+//
+//
+// loop_statement = predicate_loop_statement
+//                 | iterator_loop_statement
+//
+// predicate_loop_statement = 'while' expression block_statement
+// iterator_loop_statement = 'for' identifier 'in' expression block_statement
+//
 //
 // expression_statement = expression ';'
 // expression = assignment_expression
 //              | binary_expression
 //              | unary_expression
 //              | literal
+//
 //
 // declaration_statement = declaration
 // declaration = variable_declaration
@@ -28,99 +36,147 @@ use super::{PResult, Parser, TokenType};
 //               | enum_declaration
 //               | interface_declaration
 //
-// if_statement = 'if' expression block_statement ('elif' expression block_statement)* 'else'
-//                block_statement
 //
 // variable_declaration = 'var' 'mut'? identifier: type_specifier ('=' expression)? ';'
-// type_specifier = primitive_type | ...
-// primitive_type = 'int' | 'float' | 'bool' | 'char'
-//
+// type_specifier = path
+// path = segment ('::' segment)*
+// segment = identifier ('<' generic_args '>')?
+// generic_args = angle_bracketed_args
+// angle_bracketed_args = '<' angle_bracketed_arg (',' angle_bracketed_arg)* '>'
+// angle_bracketed_arg = generic_arg
+// generic_arg = type_specifier
+
 impl Parser<'_> {
     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
         if self.token.is_keyword(Keyword::Var) {
-            self.parse_var_declaration_stmt()
+            self.parse_stmt_var_decl()
         } else if self.token.is_keyword(Keyword::If) {
             self.parse_stmt_if()
         } else if self.token.can_begin_expr() {
             self.parse_stmt_expr()
+        } else if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
+            self.parse_stmt_block()
+        } else if self.token.is_keyword(Keyword::While) {
+            self.parse_stmt_while()
+        } else if self.token.is_keyword(Keyword::For) {
+            self.parse_stmt_for()
         } else {
             unreachable!();
         }
     }
 
-    pub fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
-        // self.expected_tokens.push(TokenType::Keyword(Interner::intern(&mut Interner::new(), kw::Keyword::If.into())));
+    /// predicate_loop_statement = 'while' expression block_statement
+    pub fn parse_stmt_while(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::While) {
+            return Err("Expected 'while'".into());
+        }
 
         let start_span = self.token.span;
-        let mut end_span = self.token.span;
+        self.advance();
+
+        let condition = self.parse_expr()?;
+        let block = self.parse_stmt_block()?;
+        let end_span = self.prev_token.span;
+        let span = start_span.to(end_span);
+        let kind = StmtKind::While(condition, block);
+        let stmt = Box::new(Stmt { kind, span });
+
+        Ok(stmt)
+    }
+
+    /// iterator_loop_statement = 'for' identifier 'in' expression block_statement
+    pub fn parse_stmt_for(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::For) {
+            return Err("Expected 'for'".into());
+        }
+
+        let start_span = self.token.span;
+
+        self.advance();
+        if !self.token.is_ident() {
+            return Err("Expected identifier".into());
+        }
+        let ident = self.token.ident().unwrap().0;
+
+        self.advance();
+        if !self.token.is_keyword(Keyword::In) {
+            return Err("Expected 'in'".into());
+        }
+
+        self.advance();
+        let expr = self.parse_expr()?;
+        let block = self.parse_stmt_block()?;
+        let end_span = self.prev_token.span;
+        let span = start_span.to(end_span);
+        let kind = StmtKind::For(ident, expr, block);
+        let stmt = Box::new(Stmt { kind, span });
+
+        Ok(stmt)
+    }
+
+    /// if_statement = 'if' expression block_statement ('else' (block_statement | if_statement))?
+    pub fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::If) {
+            return Err("Expected 'if'".into());
+        }
+
+        let start_span = self.token.span;
 
         self.advance(); // Eat token after "if"
-        // Parse the condition expression.
-        let StmtKind::Expr( expr ) = self.parse_stmt_expr()?.kind else { todo!() };
-        let mut condition = expr;
+                        // Parse the condition expression.
+        let condition = self.parse_expr()?;
 
         // Parse the block for the `if` statement.
         let if_block = self.parse_stmt_block()?;
 
-        let mut if_branches = vec![(condition, if_block)];
-        // Parse any `elif` branches.
-        while self.token.is_keyword(Keyword::Elif) {
-            self.advance(); // Eat token after `elif`
-
-            let StmtKind::Expr( expr_elif ) = self.parse_stmt_expr()?.kind else { todo!() };
-            let elif_condition = expr_elif;
-
-            let mut elif_block = Vec::new();
-            if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
-                elif_block = self.parse_stmt_block()?;
-            } else {
-                todo!()
-            };
-
-            if_branches.push((elif_condition, elif_block));
-        }
-
         // Optionally parse an `else` block.
         let else_block = if self.token.is_keyword(Keyword::Else) {
             self.advance(); // Eat token after `else`
-            let block = self.parse_stmt_block()?;
-            Some(block)
+            if self.token.is_keyword(Keyword::If) {
+                let else_block = self.parse_stmt_if()?;
+                Some(else_block)
+            } else if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
+                let else_block = self.parse_stmt_block()?;
+                Some(else_block)
+            } else {
+                return Err("Expected 'if' or '{'".into());
+            }
         } else {
             None
         };
-        if self.token.kind == TokenKind::Eof {
-            end_span = self.prev_token.span;
-        } else {
-            end_span = self.token.span;
+
+        let end_span = self.prev_token.span;
+        let span = start_span.to(end_span);
+        let kind = StmtKind::If(condition, if_block, else_block);
+        let stmt = Box::new(Stmt { kind, span });
+        Ok(stmt)
+    }
+
+    /// block_statement = '{' statement* '}'
+    pub fn parse_stmt_block(&mut self) -> PResult<Box<Stmt>> {
+        if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
+            return Err("Expected '{'".into());
         }
 
-        let stmt = Stmt {
-            kind: StmtKind::If(if_branches, else_block),
-            span: self.mk_stmt_sp(&start_span,end_span), // Create the span for the whole `if` statement.
-        };
-        Ok(Box::new(stmt))
-    }
-
-    pub fn mk_stmt_sp(&self,start:&Span,end:Span) -> Span {
-        start.to(end)
-    }
-
-    pub fn parse_stmt_block(&mut self) -> PResult<Vec<Box<Stmt>>> {
-        if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
-            todo!()
-        };
+        let start = self.token.span;
         self.advance(); // Eat token after '{'
 
         let mut stmts = Vec::new();
         while self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
-            let stmt= self.parse_stmt()?;
+            let stmt = self.parse_stmt()?;
             stmts.push(stmt);
         }
 
+        let end = self.token.span;
+        let span = start.to(end);
+        let kind = StmtKind::Block(stmts);
+        let stmt = Box::new(Stmt { kind, span });
+
         self.advance(); // Eat token after '}'
-        Ok(stmts)
+        Ok(stmt)
     }
 
+    /// expression_statement = expression ';'
     pub fn parse_stmt_expr(&mut self) -> PResult<Box<Stmt>> {
         let expr = self.parse_expr()?;
         let span = expr.span;
@@ -128,14 +184,16 @@ impl Parser<'_> {
             kind: StmtKind::Expr(expr),
             span,
         });
-        // Current token is after expr
-        // self.advance();
+
+        self.advance(); // Eat token after ';'
         Ok(stmt)
     }
 
     /// variable_declaration = 'var' 'mut'? identifier: type_specifier ('=' expression)? ';'
-    pub fn parse_var_declaration_stmt(&mut self) -> PResult<Box<Stmt>> {
-        debug_assert!(self.token.is_keyword(Keyword::Var));
+    pub fn parse_stmt_var_decl(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::Var) {
+            return Err("Expected 'var'".into());
+        }
 
         let start = self.token.span;
         let binding_mode = if self.is_keyword_ahead(&[Keyword::Mut]) {
@@ -182,11 +240,10 @@ impl Parser<'_> {
             kind,
             span,
         };
+        let kind = StmtKind::Var(Box::new(local));
+        let stmt = Box::new(Stmt { kind, span });
 
         self.advance();
-        Ok(Box::new(Stmt {
-            kind: StmtKind::Var(Box::new(local)),
-            span,
-        }))
+        Ok(stmt)
     }
 }

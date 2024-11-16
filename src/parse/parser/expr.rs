@@ -1,5 +1,6 @@
 use crate::{
-    ast::{BinOp, BinOpKind, BinOpToken, Delimiter, Expr, ExprKind, Lit, TokenKind, UnOp},
+    ast::{BinOp, BinOpKind, BinOpToken, Delimiter, Expr, ExprKind, Lit, LitKind, TokenKind, UnOp},
+    kw::Keyword,
     parse::util::parser::{AssocOp, Fixity},
     span_encoding::Span,
 };
@@ -109,9 +110,9 @@ impl Parser<'_> {
     /// Highest precedence level.
     fn parse_expr_primary(&mut self) -> PResult<Box<Expr>> {
         match self.token.kind {
-            TokenKind::Literal(lit) => {
-                let span = self.token.span;
-                self.advance();
+            TokenKind::Literal(_) | TokenKind::Ident(..) => {
+                let lit = self.parse_token_lit()?;
+                let span = self.prev_token.span;
                 let expr = self.mk_literal(lit);
                 Ok(self.mk_expr(expr, span))
             }
@@ -127,6 +128,26 @@ impl Parser<'_> {
                 println!("Unexpected token: {:?}", self.token);
                 Err("Unexpected token".into())
             }
+        }
+    }
+
+    fn parse_token_lit(&mut self) -> PResult<Lit> {
+        match self.token.kind {
+            TokenKind::Literal(lit) => {
+                self.advance();
+                Ok(lit)
+            }
+            TokenKind::Ident(sym, _) => {
+                if sym == Keyword::True || sym == Keyword::False {
+                    let kind = LitKind::Bool;
+                    let symbol = sym;
+                    self.advance();
+                    Ok(Lit { kind, symbol })
+                } else {
+                    Err("Expected literal".into())
+                }
+            }
+            _ => Err("Expected literal".into()),
         }
     }
 
