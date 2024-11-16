@@ -220,30 +220,59 @@ impl<'ast> Visitor<'ast> for Printer {
         self.indent += self.indent_spaces;
 
         self.output
-            .push_str(&format!("{}If branch: \n", " ".repeat(self.indent)));
+            .push_str(&format!("{}If branch: ", " ".repeat(self.indent)));
+        if first_item.1.is_empty() {
+            self.output
+                .push_str(&format!("{}\n", first_item.0.span));
+        } else {
+            self.output
+                .push_str(&format!("{}\n", first_item.0.span.to(first_item.1.last().unwrap().span)));
+        }
 
         self.indent += self.indent_spaces;
 
         self.output
-            .push_str(&format!("{}Condition: ", " ".repeat(self.indent)));
+            .push_str(&format!("{}Condition: \n", " ".repeat(self.indent)));
         self.visit_expr(&first_item.0);
         self.output
-            .push_str(&format!("{}Block: \n", " ".repeat(self.indent)));
+            .push_str(&format!("{}Block: ", " ".repeat(self.indent)));
+        if first_item.1.is_empty() {
+            self.output
+                .push_str(&"[]\n".to_string());
+        } else {
+            self.output
+                .push_str(&format!("{}\n", first_item.1.first().unwrap().span.to(first_item.1.last().unwrap().span)));
+        }
         self.visit_stmt_block(&first_item.1);
 
         self.indent -= self.indent_spaces;
 
         while let Some(item) = if_branch_iter.next() {
             self.output
-                .push_str(&format!("{}Elif branch: \n", " ".repeat(self.indent)));
+                .push_str(&format!("{}Elif branch: ", " ".repeat(self.indent)));
+            if item.1.is_empty() {
+                self.output
+                    .push_str(&format!("{}\n", item.0.span));
+            } else {
+                self.output
+                    .push_str(&format!("{}\n", item.0.span.to(item.1.last().unwrap().span)));
+            }
+
 
             self.indent += self.indent_spaces;
 
             self.output
-                .push_str(&format!("{}Condition: ", " ".repeat(self.indent)));
+                .push_str(&format!("{}Condition: \n", " ".repeat(self.indent)));
             self.visit_expr(&item.0);
             self.output
-                .push_str(&format!("{}Block: \n", " ".repeat(self.indent)));
+                .push_str(&format!("{}Block: ", " ".repeat(self.indent)));
+            if item.1.is_empty() {
+                self.output
+                    .push_str(&"[]\n".to_string());
+            } else {
+                self.output
+                    .push_str(&format!("{}\n", item.1.first().unwrap().span.to(item.1.last().unwrap().span)));
+            }
             self.visit_stmt_block(&item.1);
 
             self.indent -= self.indent_spaces;
@@ -251,7 +280,14 @@ impl<'ast> Visitor<'ast> for Printer {
 
         if let Some(else_block) = else_branch {
             self.output
-                .push_str(&format!("{}Else branch: \n", " ".repeat(self.indent)));
+                .push_str(&format!("{}Else branch: ", " ".repeat(self.indent)));
+            if else_block.is_empty() {
+                self.output
+                    .push_str(&"[]\n".to_string());
+            } else {
+                self.output
+                    .push_str(&format!("{}\n ", else_block.first().unwrap().span.to(else_block.last().unwrap().span)));
+            }
             self.visit_stmt_block(else_block);
         }
         self.indent -= self.indent_spaces;
