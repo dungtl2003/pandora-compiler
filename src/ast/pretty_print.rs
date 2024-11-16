@@ -1,5 +1,3 @@
-use crate::visitor::Visitor;
-
 use std::os::linux::raw::stat;
 use crate::span_encoding::Span;
 
@@ -7,6 +5,9 @@ use super::{
     AngleBracketedArgs, Expr, ExprKind, GenericArgs, Local, LocalKind, Path, PathSegment, Stmt,
     StmtKind, Ty, TyKind,
 };
+use crate::{session_global::SessionGlobal, visitor::Visitor};
+
+
 
 pub struct Printer {
     pub output: String,
@@ -250,7 +251,7 @@ impl<'ast> Visitor<'ast> for Printer {
 
         if let Some(else_block) = else_branch {
             self.output
-                .push_str(&format!("{}Else branches: \n", " ".repeat(self.indent)));
+                .push_str(&format!("{}Else branch: \n", " ".repeat(self.indent)));
             self.visit_stmt_block(else_block);
         }
         self.indent -= self.indent_spaces;

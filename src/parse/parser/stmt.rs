@@ -2,8 +2,7 @@ use std::str::FromStr;
 
 use crate::{ast::{BindingMode, Local, LocalKind, Mutability, Ident, PrimitiveTy, Stmt, StmtKind, TokenKind, Ty, TyKind}, kw, kw::Keyword, session_global::SessionGlobal, span_encoding::Span};
 use crate::ast::Delimiter;
-use crate::interner::Interner;
-
+use crate::kw::is_keyword;
 
 // use crate::interner::Interner;
 use super::{PResult, Parser, TokenType};
@@ -40,7 +39,8 @@ impl Parser<'_> {
     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
         if self.token.is_keyword(Keyword::Var) {
             self.parse_var_declaration_stmt()
-        } else if self.is_keyword_ahead(&[Keyword::If]) {
+        } else if self.token.is_keyword(Keyword::If) {
+            println!("debug: ");
             self.parse_stmt_if()
         } else if self.token.is_ident() {
             self.parse_stmt_if()
@@ -57,11 +57,9 @@ impl Parser<'_> {
         let start_span = self.token.span;
         let mut end_span = self.token.span;
 
-        // println!("{}", self.token.is_keyword(Keyword::If));
-
-        // println!("{}", self.look_ahead(1, |tok|tok.kind == TokenKind::OpenDelim(Delimiter::Brace)));//TODO!
         self.advance(); // Eat token after "if"
         // Parse the condition expression.
+        println!("{}",self.token.span);
         let condition = self.parse_expr()?;
 
         // Parse the block for the `if` statement.
@@ -70,49 +68,40 @@ impl Parser<'_> {
         let if_block = self.parse_stmt_block()?;
         // println!("{}", self.look_ahead(1, |tok|tok.kind == TokenKind::CloseDelim(Delimiter::Brace)));//TODO!
         // self.advance(); // Eat '}'
-        end_span = self.token.span;
+
         let mut if_branches = vec![(condition, if_block)];
 
-
-
         // Parse any `elif` branches.
-        while self.look_ahead(1, |tok|tok.is_ident()){
-            self.advance(); // Eat `elif`
+        while self.token.is_keyword(Keyword::Elif) {
             self.advance(); // Eat token after `elif`
+            println!("{}",self.token.span);
             let elif_condition = self.parse_expr()?;
 
-            // println!("{}", self.look_ahead(1, |tok|tok.kind == TokenKind::OpenDelim(Delimiter::Brace)));//TODO!
-            // self.look_ahead(1, |tok|tok.kind == TokenKind::OpenDelim(Delimiter::Brace));//TODO!
-            // self.expect(TokenKind::OpenDelim(Delimiter::Brace))?;
-            // self.advance(); // Eat '{'
+            let mut elif_block = Vec::new();
 
-            let elif_block = self.parse_stmt_block()?;
-
-            // println!("debug:{}", self.look_ahead(1, |tok|tok.kind == TokenKind::CloseDelim(Delimiter::Brace)));//TODO!
-            // self.look_ahead(1, |tok|tok.kind == TokenKind::CloseDelim(Delimiter::Brace));//TODO!
-            // self.advance(); // Eat '}'
-            end_span = self.token.span;
+            if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
+                elif_block = self.parse_stmt_block()?;
+            } else {
+                todo!()
+            };
 
             if_branches.push((elif_condition, elif_block));
         }
 
         // Optionally parse an `else` block.
         let else_block = if self.token.is_keyword(Keyword::Else) {
-
-            self.advance(); // Eat `else`
-
-            self.look_ahead(1, |tok|tok.kind == TokenKind::OpenDelim(Delimiter::Brace));//TODO!
-            self.advance(); // Eat '{'
-
+            self.advance(); // Eat token after `else`
             let block = self.parse_stmt_block()?;
-
-            end_span = self.token.span;
-
             Some(block)
         } else {
             None
         };
-        end_span = self.token.span;
+        if self.token.kind == TokenKind::Eof {
+            end_span = self.prev_token.span;
+        } else {
+            end_span = self.token.span;
+        }
+
         // Construct the `If` statement node.
         let stmt = Stmt {
             kind: StmtKind::If(if_branches, else_block),
@@ -126,22 +115,19 @@ impl Parser<'_> {
     }
 
     pub fn parse_stmt_block(&mut self) -> PResult<Vec<Box<Stmt>>> {
-        // let start_span = self.token.span;
-        // let mut end_span = self.token.span;
+        if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
+            todo!()
+        };
+        self.advance(); // Eat token after '{'
+
         let mut stmts = Vec::new();
-        while self.look_ahead(1, |tok|tok.kind != TokenKind::CloseDelim(Delimiter::Brace)) {
-            self.advance();
-            let stmt= self.parse_stmt_if()?;
+        while self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
+            let stmt= self.parse_stmt()?;
             stmts.push(stmt);
+            self.advance();
         }
 
-        self.advance();
-        // println!("{}",self.token.kind == TokenKind::CloseDelim(Delimiter::Brace));
-        // self.look_ahead(1, |tok|tok.kind == TokenKind::CloseDelim(Delimiter::Brace)); //TODO!
-
-        // self.advance(); // Eat '}'
-        // end_span = self.token.span;
-
+        self.advance(); // Eat token after '}'
         Ok(stmts)
     }
 
