@@ -16,14 +16,14 @@ Nhiệm vụ chính của phần phân tích từ vựng là đọc các ký t�
         \node[squarednode,text width=3cm,align=center](parser)[right=of lexer,xshift = 2cm] {Phân tích cú pháp};
         \node[squarednode,text width=3cm,align=center](tableofsymbols)[below=of lexer, xshift = 3cm, yshift = -0.5cm] {Bảng ký hiệu};
         \node[](nothing)[right=of parser]{}; 
-        \node[text width=5cm,align=center](textabove)[above=of lexer,xshift = 3cm, yshift = -1.2cm]{Yêu cầu lấy từ tố tiếp theo}; 
-        \node[text width=3cm,align=center](textbelow)[below=of lexer,xshift = 3cm, yshift = 1.2cm]{Từ tố}; 
+        % \node[text width=5cm,align=center](textabove)[below=of lexer,xshift = 3cm, yshift = -1.2cm]{Yêu cầu lấy từ tố tiếp theo}; 
+        \node[text width=3cm,align=center](textbelow)[above=of lexer,xshift = 3cm, yshift = -1.5cm]{Từ tố}; 
     
         %Lines
         \draw[->] (source) -- (lexer);
-        \draw[->] ([yshift = 2mm]lexer.east) -- ([yshift = 2mm]parser.west);
+        \draw[->] (lexer.east) -- (parser.west);
         \draw[<->] (lexer.south) |- ([yshift = 2mm]tableofsymbols.west);
-        \draw[->] ([yshift = -2mm]parser.west) -- ([yshift = -2mm]lexer.east) ;
+        % \draw[->] ([yshift = -2mm]parser.west) -- ([yshift = -2mm]lexer.east) ;
         \draw[<->] (tableofsymbols.east)  -| (nothing.south);
         \draw[->,dashed] (parser.east) -- (nothing.west) ;
     \end{tikzpicture}
@@ -96,4 +96,4 @@ Quy trình phân tích cú pháp trong hệ thống của chúng em bao gồm ba
 
 \textbf{Giai đoạn 3.} \textit{Phân tích cây từ tố.}
 
-Đầu tiên, mã nguồn được chia nhỏ thành các từ tố sơ cấp (\textit{Token trong gói lexer}) – những phần tử cơ bản nhất như tên, toán tử, và ký tự đặc biệt, \dots Sau đó, ở giai đoạn tiếp theo, các token sơ cấp này được xử lý để tạo thành token thứ cấp (\textit{Token trong gói ast}) bằng cách loại bỏ các khoảng trắng, comment không cần thiết. Cuối cùng, các token thứ cấp được nhóm lại (đồng thời kết hợp các token có thể ghép lại, ví dụ như '<' và '=' thành "<=", \dots) để tạo thành cây từ tố (\textit{TokenTree trong gói ast::tokenstream}), giúp biểu diễn cấu trúc cú pháp của mã nguồn, tạo nền tảng cho quá trình phân tích cú pháp, phân tích ngữ nghĩa và biên dịch. Chi tiết sẽ được chúng em trình bày như dưới đây:
+Đầu tiên, mã nguồn được chia nhỏ thành các từ tố sơ cấp (\textit{Token trong gói lexer}) – những phần tử cơ bản nhất như tên, toán tử, và ký tự đặc biệt, \dots Sau đó, ở giai đoạn tiếp theo, các token sơ cấp này được xử lý để tạo thành token thứ cấp (\textit{Token trong gói ast}) bằng cách loại bỏ các khoảng trắng, comment không cần thiết. Cuối cùng, các token thứ cấp được nhóm lại (đồng thời kết hợp các token có thể ghép lại, ví dụ như '<' và '=' thành "<=", \dots) để tạo thành cây từ tố (\textit{TokenTree trong gói ast::tokenstream}), giúp biểu diễn cấu trúc cú pháp của mã nguồn, tạo nền tảng cho quá trình phân tích cú pháp, phân tích ngữ nghĩa và biên dịch. 
