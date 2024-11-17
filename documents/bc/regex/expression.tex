@@ -4,6 +4,8 @@
 
     \hspace{4.5cm}| OPERATOR\_EXPRESSION
 
+    \hspace{4.5cm}| GROUPED\_EXPRESSION
+
     \hspace{4.5cm}| VARIABLE\_EXPRESSION
 
     \hspace{4.5cm}| FUNCTION\_CALL\_EXPRESSION
@@ -22,6 +24,8 @@
 
     \hspace{4.5cm}| ASSIGNMENT\_EXPRESSION
 
+    \hspace{4.5cm}| COMPOUND\_ASSIGNMENT\_EXPRESSION
+
     \hspace{4.5cm}| LAZY\_BOOLEAN\_EXPRESSION
     \end{rg}
 }
@@ -39,5 +43,113 @@
     \hspace{5.9cm}| FLOAT\_LITERAL
 
     \hspace{5.9cm}| \w{true} | \w{false}
+    \end{rg}
+}
+
+\newcommand{\regexneexpr}{
+    \begin{rg}
+    NEGATION\_EXPRESSION -> \w{$-$} EXPRESSION
+
+    \hspace{6.45cm}| \w{$!$} EXPRESSION
+    \end{rg}
+}
+
+\newcommand{\regexarithlogicexpr}{
+    \begin{rg}
+    ARITHMETIC\_OR\_LOGICAL\_EXPRESSION -> 
+
+    \hspace{6cm}EXPRESSION \w{$+$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$-$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$*$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$/$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$\%$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$\&$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$|$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$\wedge$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$<<$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$>>$} EXPRESSION
+    \end{rg}
+}
+
+\newcommand{\regexcompexpr}{
+    \begin{rg}
+    COMPARISON\_EXPRESSION -> 
+
+    \hspace{6cm}EXPRESSION \w{$==$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$!=$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$<$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$>$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$<=$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$>=$} EXPRESSION
+    \end{rg}
+}
+
+\newcommand{\regexassignexpr}{
+    \begin{rg}
+    ASSIGNMENT\_EXPRESSION -> 
+
+    \hspace{6cm}EXPRESSION \w{$=$} EXPRESSION
+    \end{rg}
+}
+
+\newcommand{\regexcompoundassignexpr}{
+    \begin{rg}
+    COMPOUND\_ASSIGNMENT\_EXPRESSION ->
+
+    \hspace{6cm}EXPRESSION \w{$+=$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$-=$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$*=$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$/=$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$\%=$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$\&=$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$|=$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$\wedge=$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$<<=$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$>>=$} EXPRESSION
+    \end{rg}
+}
+
+\newcommand{\regexlazyboolexpr}{
+    \begin{rg}
+    LAZY\_BOOLEAN\_EXPRESSION ->
+
+    \hspace{6cm}EXPRESSION \w{$\&\&$} EXPRESSION
+
+    \hspace{5.4cm}| EXPRESSION \w{$||$} EXPRESSION
+    \end{rg}
+}
+
+\newcommand{\regexgroupexpr}{
+    \begin{rg}
+    GROUPED\_EXPRESSION -> \w{(} EXPRESSION \w{)}
+    \end{rg}
+}
+
+\newcommand{\regexvarexpr}{
+    \begin{rg}
+    VARIABLE\_EXPRESSION -> IDENTIFIER
     \end{rg}
 }
