@@ -20,8 +20,10 @@ Phân tích cú pháp là một giai đoạn quan trọng trong quá trình xây
         \node[squarednode,text width=3cm,align=center](tableofsymbols)[below=of lexer, xshift = 3cm, yshift = -0.5cm] {Bảng ký hiệu};
         \node[squarednode,text width=2.5cm,align=center](semanticanalysis)[right=of parser]{Phân tích ngữ nghĩa}; 
     
-        \node[text width=2cm,align=center](textabove)[above=of lexer,xshift = 2.5cm, yshift = -1.2cm]{Yêu cầu lấy từ tố tiếp theo}; 
-        \node[text width=2cm,align=center](textbelow)[below=of lexer,xshift = 2.5cm, yshift = 1.2cm]{Từ tố}; 
+        \node[text width=2cm,align=center](textabove)[above=of lexer,xshift = 2.5cm, yshift = -1.5cm]{Yêu cầu lấy từ tố tiếp theo}; 
+        \node[text width=2cm,align=center](textbelow)[below=of lexer,xshift = 2.5cm, yshift = 1.5cm]{Từ tố}; 
+        \node[text width=1.5cm,align=center](textaboveparser)[above=of parser,xshift = 2.2cm, yshift = -1.5cm]{Cây phân tích}; 
+
         \node[](nothing)[right=of semanticanalysis]{};
     
         \coordinate (A) at (lexer.south);
