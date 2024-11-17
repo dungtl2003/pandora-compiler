@@ -4,27 +4,53 @@ Nhiệm vụ chính của phần phân tích từ vựng là đọc các ký t�
 
 \vspace{1cm}
 \hspace{-1cm}
-\begin{tikzpicture}[
-    % roundnode/.style={circle, draw=green!60, fill=green!5, very thick, minimum size=7mm},
-    squarednode/.style={rectangle, draw=red!60, fill=red!5, very thick, minimum size=5mm},
-    ]
-    %Nodes
-    \node[squarednode,text width=2.5cm,align=center](lexer){Phân tích từ vựng};
-    \node[text width=3cm,align=center](source)[left=of lexer]{Chương trình nguồn};
-    \node[squarednode,text width=3cm,align=center](parser)[right=of lexer,xshift = 2cm] {Phân tích cú pháp};
-    \node[squarednode,text width=3cm,align=center](tableofsymbols)[below=of lexer, xshift = 3cm, yshift = -0.5cm] {Bảng ký hiệu};
-    \node[](nothing)[right=of parser]{}; 
-    \node[text width=5cm,align=center](textabove)[above=of lexer,xshift = 3cm, yshift = -1.2cm]{Yêu cầu lấy từ tố tiếp theo}; 
-    \node[text width=3cm,align=center](textbelow)[below=of lexer,xshift = 3cm, yshift = 1.2cm]{Từ tố}; 
+\begin{figure}[h]
+    % \centering
+    \begin{tikzpicture}[
+        % roundnode/.style={circle, draw=green!60, fill=green!5, very thick, minimum size=7mm},
+        squarednode/.style={rectangle, draw=red!60, fill=red!5, very thick, minimum size=5mm},
+        ]
+        %Nodes
+        \node[squarednode,text width=2.5cm,align=center](lexer){Phân tích từ vựng};
+        \node[text width=3cm,align=center](source)[left=of lexer]{Chương trình nguồn};
+        \node[squarednode,text width=3cm,align=center](parser)[right=of lexer,xshift = 2cm] {Phân tích cú pháp};
+        \node[squarednode,text width=3cm,align=center](tableofsymbols)[below=of lexer, xshift = 3cm, yshift = -0.5cm] {Bảng ký hiệu};
+        \node[](nothing)[right=of parser]{}; 
+        \node[text width=5cm,align=center](textabove)[above=of lexer,xshift = 3cm, yshift = -1.2cm]{Yêu cầu lấy từ tố tiếp theo}; 
+        \node[text width=3cm,align=center](textbelow)[below=of lexer,xshift = 3cm, yshift = 1.2cm]{Từ tố}; 
+    
+        %Lines
+        \draw[->] (source) -- (lexer);
+        \draw[->] ([yshift = 2mm]lexer.east) -- ([yshift = 2mm]parser.west);
+        \draw[<->] (lexer.south) |- ([yshift = 2mm]tableofsymbols.west);
+        \draw[->] ([yshift = -2mm]parser.west) -- ([yshift = -2mm]lexer.east) ;
+        \draw[<->] (tableofsymbols.east)  -| (nothing.south);
+        \draw[->,dashed] (parser.east) -- (nothing.west) ;
+    \end{tikzpicture}
+    \caption{Vị trí của phần phân tích từ vựng trong trình biên dịch.}
+    \label{fig:pos-of-lexer}
+\end{figure}
+% \begin{tikzpicture}[
+%     % roundnode/.style={circle, draw=green!60, fill=green!5, very thick, minimum size=7mm},
+%     squarednode/.style={rectangle, draw=red!60, fill=red!5, very thick, minimum size=5mm},
+%     ]
+%     %Nodes
+%     \node[squarednode,text width=2.5cm,align=center](lexer){Phân tích từ vựng};
+%     \node[text width=3cm,align=center](source)[left=of lexer]{Chương trình nguồn};
+%     \node[squarednode,text width=3cm,align=center](parser)[right=of lexer,xshift = 2cm] {Phân tích cú pháp};
+%     \node[squarednode,text width=3cm,align=center](tableofsymbols)[below=of lexer, xshift = 3cm, yshift = -0.5cm] {Bảng ký hiệu};
+%     \node[](nothing)[right=of parser]{}; 
+%     \node[text width=5cm,align=center](textabove)[above=of lexer,xshift = 3cm, yshift = -1.2cm]{Yêu cầu lấy từ tố tiếp theo}; 
+%     \node[text width=3cm,align=center](textbelow)[below=of lexer,xshift = 3cm, yshift = 1.2cm]{Từ tố}; 
 
-    %Lines
-    \draw[->] (source) -- (lexer);
-    \draw[->] ([yshift = 2mm]lexer.east) -- ([yshift = 2mm]parser.west);
-    \draw[<->] (lexer.south) |- ([yshift = 2mm]tableofsymbols.west);
-    \draw[->] ([yshift = -2mm]parser.west) -- ([yshift = -2mm]lexer.east) ;
-    \draw[<->] (tableofsymbols.east)  -| (nothing.south);
-    \draw[->,dashed] (parser.east) -- (nothing.west) ;
-\end{tikzpicture}
+%     %Lines
+%     \draw[->] (source) -- (lexer);
+%     \draw[->] ([yshift = 2mm]lexer.east) -- ([yshift = 2mm]parser.west);
+%     \draw[<->] (lexer.south) |- ([yshift = 2mm]tableofsymbols.west);
+%     \draw[->] ([yshift = -2mm]parser.west) -- ([yshift = -2mm]lexer.east) ;
+%     \draw[<->] (tableofsymbols.east)  -| (nothing.south);
+%     \draw[->,dashed] (parser.east) -- (nothing.west) ;
+% \end{tikzpicture}
 \vspace{1cm}
 
 
