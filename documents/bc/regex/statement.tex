@@ -16,6 +16,8 @@
     \begin{rg}
     DECLARATION\_STATEMENT -> VARIABLE\_DECL\_STATEMENT
 
+    \hspace{6.75cm}| CONSTANT\_DECL\_STATEMENT
+
     \hspace{6.75cm}| FUNCTION\_DECL\_STATEMENT
 
     \hspace{6.75cm}| CLASS\_DECL\_STATEMENT
@@ -26,9 +28,17 @@
 
 \newcommand{\regexvardeclstmt}{
     \begin{rg}
-    VARIABLE\_DECL\_STATEMENT -> \w{var}\w{mut}?
+    VARIABLE\_DECL\_STATEMENT -> \w{var} \w{mut}?
 
-    \hspace{2.75cm}IDENTIFIER\w{:}TYPE\_SPECIFIER(\w{=}EXPRESSION)?\w{;}
+    \hspace{2.75cm}IDENTIFIER\w{:} TYPE (\w{=}EXPRESSION)?\w{;}
+    \end{rg}
+}
+
+\newcommand{\regexconstdeclstmt}{
+    \begin{rg}
+    CONSTANT\_DECL\_STATEMENT -> \w{const}
+
+    \hspace{3.5cm}IDENTIFIER\w{:} TYPE \w{=} EXPRESSION\w{;}
     \end{rg}
 }
 
