@@ -1,4 +1,57 @@
 \section{Phân tích cú pháp}
 \subsection{Mục đích}
+Phân tích cú pháp là một giai đoạn quan trọng trong quá trình xây dựng compiler, với mục tiêu chuyển đổi chuỗi các token từ bộ phân tích từ vựng (lexer) thành một cấu trúc cây cú pháp trừu tượng (AST). Cây AST này đại diện cho cấu trúc logic của chương trình, giúp xác định cách các phần tử trong mã nguồn liên kết với nhau và hỗ trợ quá trình phân tích ngữ nghĩa cũng như sinh mã.
+
+\vspace{1cm}
+\hspace{-1.5cm}
+\begin{tikzpicture}[
+    % roundnode/.style={circle, draw=green!60, fill=green!5, very thick, minimum size=7mm},
+    squarednode/.style={rectangle, draw=red!60, fill=red!5, very thick, minimum size=5mm},
+    ]
+
+    %Nodes
+    \node[squarednode,text width=2.5cm,align=center](lexer){Phân tích từ vựng};
+    \node[text width=2cm,align=center](source)[above=of lexer, xshift = -2.5cm, yshift = -1.5cm]{Chương trình nguồn};
+    \node[](nothingsource)[left=of lexer]{};
+
+    \node[squarednode,text width=3cm,align=center](parser)[right=of lexer,xshift = 1cm] {Phân tích cú pháp};
+    \node[squarednode,text width=3cm,align=center](tableofsymbols)[below=of lexer, xshift = 3cm, yshift = -0.5cm] {Bảng ký hiệu};
+    \node[squarednode,text width=2.5cm,align=center](semanticanalysis)[right=of parser]{Phân tích ngữ nghĩa}; 
+
+    \node[text width=2cm,align=center](textabove)[above=of lexer,xshift = 2.5cm, yshift = -1.2cm]{Yêu cầu lấy từ tố tiếp theo}; 
+    \node[text width=2cm,align=center](textbelow)[below=of lexer,xshift = 2.5cm, yshift = 1.2cm]{Từ tố}; 
+    \node[](nothing)[right=of semanticanalysis]{};
+
+    \coordinate (A) at (lexer.south);
+    \coordinate (B) at ([yshift = 2mm]tableofsymbols.west);
+
+
+    %Lines
+    \draw[->] (nothingsource) -- (lexer);
+    \draw[->] ([yshift = 2mm]lexer.east) -- ([yshift = 2mm]parser.west);
+    \draw[<->] (lexer.south) |- ([yshift = 2mm]tableofsymbols.west);
+    \draw[->] ([yshift = -2mm]parser.west) -- ([yshift = -2mm]lexer.east);
+    \draw[<->] (tableofsymbols.east)  -| (semanticanalysis.south);
+    \draw[->] (parser.east) -- (semanticanalysis.west); %use dashed for --->
+    \draw[->] (semanticanalysis.east) -- (nothing.west);
+
+\end{tikzpicture}
+\vspace{1cm}
+
+Mục đích chính của phân tích cú pháp là đảm bảo mã nguồn tuân thủ đúng các quy tắc cú pháp của ngôn ngữ lập trình. Qua đó, compiler có thể phát hiện và báo cáo các lỗi cú pháp, giúp nhà phát triển sửa chữa trước khi chuyển sang các giai đoạn xử lý tiếp theo. Phân tích cú pháp đóng vai trò như một bước đệm giữa việc nhận diện token và việc kiểm tra ý nghĩa logic cũng như sinh mã cuối cùng, giúp đảm bảo quá trình biên dịch diễn ra mượt mà và chính xác.
 \subsection{Một số phương pháp phân tích cú pháp}
-\subsection{Liên hệ với trình biên dịch Pandora}
+Ở đây chúng em đề cập đến hai thuật toán phân tích phổ biến nhất là \textit{Thuật toán phân tích Top-down} và \textit{Thuật toán phân tích Bottom-up}
+
+\textbf{Thuật toán phân tích Top-down:}
+Tên \textit{phân tích Top-down} xuất phát từ ý tưởng cố gắng tạo ra một cây phân tích cho đầu vào bắt đầu từ đỉnh và đi xuống cho đến lá.
+
+\textbf{Thuật toán phân tích Bottom-up:}
+Phương pháp \textit{phân tích Bottom-up} về tư tưởng là ngược lại với phương pháp \textit{phân tích Bottom-up}. Phương pháp này lại bắt đầu từ lá (tức là từ chính các ký hiệu đầu vào) và cố gắng xây dựng thành cây bằng cách hướng lên gốc.
+
+\subsection{Liên hệ với trình biên dịch ngôn ngữ Pandora}
+Trong thiết kế và xây dựng bộ phân tích cú pháp cho trình biên dịch ngôn ngữ Pandora, chúng em sử dụng thuật toán phân tích Top-down và cụ thể là sử dụng phương pháp phân tích đệ quy đi xuống (recursive descent parsing).
+
+\textit{Phân tích đệ quy đi xuống} là một kỹ thuật phân tích cú pháp từ trên xuống, xây dựng cây cú pháp từ đỉnh và đọc đầu vào từ trái sang phải. Phương pháp này sử dụng các thủ tục tương ứng cho từng từ tố đơn (\textit{\emph{Các kí tự đơn như} Colon, Comma, Plus, Minus \dots \emph{hoặc các từ khóa như} if, for, \dots }) và các ký hiệu không kết thúc (\textit{IS\_STATEMENT, LOOP\_STATEMENT, BLOCK\_STATEMENT, \dots}) , với mỗi quy tắc ngữ pháp được triển khai dưới dạng một hàm hoặc thủ tục riêng biệt. Quá trình phân tích diễn ra đệ quy, nghĩa là các hàm gọi lại chính chúng hoặc gọi các hàm khác để phân tích các phần tử con.
+% \cite{} TODO!
+
+\textbf{Lý do chọn phương pháp này:} Với ngôn ngữ không quá phức tạp như ngôn ngữ Pandora do chúng em thiết kế, phương pháp đệ quy xuống là một lựa chọn hợp lý để xây dựng trình biên dịch. Đây là kỹ thuật phân tích cú pháp từ trên xuống, giúp mô phỏng cấu trúc ngữ pháp của ngôn ngữ một cách trực quan và dễ hiểu. Phương pháp này không chỉ dễ dàng triển khai mà còn rất thuận tiện cho việc bảo trì và mở rộng hệ thống sau này. Bởi vì nó cho phép phân tích cú pháp theo từng phần tử nhỏ, từ đó dễ dàng kiểm tra và sửa lỗi. Hơn nữa, với ngữ pháp đơn giản của Pandora, việc áp dụng đệ quy xuống giúp giảm bớt độ phức tạp trong việc viết mã và tối ưu hóa hiệu suất của trình biên dịch.

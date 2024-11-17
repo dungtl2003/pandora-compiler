@@ -20,9 +20,9 @@ Nhiệm vụ chính của phần phân tích từ vựng là đọc các ký t�
     %Lines
     \draw[->] (source) -- (lexer);
     \draw[->] ([yshift = 2mm]lexer.east) -- ([yshift = 2mm]parser.west);
-    \draw[<->] (lexer.south) -- ([yshift = 2mm]tableofsymbols.west);
+    \draw[<->] (lexer.south) |- ([yshift = 2mm]tableofsymbols.west);
     \draw[->] ([yshift = -2mm]parser.west) -- ([yshift = -2mm]lexer.east) ;
-    \draw[<->] (tableofsymbols.east)  -- (nothing.south);
+    \draw[<->] (tableofsymbols.east)  -| (nothing.south);
     \draw[->,dashed] (parser.east) -- (nothing.west) ;
 \end{tikzpicture}
 \vspace{1cm}
