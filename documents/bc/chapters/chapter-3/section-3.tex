@@ -1,6 +1,9 @@
 \section{Xây dựng bộ phân tích từ vựng}
-\textbf{Giai đoạn 1.} \textit{Phân tích từ tố sơ cấp:}
+Giai đoạn phân tích từ vựng là bước đầu tiên trong quá trình biên dịch, giúp chuyển đổi mã nguồn thành các đơn vị cơ bản gọi là từ tố (token). Từ tố đại diện cho các thực thể đầu cuối (ký hiệu kết thúc) như từ khóa, toán tử, tên biến, và hằng số, là nền tảng để bộ phân tích cú pháp xử lý tiếp theo. Việc xây dựng bộ phân tích từ vựng yêu cầu định nghĩa rõ ràng các quy tắc để nhận diện và phân loại các phần tử trong mã nguồn. Phần này sẽ trình bày quy trình triển khai lexer để đảm bảo nhận diện chính xác các token cần thiết.
 
+3 giai đoạn của bộ phân tích từ vựng sẽ được trình bày chi tiết như sau:
+
+\subsection{Phân tích từ tố sơ cấp}
 Từ tố sơ cấp bao gồm các thuộc tính là loại từ tố và độ dài của từ tố:
 
 \clearpage
@@ -388,8 +391,7 @@ Hàm \textit{advance\_token} được sử dụng để đọc từ tố tiếp 
   \end{lstlisting}
 \end{itemize}
 
-
-\textbf{Giai đoạn 2.} \textit{Phân tích từ tố thứ cấp:}
+\subsection{Phân tích từ tố thứ cấp}
 
 Từ tố thứ cấp bao gồm các thuộc tính là loại từ tố và vị trí của từ tố:
 \begin{lstlisting}
@@ -728,8 +730,7 @@ Hàm \textit{next\_token} được sử dụng để đọc từ tố sơ cấp 
   \end{lstlisting}
 \end{itemize}
 
-\textbf{Giai đoạn 3.} \textit{Phân tích cây từ tố:}
-
+\subsection{Phân tích cây từ tố}
 Cây từ tố là cấp độ từ tố phức tạp hơn so với 2 cấp độ trước. 1 cây từ tố có thể là 1 từ tố đơn (lá), hoặc là 1 nhóm các cây từ tố con được đặt trong cặp đóng mở ngoặc (1 cây từ tố con).
 
 \begin{lstlisting}
