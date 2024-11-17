@@ -278,7 +278,8 @@ Sau khi đoán nhận từ khóa \textbf{for}, các bước tiếp theo sẽ đ�
 \end{lstlisting}
 \end{itemize}
 
-\textbf{Câu lệnh biểu thức:} Khi từ tố đọc được hiện tại có thể bắt đầu một biểu thức, câu lệnh biểu thức sẽ được phân tích thông qua hàm \textit{parse\_stmt\_expr}:
+\subsubsection{Câu lệnh biểu thức:} 
+Khi từ tố đọc được hiện tại có thể bắt đầu một biểu thức, câu lệnh biểu thức sẽ được phân tích thông qua hàm \textit{parse\_stmt\_expr}:
 \begin{lstlisting}
     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
         ...
@@ -300,5 +301,5 @@ Hàm \textit{parse\_stmt\_expr} sẽ phân tích câu lệnh biểu thức thôn
 \end{lstlisting}
 
 \subsection{Biểu thức}
-\subsubsection{Biểu thức hằng}
+
 
