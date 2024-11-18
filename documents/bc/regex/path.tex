@@ -1,0 +1,41 @@
+\newcommand{\regexsimplepath}{
+    \begin{rg}
+    SIMPLE\_PATH -> SIMPLE\_PATH\_SEGMENT
+
+    \hspace{3.05cm}(\w{::} SIMPLE\_PATH\_SEGMENT)*
+
+    SIMPLE\_PATH\_SEGMENT -> IDENTIFIER | \w{super} | \w{self}
+    \end{rg}
+}
+
+\newcommand{\regexpathinexpr}{
+    \begin{rg}
+    PATH\_IN\_EXPRESSION -> PATH\_EXPR\_SEGMENT
+
+    \hspace{5.1cm}(\w{::} PATH\_EXPR\_SEGMENT)*
+
+    PATH\_EXPR\_SEGMENT -> PATH\_IDENT\_SEGMENT
+
+    \hspace{5.1cm}(\w{::} GENERIC\_ARGS)?
+
+    PATH\_IDENT\_SEGMENT -> IDENTIFIER | \w{super} | \w{self}
+
+    GENERIC\_ARGS -> \w{<}\w{>}
+
+    \hspace{3.05cm}| \w{<}(GENERIC\_ARG\w{,})* GENERIC\_ARG\w{,}?\w{>}
+
+    GENERIC\_ARG -> TYPE
+    \end{rg}
+}
+
+\newcommand{\regexpathintype}{
+    \begin{rg}
+    PATH\_IN\_TYPE -> PATH\_TYPE\_SEGMENT
+
+    \hspace{3.35cm}(\w{::} PATH\_TYPE\_SEGMENT)*
+
+    PATH\_TYPE\_SEGMENT -> PATH\_IDENT\_SEGMENT
+
+    \hspace{3.35cm}(\w{::} GENERIC\_ARGS)?
+    \end{rg}
+}

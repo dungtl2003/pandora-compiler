@@ -1,0 +1,92 @@
+\newcommand{\regexitem}{
+    \begin{rg}
+    ITEM -> VISIBILITY?
+
+    \hspace{1.8cm}(FUNCTION\_ITEM
+
+    \hspace{1.8cm}| CLASS\_ITEM
+
+    \hspace{1.8cm}| INTERFACE\_ITEM
+
+    \hspace{1.8cm}| IMPORT\_DECLARATION\_ITEM
+
+    \hspace{1.8cm}| TYPE\_ALIAS\_ITEM)
+
+    \hspace{1.8cm}| ENUMERATION\_ITEM
+    \end{rg}
+}
+
+\newcommand{\regexfunitem}{
+    \begin{rg}
+    FUNCTION\_ITEM -> \w{fun} IDENTIFIER  GENERIC\_PARAMS?
+
+    \hspace{3.5cm}\w{(}FUNC\_PARAMS?\w{)} FUNC\_RET\_TYPE?
+    
+    \hspace{3.5cm}(BLOCK\_STATEMENT | \w{;})
+
+    FUNC\_PARAMS -> SELF\_PARAM\w{,}?
+
+    \hspace{3.5cm}| (SELF\_PARAM\w{,})? 
+
+    \hspace{3.5cm}FUNC\_PARAM (\w{,} FUNC\_PARAM)*\w{,}?
+
+    FUNC\_PARAM -> IDENTIFIER\w{:} TYPE
+
+    FUNC\_RET\_TYPE -> \w{->} TYPE
+
+    SELF\_PARAM -> SHORT\_HAND\_SELF | TYPED\_SELF
+
+    SHORT\_HAND\_SELF -> \w{mut}? \w{self}
+
+    TYPED\_SELF -> \w{mut}? \w{self}\w{:} TYPE
+    \end{rg}
+}
+
+\newcommand{\regexclassitem}{
+    \begin{rg}
+    CLASS\_ITEM -> \w{class} IDENTIFIER GENERIC\_PARAMS?
+
+    \hspace{3.5cm}EXTENDS\_CLAUSE? IMPLEMENTS\_CLAUSE?
+
+    \hspace{3.5cm}\w{\{} (CLASS\_FIELD)* (CLASS\_METHOD)* \w{\}}
+
+    EXTENDS\_CLAUSE -> \w{ext} TYPE
+
+    IMPLEMENTS\_CLAUSE -> \w{impl} TYPE (\w{,} TYPE)*
+
+    CLASS\_FIELD -> 
+
+    \hspace{3.5cm}VISIBILITY (CONST\_FIELD | VAR\_FIELD)
+
+    CONST\_FIELD -> 
+
+    \hspace{3.5cm}\w{const} IDENTIFIER\w{:} TYPE \w{=} EXPRESSION\w{;}
+
+    VAR\_FIELD -> IDENTIFIER\w{:} TYPE\w{;}
+
+    CLASS\_METHOD -> FUNCTION\_ITEM
+
+    \end{rg}
+}
+
+\newcommand{\regexinterfaceitem}{
+    \begin{rg}
+    INTERFACE\_ITEM -> \w{interface} IDENTIFIER
+
+    \hspace{3.5cm}GENERIC\_PARAMS? EXTENDS\_CLAUSE?
+
+    \hspace{3.5cm}\w{\{} (INTERFACE\_METHOD)* \w{\}}
+
+    INTERFACE\_METHOD -> FUNCTION\_ITEM
+    \end{rg}
+}
+
+\newcommand{\regeximportitem}{
+    \begin{rg}
+    IMPORT\_DECLARATION\_ITEM -> \w{import} IMPORT\_TREE\w{;}
+
+    IMPORT\_TREE -> (SIMPLE\_PATH \w{::})? \w{*}
+
+    \hspace{3.8cm}| SIMPLE\_PATH (\w{as} IDENTIFIER | \_)?
+    \end{rg}
+}
