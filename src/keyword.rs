@@ -23,6 +23,10 @@ pub enum Keyword {
     While,
     Pub,
     Impl,
+    Ext,
+    Return,
+    As,
+    Void,
 }
 
 pub fn is_keyword(symbol: Symbol) -> bool {

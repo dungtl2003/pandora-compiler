@@ -29,3 +29,19 @@ Kiểu dữ liệu người dùng tự định nghĩa trong Pandora bao gồm:
 
     \item \textbf{Kiểu giao diện (\textit{interface})}: Kiểu dữ liệu giao diện là kiểu dữ liệu dùng để lưu trữ các giao diện.
 \end{itemize}
+
+\subsection{Giới hạn kiểu dữ liệu chung (\textit{Generic type bound})}
+
+\regextypebound
+
+Giới hạn kiểu dữ liệu chung cho phép chúng ta giới hạn kiểu dữ liệu mà một kiểu dữ liệu chung có thể nhận. Ví du:
+
+\begin{lstlisting}[]
+    fun calc<T ext Add<T> + Sub<T>>(a: T, b: T, mode: int) -> T {
+        if mode == 0 {
+            return a + b;
+        } else {
+            return a - b;
+        }
+    }
+\end{lstlisting}

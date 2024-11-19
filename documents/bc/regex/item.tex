@@ -90,3 +90,15 @@
     \hspace{3.8cm}| SIMPLE\_PATH (\w{as} IDENTIFIER | \_)?
     \end{rg}
 }
+
+\newcommand{\regexgenparams}{
+    \begin{rg}
+    GENERIC\_PARAMS -> 
+
+    \hspace{3.5cm}\w{<} (GENERIC\_PARAM\w{,})* GENERIC\_PARAM\w{,}? \w{>}
+
+    GENERIC\_PARAM -> 
+
+    \hspace{3.5cm}IDENTIFIER (\w{ext} TYPE\_PARAM\_BOUNDS)?
+    \end{rg}
+}

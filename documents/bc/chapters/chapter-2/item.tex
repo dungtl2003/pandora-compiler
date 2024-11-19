@@ -10,11 +10,43 @@ Vật phẩm là một thành phần cơ bản của ngôn ngữ Pandora. Mỗi 
 
 1 hàm bao gồm tên hàm, danh sách tham số, kiểu trả về và thân hàm. Ngoại trừ tên ra, các thành phần còn lại có thể bị bỏ qua. Hàm có thể định nghĩa trong một module hoặc một class. Các hàm có thể khai báo 1 tập hợp các biến đầu vào dưới dạng tham số, qua đó nơi gọi hàm có thể truyền giá trị vào hàm, và loại giá trị trả về của hàm sẽ được trả về nơi gọi khi hoàn thành. Trong trường hợp hàm không trả về giá trị, kiểu trả về sẽ là \kw{void}.
 
+\begin{lstlisting}[]
+fun add<T ext Plus<T>>(a: T, b: T) -> T {
+    return a + b;
+}
+\end{lstlisting}
+
 \subsection{Vật phẩm lớp (\textit{Class item})}
 
 \regexclassitem
 
-1 lớp bao gồm tên lớp, danh sách thuộc tính, danh sách phương thức, tên lớp cha và danh sách các giao diện. Ngoại trừ tên ra, các thành phần còn lại có thể bị bỏ qua. Lớp là một cấu trúc dữ liệu mà trong đó chứa các thuộc tính và phương thức. Các lớp có thể kế thừa từ một hoặc nhiều lớp cha, và có thể được kế thừa bởi một hoặc nhiều lớp con. Các lớp con có thể mở rộng hoặc ghi đè các phương thức của lớp cha.
+1 lớp bao gồm tên lớp, danh sách thuộc tính, danh sách phương thức, tên lớp cha và danh sách các giao diện. Ngoại trừ tên ra, các thành phần còn lại có thể bị bỏ qua. Lớp là một cấu trúc dữ liệu mà trong đó chứa các thuộc tính và phương thức. Các lớp có thể kế thừa từ một hoặc nhiều lớp cha, và có thể được kế thừa bởi một hoặc nhiều lớp con. Các lớp con có thể mở rộng hoặc ghi đè các phương thức của lớp cha. Ví dụ:
+
+\begin{lstlisting}[]
+class Number impl Compare<Number> + Plus<Number> {
+    pub var value: int;
+
+    pub fun init(value: int) {
+        self.value = value;
+    }
+
+    pub fun compare(self, other: Number) -> int {
+        return self.value - other.value;
+    }
+
+    pub fun plus(self, other: Number) -> Number {
+        return Number(self.value + other.value);
+    }
+
+}
+
+fun main() {
+    var a: Number = new Number(5);
+    var b: Number = new Number(3);
+    var c: Number = a + b;
+    println(c.value);
+}
+\end{lstlisting}
 
 \subsection{Vật phẩm giao diện (\textit{Interface item})}
 
@@ -31,3 +63,17 @@ Vật phẩm là một thành phần cơ bản của ngôn ngữ Pandora. Mỗi 
 \subsection{Vật phẩm bí danh loại (\textit{Type alias item})}
 
 \subsection{Vật phẩm liệt kê (\textit{Enumeration item})}
+
+\subsection{Danh sách tham số chung (\textit{Generic params})}
+
+\regexgenparams
+
+Danh sách tham số chung cho phép chúng ta khai báo một hoặc nhiều tham số chung cho một vật phẩm. Tham số chung được sử dụng để tạo ra các vật phẩm có thể hoạt động với nhiều kiểu dữ liệu khác nhau. Ví dụ:
+
+\begin{lstlisting}[]
+    fun swap<T>(a: T, b: T) {
+        var temp: T = a;
+        a = b;
+        b = temp;
+    }
+\end{lstlisting}

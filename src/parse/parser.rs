@@ -1,4 +1,5 @@
 mod expr;
+mod item;
 mod path;
 mod stmt;
 mod ty;

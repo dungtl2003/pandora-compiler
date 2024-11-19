@@ -16,6 +16,7 @@ pub use token::{
 
 use crate::span_encoding::{Span, Spanned};
 
+#[derive(Debug)]
 pub struct BindingMode(pub Mutability);
 
 impl Display for BindingMode {
@@ -24,6 +25,7 @@ impl Display for BindingMode {
     }
 }
 
+#[derive(Debug)]
 pub enum Mutability {
     Immutable,
     Mutable,
@@ -47,11 +49,13 @@ impl BindingMode {
     }
 }
 
+#[derive(Debug)]
 pub struct Stmt {
     pub kind: StmtKind,
     pub span: Span,
 }
 
+#[derive(Debug)]
 pub enum StmtKind {
     /// An expression statement: `expr;`.
     Expr(Box<Expr>),
@@ -141,9 +145,12 @@ pub enum TyKind {
     ///
     /// Type parameters are stored in the `Path` itself.
     Path(Path),
+
+    Never,
 }
 
 /// Local represents a `var` statement. e.g. `var mut <ident>:<ty> = <expr>;`.
+#[derive(Debug)]
 pub struct Local {
     pub binding_mode: BindingMode,
     pub ident: Ident,
@@ -152,6 +159,7 @@ pub struct Local {
     pub span: Span,
 }
 
+#[derive(Debug)]
 pub enum LocalKind {
     /// Local declaration.
     /// Example: `let x: int;`
@@ -267,4 +275,156 @@ pub enum BinOpKind {
     Shl,
     /// The `>>` operator (shift right).
     Shr,
+}
+
+#[derive(Debug)]
+pub struct Visibility {
+    pub kind: VisibilityKind,
+    pub span: Span,
+}
+
+#[derive(Debug)]
+pub enum VisibilityKind {
+    Public,
+}
+
+#[derive(Debug)]
+pub struct Item {
+    pub span: Span,
+    pub kind: ItemKind,
+    pub vis: Visibility,
+    /// The name of the item.
+    pub ident: Ident,
+}
+
+#[derive(Debug)]
+pub enum ItemKind {
+    /// E.g. `import foo;`, `import foo::bar` or `import foo::bar as baz`.
+    Import(ImportTree),
+
+    /// E.g. `class Foo { ... }`.
+    Class(Box<Class>),
+
+    /// E.g. `fn foo() { ... }`.
+    Fun(Box<Fun>),
+
+    /// E.g. `interface Foo { ... }`.
+    Interface(Box<Interface>),
+}
+
+#[derive(Debug)]
+pub struct Interface {
+    pub generics: Vec<GenericParam>,
+    pub ext_clause: Option<ExtClause>,
+    pub body: InterfaceBody,
+}
+
+#[derive(Debug)]
+pub struct InterfaceBody {
+    pub methods: Vec<Item>,
+}
+
+/// A function definition.
+#[derive(Debug)]
+pub struct Fun {
+    pub generics: Vec<GenericParam>,
+    pub sig: FunSig,
+    pub body: Option<Stmt>,
+}
+
+/// The signature of a function.
+#[derive(Debug)]
+pub struct FunSig {
+    pub inputs: Vec<Param>,
+    pub output: FunRetTy,
+
+    pub span: Span,
+}
+
+/// A parameter in a function header.
+/// E.g., `bar: usize` as in `fn foo(bar: usize)`.
+#[derive(Debug)]
+pub struct Param {
+    pub ty: Box<Ty>,
+    pub ident: Ident,
+    pub span: Span,
+}
+
+#[derive(Debug)]
+pub enum FunRetTy {
+    /// Returns type is not specified.
+    ///
+    /// Functions default to `void`.
+    /// Span points to where return type would be inserted.
+    Default(Span),
+    /// Everything else.
+    Ty(Box<Ty>),
+}
+
+#[derive(Debug)]
+pub struct Class {
+    pub generics: Vec<GenericParam>,
+    pub ext_clause: Option<ExtClause>,
+    pub impl_clause: Option<ImplClause>,
+    pub body: ClassBody,
+}
+
+#[derive(Debug)]
+pub struct ClassBody {
+    pub fields: Vec<ClassField>,
+    pub methods: Vec<Item>,
+}
+
+#[derive(Debug)]
+pub struct ClassField {
+    pub vis: Visibility,
+    pub kind: ClassFieldKind,
+}
+
+#[derive(Debug)]
+pub enum ClassFieldKind {
+    Const(Ident, Box<Ty>, Box<Expr>),
+    Var(Ident, Box<Ty>),
+}
+
+#[derive(Debug)]
+pub struct ExtClause {
+    pub span: Span,
+    pub ty: Box<Ty>,
+}
+
+#[derive(Debug)]
+pub struct ImplClause {
+    pub span: Span,
+    pub tys: Vec<Box<Ty>>,
+}
+
+/// Represents type and const parameters attached to a declaration of
+/// a function, enum, etc.
+#[derive(Clone, Debug)]
+pub struct Generics {
+    pub params: Vec<GenericParam>,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug)]
+pub struct GenericParam {
+    pub ident: Ident,
+    pub colon_span: Option<Span>,
+}
+
+#[derive(Debug)]
+pub struct ImportTree {
+    pub prefix: Path,
+    pub kind: ImportTreeKind,
+    pub span: Span,
+}
+
+#[derive(Debug)]
+pub enum ImportTreeKind {
+    /// `import foo::bar` or `import foo::bar as baz`
+    Simple(Option<Ident>),
+
+    /// `import foo::*`
+    Glob,
 }
