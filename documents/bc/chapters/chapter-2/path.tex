@@ -6,9 +6,20 @@
 
 \regexsimplepath
 
+\begin{lstlisting}
+    import std::io::Error;
+    import super::Common;
+    import self::Value;
+\end{lstlisting}
+
 \subsection{Đường dẫn trong biểu thức (\textit{Expression path})}
 
 \regexpathinexpr
+
+\begin{lstlisting}
+    var x: Integer = self::add<Integer>(1, 2);
+    var y: Integer = super::common::<Integer>::add(1, 2);
+\end{lstlisting}
 
 \subsection{Đường dẫn trong kiểu (\textit{Type path})}
 

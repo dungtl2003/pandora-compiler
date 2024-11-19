@@ -192,6 +192,7 @@ pub fn walk_generic_arg<'ast, V: Visitor<'ast>>(visitor: &mut V, arg: &'ast Gene
 pub fn walk_ty<'ast, V: Visitor<'ast>>(visitor: &mut V, ty: &'ast Ty) {
     match &ty.kind {
         TyKind::Path(path) => visitor.visit_path(path),
+        TyKind::Never => {}
     }
 }
 
@@ -217,6 +218,10 @@ pub fn walk_expr<'ast, V: Visitor<'ast>>(visitor: &mut V, expression: &'ast Expr
             visitor.visit_expr(_rhs);
         }
         ExprKind::Literal(_token) => {}
-        ExprKind::Var(_ident) => {}
+        ExprKind::Path(path) => visitor.visit_path(path),
+        ExprKind::Cast(expr, ty) => {
+            visitor.visit_expr(expr);
+            visitor.visit_ty(ty);
+        }
     }
 }

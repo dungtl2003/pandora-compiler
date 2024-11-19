@@ -20,9 +20,9 @@
 
     PATH\_IDENT\_SEGMENT -> IDENTIFIER | \w{super} | \w{self}
 
-    GENERIC\_ARGS -> \w{<}\w{>}
+    GENERIC\_ARGS ->
 
-    \hspace{3.05cm}| \w{<}(GENERIC\_ARG\w{,})* GENERIC\_ARG\w{,}?\w{>}
+    \hspace{3.05cm}\w{<}(GENERIC\_ARG\w{,})* GENERIC\_ARG\w{,}?\w{>}
 
     GENERIC\_ARG -> TYPE
     \end{rg}

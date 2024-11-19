@@ -55,7 +55,9 @@ pub enum TokenKind {
     /// `:`
     Colon,
     /// `::`
-    ColonColon,
+    PathSep,
+    /// `->`
+    RArrow,
     /// `?`
     Question,
     /// An opening delimiter (e.g., `{`).
@@ -179,6 +181,7 @@ impl Token {
             },
             Not => match joint.kind {
                 Eq => Ne,
+                Gt => RArrow,
                 _ => return None,
             },
             Lt => match joint.kind {
@@ -200,12 +203,12 @@ impl Token {
                 _ => return None,
             },
             Colon => match joint.kind {
-                Colon => ColonColon,
+                Colon => PathSep,
                 _ => return None,
             },
             Le | EqEq | Ne | Ge | AndAnd | OrOr | Tilde | BinOpEq(_) | Dot | Comma | Semicolon
             | Question | OpenDelim(_) | CloseDelim(_) | Literal(_) | Ident(..) | DocComment(..)
-            | ColonColon | Eof => return None,
+            | PathSep | RArrow | Eof => return None,
         };
 
         Some(Token {
@@ -222,8 +225,8 @@ impl Token {
             Eq | Lt | Le | EqEq | Ne | Ge | Gt | AndAnd | OrOr | Not | Tilde | BinOp(_)
             | BinOpEq(_) | Dot | Comma | Semicolon | Colon | Question => true,
 
-            ColonColon | OpenDelim(..) | CloseDelim(..) | Literal(..) | DocComment(..)
-            | Ident(..) | Eof => false,
+            PathSep | OpenDelim(..) | CloseDelim(..) | Literal(..) | DocComment(..) | Ident(..)
+            | Eof | RArrow => false,
         }
     }
 
@@ -278,6 +281,35 @@ impl Token {
 
     pub fn is_ident(&self) -> bool {
         matches!(self.kind, Ident(..))
+    }
+}
+
+impl TokenKind {
+    pub fn break_two_token_op(&self, n: u32) -> Option<(TokenKind, TokenKind)> {
+        assert!(n == 1 || n == 2);
+        Some(match (self, n) {
+            (Le, 1) => (Lt, Eq),
+            (EqEq, 1) => (Eq, Eq),
+            (Ne, 1) => (Not, Eq),
+            (Ge, 1) => (Gt, Eq),
+            (AndAnd, 1) => (BinOp(And), BinOp(And)),
+            (OrOr, 1) => (BinOp(Or), BinOp(Or)),
+            (BinOp(Shl), 1) => (Lt, Lt),
+            (BinOp(Shr), 1) => (Gt, Gt),
+            (BinOpEq(Plus), 1) => (BinOp(Plus), Eq),
+            (BinOpEq(Minus), 1) => (BinOp(Minus), Eq),
+            (BinOpEq(Star), 1) => (BinOp(Star), Eq),
+            (BinOpEq(Slash), 1) => (BinOp(Slash), Eq),
+            (BinOpEq(Percent), 1) => (BinOp(Percent), Eq),
+            (BinOpEq(Caret), 1) => (BinOp(Caret), Eq),
+            (BinOpEq(And), 1) => (BinOp(And), Eq),
+            (BinOpEq(Or), 1) => (BinOp(Or), Eq),
+            (BinOpEq(Shl), 1) => (Lt, Le),         // `<` + `<=`
+            (BinOpEq(Shl), 2) => (BinOp(Shl), Eq), // `<<` + `=`
+            (BinOpEq(Shr), 1) => (Gt, Ge),         // `>` + `>=`
+            (BinOpEq(Shr), 2) => (BinOp(Shr), Eq), // `>>` + `=`
+            _ => return None,
+        })
     }
 }
 

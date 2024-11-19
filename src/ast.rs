@@ -93,7 +93,7 @@ pub struct Path {
 
 /// A segment of a path: an identifier and a set of types.
 ///
-/// E.g., `std`, `String` or `Box<T>`.
+/// E.g., `std`, `String` or `Box::<T>`.
 #[derive(Debug)]
 pub struct PathSegment {
     /// The identifier portion of this path segment.
@@ -199,9 +199,11 @@ pub enum ExprKind {
     ///
     /// E.g., `a += 1`.
     AssignOp(BinOp, Box<Expr>, Box<Expr>),
-    // TODO: make this a path (stuck on case `age < 18`, misunderstood a path: `age<18>`, not a
-    // binary op)
-    Var(Ident),
+    /// Variable reference, possibly containing `::` and/or type
+    /// parameters (e.g., `foo::bar::<baz>`).
+    Path(Box<Path>),
+    /// A cast (e.g., `foo as float`).
+    Cast(Box<Expr>, Box<Ty>),
 }
 
 impl Display for Expr {

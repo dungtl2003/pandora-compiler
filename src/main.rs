@@ -85,19 +85,6 @@ fn print_lex_3<'sess>(
     crate::ast::pprint(&tokens);
 }
 
-fn print_parse_path<'sess>(
-    data: &str,
-    emitter: ErrorHandler,
-    session: &'sess session_global::SessionGlobal,
-) {
-    let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
-    let mut parser = parse::parser::Parser::new(tokens, session);
-    let path = parser.parse_path().unwrap();
-    let mut printer = ast::pretty_print::Printer::new();
-    printer.print_path(&path);
-    println!("{}", printer.output);
-}
-
 fn print_parse_stmts<'sess>(
     data: &str,
     emitter: ErrorHandler,

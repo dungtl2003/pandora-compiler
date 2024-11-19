@@ -28,10 +28,18 @@ impl Span {
         DUMMY_SP
     }
 
+    pub fn with_offset(self, offset: BytePos) -> Self {
+        Span {
+            offset,
+            length: self.length,
+        }
+    }
+
     pub fn from_offset(offset: BytePos, length: usize) -> Self {
         Span { offset, length }
     }
 
+    /// Returns the end of the span (exclusive).
     pub fn end(&self) -> BytePos {
         self.offset + self.length as u32
     }

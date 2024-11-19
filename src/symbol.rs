@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 
 use symbol::Symbol as Sym;
 
-use crate::kw::Keyword;
+use crate::kw::{self, Keyword};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Symbol {
@@ -34,5 +34,14 @@ impl Symbol {
 
     pub fn is_bool_lit(&self) -> bool {
         self.sym == Keyword::True || self.sym == Keyword::False
+    }
+
+    pub fn is_path_segment_keyword(&self) -> bool {
+        let res = kw::from_str(self.sym.as_str());
+
+        match res {
+            Ok(keyword) if matches!(keyword, Keyword::Super | Keyword::SelfLower) => true,
+            _ => false,
+        }
     }
 }

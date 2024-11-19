@@ -195,13 +195,12 @@ impl<'ast> Visitor<'ast> for Printer {
                     span
                 ));
             }
-            ExprKind::Var(ident) => {
-                self.output.push_str(&format!(
-                    "{}Variable: {} {}\n",
-                    space(self.indent),
-                    ident.name,
-                    span
-                ));
+            ExprKind::Path(path) => {
+                self.visit_path(path);
+            }
+            ExprKind::Cast(expr, ty) => {
+                self.visit_expr(expr);
+                self.visit_ty(ty);
             }
         }
         self.indent -= self.indent_spaces;
@@ -262,6 +261,10 @@ impl<'ast> Visitor<'ast> for Printer {
         match &ty.kind {
             TyKind::Path(path) => {
                 self.visit_path(path);
+            }
+            TyKind::Never => {
+                self.output
+                    .push_str(&format!("{}Void\n", space(self.indent)));
             }
         }
         self.indent -= self.indent_spaces;

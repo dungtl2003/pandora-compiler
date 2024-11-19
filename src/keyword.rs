@@ -27,6 +27,8 @@ pub enum Keyword {
     Return,
     As,
     Void,
+    Super,
+    SelfLower,
 }
 
 pub fn is_keyword(symbol: Symbol) -> bool {
