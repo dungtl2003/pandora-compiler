@@ -25,7 +25,7 @@ impl Display for BindingMode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Mutability {
     Immutable,
     Mutable,
@@ -83,7 +83,7 @@ pub enum StmtKind {
 /// along with a bunch of supporting information.
 ///
 /// E.g., `std::cmp::PartialEq`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Path {
     pub span: Span,
     /// The segments in the path: the things separated by `::`.
@@ -94,7 +94,7 @@ pub struct Path {
 /// A segment of a path: an identifier and a set of types.
 ///
 /// E.g., `std`, `String` or `Box::<T>`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PathSegment {
     /// The identifier portion of this path segment.
     pub ident: Ident,
@@ -104,14 +104,14 @@ pub struct PathSegment {
 /// The generic arguments and associated item constraints of a path segment.
 ///
 /// E.g., `<A, B>` as in `Foo<A, B>`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GenericArgs {
     /// The `<A, B, C>` in `foo::bar::baz::<A, B, C>`.
     AngleBracketed(AngleBracketedArgs),
 }
 
 /// A path like `Foo<T, E>`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AngleBracketedArgs {
     /// The overall span.
     pub span: Span,
@@ -120,26 +120,26 @@ pub struct AngleBracketedArgs {
 }
 
 /// Either an argument for a generic parameter or a constraint on an associated item.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AngleBracketedArg {
     /// A generic argument for a generic parameter.
     Arg(GenericArg),
 }
 
 /// Concrete argument in the sequence of generic args.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GenericArg {
     /// `Bar` in `Foo<Bar>`.
     Type(Box<Ty>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ty {
     pub kind: TyKind,
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TyKind {
     /// A path (`module::module::...::Type`).
     ///
@@ -288,6 +288,7 @@ pub struct Visibility {
 #[derive(Debug)]
 pub enum VisibilityKind {
     Public,
+    Private,
 }
 
 #[derive(Debug)]
@@ -337,16 +338,22 @@ pub struct Fun {
 /// The signature of a function.
 #[derive(Debug)]
 pub struct FunSig {
-    pub inputs: Vec<Param>,
+    pub inputs: (Option<SelfParam>, Vec<FunParam>),
     pub output: FunRetTy,
 
+    pub span: Span,
+}
+
+#[derive(Debug)]
+pub struct SelfParam {
+    pub kind: SelfKind,
     pub span: Span,
 }
 
 /// A parameter in a function header.
 /// E.g., `bar: usize` as in `fn foo(bar: usize)`.
 #[derive(Debug)]
-pub struct Param {
+pub struct FunParam {
     pub ty: Box<Ty>,
     pub ident: Ident,
     pub span: Span,
@@ -412,7 +419,7 @@ pub struct Generics {
 #[derive(Clone, Debug)]
 pub struct GenericParam {
     pub ident: Ident,
-    pub colon_span: Option<Span>,
+    pub bounds: Vec<Ty>,
 }
 
 #[derive(Debug)]
@@ -429,4 +436,15 @@ pub enum ImportTreeKind {
 
     /// `import foo::*`
     Glob,
+}
+
+/// Alternative representation for `Arg`s describing `self` parameter of methods.
+///
+/// E.g., `&mut self` as in `fn foo(&mut self)`.
+#[derive(Clone, Debug)]
+pub enum SelfKind {
+    /// `self`, `mut self`
+    Value(Mutability),
+    /// `self: TYPE`, `mut self: TYPE`
+    Explicit(Box<Ty>, Mutability),
 }

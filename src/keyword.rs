@@ -23,11 +23,13 @@ pub enum Keyword {
     While,
     Pub,
     Impl,
-    Ext,
+    #[strum(serialize = "ext")]
+    Extends,
     Return,
     As,
     Void,
     Super,
+    #[strum(serialize = "self")]
     SelfLower,
 }
 
