@@ -1,1 +1,6 @@
-2 < 3 && 3 > 5
+var a: float = 5.3;
+{
+var b: float = 7.2;
+var c: float = a + b;
+var b: int = 8;
+}

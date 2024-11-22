@@ -16,7 +16,17 @@ pub use token::{
 
 use crate::span_encoding::{Span, Spanned};
 
-#[derive(Debug)]
+pub struct Ast {
+    pub stmts: Vec<Box<Stmt>>,
+}
+
+impl Ast {
+    pub fn new(stmts: Vec<Box<Stmt>>) -> Self {
+        Ast { stmts }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct BindingMode(pub Mutability);
 
 impl Display for BindingMode {
@@ -49,14 +59,31 @@ impl BindingMode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Stmt {
     pub kind: StmtKind,
     pub span: Span,
 }
 
-#[derive(Debug)]
+impl Stmt {
+    pub fn is_main_fun(&self) -> bool {
+        let Stmt { kind, .. } = self;
+        matches!(kind, StmtKind::Item(_));
+        match kind {
+            StmtKind::Item(item) => item.is_main_fun(),
+            _ => false,
+        }
+    }
+
+    pub fn is_fun_item(&self) -> bool {
+        matches!(&self.kind, StmtKind::Item(item) if matches!(item.kind, ItemKind::Fun(..)))
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum StmtKind {
+    /// An item creation statement.
+    Item(Box<Item>),
     /// An expression statement: `expr;`.
     Expr(Box<Expr>),
     /// A block statement: `{ stmt* }`.
@@ -75,6 +102,8 @@ pub enum StmtKind {
     While(Box<Expr>, Box<Stmt>),
     /// A for loop: 'for' ident 'in' expr block_stmt
     For(Ident, Box<Expr>, Box<Stmt>),
+    /// An empty statement: ';'.
+    Empty,
 }
 
 /// A "Path" is essentially Pandora's notion of a name.
@@ -150,7 +179,7 @@ pub enum TyKind {
 }
 
 /// Local represents a `var` statement. e.g. `var mut <ident>:<ty> = <expr>;`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Local {
     pub binding_mode: BindingMode,
     pub ident: Ident,
@@ -159,7 +188,7 @@ pub struct Local {
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LocalKind {
     /// Local declaration.
     /// Example: `let x: int;`
@@ -169,7 +198,7 @@ pub enum LocalKind {
     Init(Box<Expr>),
 }
 
-#[derive(Debug, EnumString, AsRefStr, PartialEq)]
+#[derive(Debug, Clone, EnumString, AsRefStr, PartialEq)]
 #[strum(serialize_all = "lowercase")] // This ensures matching with lowercase strings.
 pub enum PrimitiveTy {
     Int,
@@ -178,13 +207,13 @@ pub enum PrimitiveTy {
     Char,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExprKind {
     /// A binary operation (e.g. `a + b`, `a * b`).
     Binary(BinOp, Box<Expr>, Box<Expr>),
@@ -223,7 +252,7 @@ impl Display for Expr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UnOp {
     /// The `!` operator for logical inversion.
     Not,
@@ -239,7 +268,7 @@ impl Display for BinOp {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinOpKind {
     /// The `+` operator (addition).
     Add,
@@ -279,28 +308,36 @@ pub enum BinOpKind {
     Shr,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Visibility {
     pub kind: VisibilityKind,
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum VisibilityKind {
     Public,
-    Private,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Item {
     pub span: Span,
     pub kind: ItemKind,
-    pub vis: Visibility,
+    pub vis: Option<Visibility>,
     /// The name of the item.
     pub ident: Ident,
 }
 
-#[derive(Debug)]
+impl Item {
+    pub fn is_main_fun(&self) -> bool {
+        match &self.kind {
+            ItemKind::Fun(_) => self.ident.name.as_str() == "main",
+            _ => false,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum ItemKind {
     /// E.g. `import foo;`, `import foo::bar` or `import foo::bar as baz`.
     Import(ImportTree),
@@ -315,20 +352,20 @@ pub enum ItemKind {
     Interface(Box<Interface>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Interface {
     pub generics: Vec<GenericParam>,
     pub ext_clause: Option<ExtClause>,
     pub body: InterfaceBody,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct InterfaceBody {
     pub methods: Vec<Item>,
 }
 
 /// A function definition.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Fun {
     pub generics: Vec<GenericParam>,
     pub sig: FunSig,
@@ -336,7 +373,7 @@ pub struct Fun {
 }
 
 /// The signature of a function.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunSig {
     pub inputs: (Option<SelfParam>, Vec<FunParam>),
     pub output: FunRetTy,
@@ -344,7 +381,7 @@ pub struct FunSig {
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SelfParam {
     pub kind: SelfKind,
     pub span: Span,
@@ -352,14 +389,14 @@ pub struct SelfParam {
 
 /// A parameter in a function header.
 /// E.g., `bar: usize` as in `fn foo(bar: usize)`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunParam {
     pub ty: Box<Ty>,
     pub ident: Ident,
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FunRetTy {
     /// Returns type is not specified.
     ///
@@ -370,7 +407,7 @@ pub enum FunRetTy {
     Ty(Box<Ty>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Class {
     pub generics: Vec<GenericParam>,
     pub ext_clause: Option<ExtClause>,
@@ -378,31 +415,31 @@ pub struct Class {
     pub body: ClassBody,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClassBody {
     pub fields: Vec<ClassField>,
     pub methods: Vec<Item>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClassField {
     pub vis: Visibility,
     pub kind: ClassFieldKind,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ClassFieldKind {
     Const(Ident, Box<Ty>, Box<Expr>),
     Var(Ident, Box<Ty>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExtClause {
     pub span: Span,
     pub ty: Box<Ty>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ImplClause {
     pub span: Span,
     pub tys: Vec<Box<Ty>>,
@@ -422,14 +459,14 @@ pub struct GenericParam {
     pub bounds: Vec<Ty>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ImportTree {
     pub prefix: Path,
     pub kind: ImportTreeKind,
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ImportTreeKind {
     /// `import foo::bar` or `import foo::bar as baz`
     Simple(Option<Ident>),

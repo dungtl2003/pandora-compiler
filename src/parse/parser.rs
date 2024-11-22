@@ -9,7 +9,7 @@ use symbol::Symbol;
 
 use crate::{
     ast::{
-        DelimSpan, Delimiter, Ident, IdentIsRaw, Spacing, Stmt, Token, TokenKind, TokenStream,
+        Ast, DelimSpan, Delimiter, Ident, IdentIsRaw, Spacing, Stmt, Token, TokenKind, TokenStream,
         TokenTree, TokenTreeCursor,
     },
     kw::{self, Keyword},
@@ -17,7 +17,7 @@ use crate::{
     span_encoding::DUMMY_SP,
 };
 
-pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<Stmt>>> {
+pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Ast> {
     let mut stmts: Vec<Box<Stmt>> = Vec::new();
     let mut parser = Parser::new(tokens, session);
 
@@ -26,7 +26,8 @@ pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<St
         stmts.push(stmt);
     }
 
-    Ok(stmts)
+    let ast = Ast::new(stmts);
+    Ok(ast)
 }
 
 pub struct Parser<'sess> {

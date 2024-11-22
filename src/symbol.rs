@@ -16,6 +16,12 @@ impl From<&str> for Symbol {
     }
 }
 
+impl AsRef<str> for Symbol {
+    fn as_ref(&self) -> &str {
+        self.sym.as_str()
+    }
+}
+
 impl Display for Symbol {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{}", self.sym.as_str())

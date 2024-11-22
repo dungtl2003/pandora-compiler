@@ -54,6 +54,10 @@ impl Span {
             length: (other.end() - self.offset) as usize,
         }
     }
+
+    pub fn is_after(&self, other: Span) -> bool {
+        self.offset > other.end()
+    }
 }
 
 impl Display for Span {
