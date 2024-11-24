@@ -17,7 +17,7 @@ use std::sync::Arc;
 fn main() {
     let file_path = "src/trash/".to_string();
     let file_names = vec![
-        "program.box",
+        //"program.box",
         //"var_decl.box",
         //"path.box",
         //"expr.box",
@@ -30,6 +30,8 @@ fn main() {
         //"unterminated_char.box",
         //"unescape_error.box",
         //"if_stmt.box",
+        "fun_item.box",
+        //"class_item.box",
     ];
 
     for file_name in file_names {
@@ -60,7 +62,8 @@ fn main() {
         //    println!("{token:?}");
         // }
         //
-        print_parse_stmts(&data, emitter, &session);
+        print_parse_items(&data, emitter, &session);
+        // print_lex_3(&data,emitter,&session);
         println!("================ END ================");
     }
 }
@@ -94,5 +97,17 @@ fn print_parse_stmts<'sess>(
     let stmts = parse::parser::parse(tokens, session).unwrap();
     let mut printer = ast::pretty_print::Printer::new();
     printer.print_stmts(&stmts);
+    println!("{}", printer.output);
+}
+
+fn print_parse_items<'sess>(
+    data: &str,
+    emitter: ErrorHandler,
+    session: &'sess session_global::SessionGlobal,
+) {
+    let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
+    let items = parse::parser::parse_items(tokens, session).unwrap();
+    let mut printer = ast::pretty_print::Printer::new();
+    printer.print_items(&items);
     println!("{}", printer.output);
 }

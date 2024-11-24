@@ -3,39 +3,29 @@ use crate::kw::Keyword;
 use super::{PResult, Parser};
 
 impl Parser<'_> {
-    pub fn parse_item(&mut self) -> PResult<Item> {
+    pub fn parse_item(&mut self) -> PResult<Box<Item>> {
         if self.token.is_keyword(Keyword::Pub){
             self.advance(); // Eat token after "pub"
         };
         if self.token.is_keyword(Keyword::Class) {
             self.parse_item_class()
         } else if self.token.is_keyword(Keyword::Fun)  {
-            self.parse_item_class()
+            self.parse_item_function()
         } else if self.token.is_keyword(Keyword::Interface)  {
-            self.parse_item_class()
+            self.parse_item_interface()
         } else {
             todo!()
         }
     }
 
-    pub fn parse_item_function(&mut self) -> PResult<Item> {
-        if !self.token.kind != Keyword::Fun {
+    pub fn parse_item_function(&mut self) -> PResult<Box<Item>> {
+        if !self.token.is_keyword(Keyword::Fun) {
             return Err("Expected function".into());
         }
-
         let mut start_span = self.token.span;
-        let vis = if self.prev_token.is_keyword(Keyword::Pub) {
-            start_span = self.prev_token.span;
-            Visibility{
-                kind:VisibilityKind::Public,
-                span:self.prev_token.span,
-            }
-        } else {
-            Visibility{
-                kind:VisibilityKind::Private,
-                span:self.token.span,
-            }
-        };
+        let vis = self.parse_item_vis();
+
+        if vis.is_some() {start_span = self.prev_token.span;};
 
         if !self.is_ident_ahead(){
             return Err("Expected identifier".into());
@@ -51,7 +41,7 @@ impl Parser<'_> {
 
         let span = start_span.to(self.prev_token.span);
 
-        Ok(Item{
+        Ok(Box::new(Item{
             span,
             kind:ItemKind::Fun(Box::new(Fun {
                 generics,
@@ -60,13 +50,13 @@ impl Parser<'_> {
             })),
             vis ,
             ident,
-        })
+        }))
 
     }
 
     // (mut? self:Type?, a:A, b:B)
     pub fn parse_item_function_sig(&mut self) -> PResult<FunSig> {
-        if !self.token.kind != TokenKind::OpenDelim(Delimiter::Parenthesis) {
+        if self.token.kind != TokenKind::OpenDelim(Delimiter::Parenthesis) {
             return Err("Expected parenthesis".into());
         }
         let start_span = self.token.span;
@@ -96,17 +86,44 @@ impl Parser<'_> {
                     span:start_self_param_span.to(self.token.span),
                 })
             }
+        } else if self.is_keyword_ahead(&[Keyword::SelfLower]) {
+            let start_self_param_span = self.token.span;
+            self.advance(); // Eat "self"
+            if self.look_ahead(1,|tok|tok.kind == TokenKind::Colon) {
+                self.advance(); // Eat ':'
+                if !self.is_ident_ahead(){
+                    return Err("Expected identifier".into());
+                }
+                self.advance(); // Eat ident
+                let ty = self.parse_ty()?;
+                Some(SelfParam{
+                    kind:SelfKind::Explicit(ty, Mutability::Immutable),
+                    span:start_self_param_span.to(self.token.span),
+                })
+            } else {
+                Some(SelfParam{
+                    kind:SelfKind::Value(Mutability::Immutable),
+                    span:start_self_param_span.to(self.token.span),
+                })
+            }
         } else {
             None
         };
+        if self.look_ahead(1,|tok|tok.kind == TokenKind::Comma) {
+            self.advance();
+        }
+
 
         // fun_params
         let mut fun_params = Vec::new();
-        self.advance(); // Eat token after '('
+        self.advance(); // Eat token after '(' or ','
+
         while self.token.kind != TokenKind::CloseDelim(Delimiter::Parenthesis) {
+
             if !self.token.is_ident() {
                 return Err("Expected identifier".into());
             }
+
             let pram = self.parse_item_function_param()?;
             fun_params.push(pram);
 
@@ -116,18 +133,16 @@ impl Parser<'_> {
                 break;
             };
         }
-
         if self.token.kind != TokenKind::CloseDelim(Delimiter::Parenthesis) {
             return Err("Expected ')'".into());
         }
 
-        if self.look_ahead(1,|tok|tok.kind != TokenKind::BinOp(BinOpToken::Minus))
-            || self.look_ahead(2,|tok|tok.kind != TokenKind::Gt) {
-            return Err("Expected '-''>'".into());
+        if self.look_ahead(1,|tok|tok.kind != TokenKind::RArrow){
+            return Err("Expected ->".into());
         }
 
-        self.advance(); // Eat '-'
-        self.advance(); // Eat '>'
+        self.advance(); // Eat "->"
+
         if !self.is_ident_ahead() {
             return Err("Expected type".into());
 
@@ -163,6 +178,11 @@ impl Parser<'_> {
         let start_span = self.token.span;
 
         let ident = self.parse_item_ident()?;
+        if self.token.kind == TokenKind::Colon {
+            self.advance();
+        } else {
+            return Err("Expected ':'".into());
+        }
         let ty = self.parse_ty()?;
 
         let span = start_span.to(self.prev_token.span);
@@ -181,21 +201,21 @@ impl Parser<'_> {
             self.advance(); // Eat token after ';'
             return Ok(None);
         }
-        if !self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
+        if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
             return Err("Expected '{'".into());
         }
 
-        let Stmt {kind,span} = self.parse_stmt_block();
+        let stmt = self.parse_stmt_block()?;
 
         Ok(Some(Stmt{
-            kind,
-            span
+            kind:stmt.kind,
+            span:stmt.span
         }))
     }
 
-    pub fn parse_item_class(&mut self) -> PResult<Item> {
-        if !self.token.kind != Keyword::Class {
-            return Err("Expected function".into());
+    pub fn parse_item_class(&mut self) -> PResult<Box<Item>> {
+        if !self.token.is_keyword(Keyword::Class) {
+            return Err("Expected class".into());
         }
 
         if !self.is_ident_ahead(){
@@ -203,29 +223,20 @@ impl Parser<'_> {
         }
 
         let mut start_span = self.token.span;
-        let vis = if self.prev_token.is_keyword(Keyword::Pub) {
-            start_span = self.prev_token.span;
-            Visibility{
-                kind:VisibilityKind::Public,
-                span:self.prev_token.span,
-            }
-        } else {
-            Visibility{
-                kind:VisibilityKind::Private,
-                span:self.token.span,
-            }
-        };
+        let vis = self.parse_item_vis();
+
+        if vis.is_some() {start_span = self.prev_token.span;};
 
         self.advance(); // Eat ident
         let ident = self.parse_item_ident()?;
 
-        let generics = self.parse_item_generics()?;
-        let ext_clause= self.parse_item_class_ext_clause()?;
-        let impl_clause= self.parse_item_class_impl_clause()?;
+        let generics = if self.token.kind == TokenKind::Lt {self.parse_item_generics()?} else {vec![]};
+        let ext_clause= if self.token.is_keyword(Keyword::Extends) {self.parse_item_class_ext_clause()?} else {None};
+        let impl_clause= if self.token.is_keyword(Keyword::Impl) {self.parse_item_class_impl_clause()?} else {None};
         let body = self.parse_item_class_body()?;
 
         let span = start_span.to(self.prev_token.span);
-        Ok(Item{
+        Ok(Box::new(Item{
             span,
             kind:ItemKind::Class(Box::new(Class {
                 generics,
@@ -235,11 +246,11 @@ impl Parser<'_> {
             })),
             vis,
             ident
-        })
+        }))
     }
 
     pub fn parse_item_class_ext_clause(&mut self) -> PResult<Option<ExtClause>> {
-        if !self.token.kind != Keyword::Extends {
+        if self.token.is_keyword(Keyword::Extends) {
             return Ok(None);
         };
         if !self.is_ident_ahead() {
@@ -258,7 +269,7 @@ impl Parser<'_> {
     }
 
     pub fn parse_item_class_impl_clause(&mut self) -> PResult<Option<ImplClause>> {
-        if !self.token.kind != Keyword::Impl {
+        if self.token.is_keyword(Keyword::Impl) {
             return Ok(None);
         };
         if !self.is_ident_ahead() {
@@ -287,7 +298,7 @@ impl Parser<'_> {
     }
 
     pub fn parse_item_class_body(&mut self) -> PResult<ClassBody> {
-        if !self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
+        if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
             return Err("Expected '{'".into());
         }
         let mut fields = Vec::new();
@@ -317,21 +328,12 @@ impl Parser<'_> {
     pub fn parse_item_class_fields(&mut self) -> PResult<Vec<ClassField>> {
         let mut class_fields = Vec::new();
 
-        while !self.is_keyword_ahead(&[Keyword::Fun]) && !self.token.is_keyword(Keyword::Fun) && !self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
+        while !self.is_keyword_ahead(&[Keyword::Fun]) && !self.token.is_keyword(Keyword::Fun) && self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
             // Current token is "pub"|"const"|"var"
 
-            let vis = if self.is_keyword(Keyword::Pub) {
-                self.advance(); // Eat token after "pub"
-                Visibility{
-                    kind:VisibilityKind::Public,
-                    span:self.prev_token.span,
-                }
-            } else {
-                Visibility{
-                    kind:VisibilityKind::Private,
-                    span:self.token.span,
-                }
-            };
+            if self.token.is_keyword(Keyword::Pub) {self.advance()};
+
+            let vis = self.parse_item_vis();
 
             // pub? const age = 10 + 10;
             let kind = if self.token.is_keyword(Keyword::Const) {
@@ -403,13 +405,13 @@ impl Parser<'_> {
                 self.advance();
             }
             let method = self.parse_item_function()?;
-            methods.push(method);
+            methods.push(*method);
         }
 
         Ok(methods)
     }
 
-    pub fn parse_item_interface(&mut self) -> PResult<Item> {
+    pub fn parse_item_interface(&mut self) -> PResult<Box<Item>> {
         if !self.token.is_keyword(Keyword::Interface)  {
             return Err("Expected interface".into());
         };
@@ -421,15 +423,12 @@ impl Parser<'_> {
         let mut start_span = self.token.span;
         let vis = if self.prev_token.is_keyword(Keyword::Pub) {
             start_span = self.prev_token.span;
-            Visibility{
+            Some(Visibility{
                 kind:VisibilityKind::Public,
                 span:self.prev_token.span,
-            }
+            })
         } else {
-            Visibility{
-                kind:VisibilityKind::Private,
-                span:self.token.span,
-            }
+            None
         };
 
         self.advance(); // Eat ident
@@ -442,16 +441,18 @@ impl Parser<'_> {
         let span = start_span.to(self.prev_token.span);
 
 
-        Ok(Item{
-            vis,
-            kind:ItemKind::Interface(Box::new(Interface{
-                generics,
-                ext_clause,
-                body,
-            })),
-            ident,
-            span,
-        })
+        Ok(Box::new(
+            Item{
+                vis,
+                kind:ItemKind::Interface(Box::new(Interface{
+                    generics,
+                    ext_clause,
+                    body,
+                })),
+                ident,
+                span,
+            }
+        ))
     }
 
     pub fn parse_item_interface_body(&mut self) -> PResult<InterfaceBody> {
@@ -489,27 +490,27 @@ impl Parser<'_> {
 
     // <T ext Type1<T> + Type2<T>, V ext Type1<V> + Type2<V>>
     pub fn parse_item_generics(&mut self) -> PResult<Vec<GenericParam>> {
-        if !self.token.kind != TokenKind::Lt {
-            return Err("Expected function".into());
+        if self.token.kind != TokenKind::Lt {
+            return Err("Expected '<'".into());
         }
 
         let mut generic_params = Vec::new();
         self.advance(); // Eat token after '<'
         while self.token.kind != TokenKind::Gt {
-            if !self.is_ident(){
-                return Err("Expected identifier".into());
+            if !self.token.is_ident(){
+                return Err("Expected '>'".into());
             }
             let ident = self.parse_item_ident()?;
             let mut bounds = Vec::new();
 
             if self.token.is_keyword(Keyword::Extends) {
                 self.advance(); // Eat token after "ext"
-                bounds.push(self.parse_ty()?);
+                bounds.push(*self.parse_ty()?);
             }
 
             while self.token.kind == TokenKind::BinOp(BinOpToken::Plus) {
                 self.advance(); // Eat '+'
-                bounds.push(self.parse_ty()?);
+                bounds.push(*self.parse_ty()?);
             }
 
             let generic_param = GenericParam{
@@ -525,14 +526,31 @@ impl Parser<'_> {
                 break;
             };
         }
+        // println!("debug!{}",self.prev_token.span);
+        // println!("debug!!!{}",self.prev_token);
+        // println!("debug!{}",self.token.span);
+        // println!("debug!!!{}",self.token);
 
         if self.token.kind != TokenKind::Gt {
             return Err("Expected gt".into());
         }
 
         self.advance(); // Eat token after '>'
-
+        // println!("debug!{}",self.token.span);
+        // println!("debug!{}",self.token);
+        // println!("debug!{}",self.token.span);
         Ok(generic_params)
+    }
 
+    pub fn parse_item_vis(&mut self) -> Option<Visibility> {
+        // current token is a token after pub, check before and return vis
+        if self.prev_token.is_keyword(Keyword::Pub) {
+            Some(Visibility{
+                kind:VisibilityKind::Public,
+                span:self.prev_token.span,
+            })
+        } else {
+            None
+        }
     }
 }

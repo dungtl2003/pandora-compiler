@@ -1,3 +1,4 @@
-fun add<T ext Plus<T>>(a: T, b: T) -> T {
-    return a + b;
+pub fun add<T ext Plus<T>>(self, a34: T, b: T) -> int {
+    60>>2;;;;;;;;;;
+    return 87+4;;;;;;;;
 }

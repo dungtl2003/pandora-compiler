@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use crate::ast::{
     AngleBracketedArg, AngleBracketedArgs, BinOpToken, GenericArg, GenericArgs, Ident, IdentIsRaw,
     Path, PathSegment, Token, TokenKind,
@@ -147,6 +148,8 @@ impl Parser<'_> {
     fn check_path_sep_and_look_ahead(&mut self, looker: impl Fn(&Token) -> bool) -> bool {
         if self.check(TokenKind::PathSep) {
             self.look_ahead(1, looker)
+        } else if self.look_ahead(0, looker) {
+            true
         } else {
             false
         }

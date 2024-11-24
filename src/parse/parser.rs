@@ -16,6 +16,7 @@ use crate::{
     session_global::SessionGlobal,
     span_encoding::DUMMY_SP,
 };
+use crate::ast::Item;
 
 pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<Stmt>>> {
     let mut stmts: Vec<Box<Stmt>> = Vec::new();
@@ -27,6 +28,18 @@ pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<St
     }
 
     Ok(stmts)
+}
+
+pub fn parse_items(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<Item>>> {
+    let mut items: Vec<Box<Item>> = Vec::new();
+    let mut parser = Parser::new(tokens, session);
+
+    while parser.token.kind != TokenKind::Eof {
+        let item = parser.parse_item()?;
+        items.push(item);
+    }
+
+    Ok(items)
 }
 
 pub struct Parser<'sess> {
@@ -63,6 +76,8 @@ impl<'sess> Parser<'sess> {
 
     /// Advance the parser by one token.
     pub fn advance(&mut self) {
+        // println!("debug!:{}",self.token.span);
+
         let (next_token, next_spacing) = self.token_cursor.next();
         // Update the current and previous tokens.
         self.prev_token = mem::replace(&mut self.token, next_token);
