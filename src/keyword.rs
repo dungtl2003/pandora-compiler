@@ -23,6 +23,15 @@ pub enum Keyword {
     While,
     Pub,
     Impl,
+    #[strum(serialize = "ext")]
+    Extends,
+    Return,
+    As,
+    Void,
+    Super,
+    #[strum(serialize = "self")]
+    SelfLower,
+    Const,
 }
 
 pub fn is_keyword(symbol: Symbol) -> bool {

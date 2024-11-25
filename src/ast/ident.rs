@@ -5,3 +5,10 @@ pub struct Ident {
     pub name: Symbol,
     pub span: Span,
 }
+
+impl Ident {
+    /// A keyword or reserved identifier that can be used as a path segment.
+    pub fn is_path_segment_keyword(&self) -> bool {
+        self.name.is_path_segment_keyword()
+    }
+}

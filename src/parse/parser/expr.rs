@@ -1,10 +1,12 @@
 use crate::{
-    ast::{BinOp, BinOpKind, BinOpToken, Delimiter, Expr, ExprKind, Lit, LitKind, TokenKind, UnOp},
+    ast::{
+        BinOp, BinOpKind, BinOpToken, Delimiter, Expr, ExprKind, Lit, LitKind, TokenKind, Ty, UnOp,
+    },
     parse::util::parser::{AssocOp, Fixity},
     span_encoding::Span,
 };
 
-use super::{PResult, Parser, TokenType};
+use super::{path::PathStyle, PResult, Parser, TokenType};
 use crate::span_encoding;
 
 impl Parser<'_> {
@@ -26,6 +28,14 @@ impl Parser<'_> {
             let prec = op_assoc.precedence();
             if prec < min_prec {
                 break;
+            }
+
+            let lhs_span = lhs.span;
+
+            // Special cases:
+            if op_assoc == AssocOp::As {
+                lhs = self.parse_assoc_op_cast(lhs, lhs_span, ExprKind::Cast)?;
+                continue;
             }
 
             let op_span = self.token.span;
@@ -79,10 +89,20 @@ impl Parser<'_> {
                     let aopexpr = self.mk_assign_op(span_encoding::respan(aop, op_span), lhs, rhs);
                     self.mk_expr(aopexpr, span)
                 }
+                AssocOp::As => unreachable!("AssocOp::As should be handled separately"),
             }
         }
 
         Ok(lhs)
+    }
+
+    fn parse_assoc_op_cast(
+        &mut self,
+        lhs: Box<Expr>,
+        lhs_span: Span,
+        expr_kind: fn(Box<Expr>, Box<Ty>) -> ExprKind,
+    ) -> PResult<Box<Expr>> {
+        todo!();
     }
 
     /// Parses a prefix-unary-operator expr.
@@ -110,28 +130,31 @@ impl Parser<'_> {
     fn parse_expr_bottom(&mut self) -> PResult<Box<Expr>> {
         match self.token.kind {
             TokenKind::Literal(_) => self.parse_expr_lit(),
-            TokenKind::Ident(_, _) => self.parse_expr_var(),
+            TokenKind::Ident(_, _) => self.parse_expr_ident(),
             TokenKind::OpenDelim(Delimiter::Parenthesis) => {
-                self.parse_expr_repeat(Delimiter::Parenthesis)
+                self.parse_expr_grouped(Delimiter::Parenthesis)
             }
             _ => Err("Unexpected token".into()),
         }
     }
 
-    fn parse_expr_var(&mut self) -> PResult<Box<Expr>> {
-        let res = self.parse_expr_lit(); // Maybe this can be a literal.
-        if res.is_err() {
-            let (ident, _) = self.token.ident().unwrap();
-            let span = self.token.span;
-            let kind = ExprKind::Var(ident);
-            self.advance();
-            Ok(self.mk_expr(kind, span))
+    fn parse_expr_ident(&mut self) -> PResult<Box<Expr>> {
+        debug_assert!(self.token.is_ident());
+        if self.look_ahead(0, |tok| tok.ident().unwrap().0.name.is_bool_lit()) {
+            self.parse_expr_lit()
         } else {
-            res
+            self.parse_expr_path()
         }
     }
 
-    fn parse_expr_repeat(&mut self, delim: Delimiter) -> PResult<Box<Expr>> {
+    fn parse_expr_path(&mut self) -> PResult<Box<Expr>> {
+        self.parse_path(PathStyle::Expr).map(|path| {
+            let span = path.span;
+            self.mk_expr(ExprKind::Path(path), span)
+        })
+    }
+
+    fn parse_expr_grouped(&mut self, delim: Delimiter) -> PResult<Box<Expr>> {
         self.advance();
         let expr = self.parse_expr()?;
         self.expect(TokenKind::CloseDelim(delim))?;

@@ -60,9 +60,34 @@ impl Parser<'_> {
             self.parse_stmt_while()
         } else if self.token.is_keyword(Keyword::For) {
             self.parse_stmt_for()
+        } else if self.token.is_keyword(Keyword::Return) {
+            self.parse_stmt_return()
         } else {
             unreachable!();
         }
+    }
+
+    pub fn parse_stmt_return(&mut self) -> PResult<Box<Stmt>>{
+        let start_span = self.token.span;
+        let kind = if self.look_ahead(1,|tok|tok.can_begin_expr()){
+            self.advance(); // Eat token after "return"
+            let expr = self.parse_expr()?;
+            self.advance(); // Eat token after ';'
+            StmtKind::Return(Some(expr))
+        } else if self.look_ahead(1,|tok|tok.kind == TokenKind::Semicolon) {
+            self.advance(); // Eat token after "return" <=> ';'
+            self.advance(); // Eat token after ';'
+            StmtKind::Return(None)
+        } else {
+            return Err("Expected an expr or ';'".into())
+        };
+        self.pass_semicolon();
+        Ok(Box::new(
+            Stmt{
+                kind,
+                span:start_span.to(self.prev_token.span),
+            }
+        ))
     }
 
     /// predicate_loop_statement = 'while' expression block_statement
@@ -80,6 +105,8 @@ impl Parser<'_> {
         let span = start_span.to(end_span);
         let kind = StmtKind::While(condition, block);
         let stmt = Box::new(Stmt { kind, span });
+
+        self.pass_semicolon();
 
         Ok(stmt)
     }
@@ -110,6 +137,8 @@ impl Parser<'_> {
         let span = start_span.to(end_span);
         let kind = StmtKind::For(ident, expr, block);
         let stmt = Box::new(Stmt { kind, span });
+
+        self.pass_semicolon();
 
         Ok(stmt)
     }
@@ -149,6 +178,9 @@ impl Parser<'_> {
         let span = start_span.to(end_span);
         let kind = StmtKind::If(condition, if_block, else_block);
         let stmt = Box::new(Stmt { kind, span });
+
+        self.pass_semicolon();
+
         Ok(stmt)
     }
 
@@ -173,6 +205,9 @@ impl Parser<'_> {
         let stmt = Box::new(Stmt { kind, span });
 
         self.advance(); // Eat token after '}'
+
+        self.pass_semicolon();
+
         Ok(stmt)
     }
 
@@ -185,7 +220,13 @@ impl Parser<'_> {
             span,
         });
 
+        if self.token.kind != TokenKind::Semicolon {
+            return Err("Expected ';'".into());
+        }
         self.advance(); // Eat token after ';'
+
+        self.pass_semicolon();
+
         Ok(stmt)
     }
 
@@ -244,6 +285,15 @@ impl Parser<'_> {
         let stmt = Box::new(Stmt { kind, span });
 
         self.advance();
+
+        self.pass_semicolon();
+
         Ok(stmt)
+    }
+
+    pub fn pass_semicolon(&mut self) {
+        while self.token.kind == TokenKind::Semicolon {
+            self.advance();
+        }
     }
 }

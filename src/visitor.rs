@@ -1,7 +1,5 @@
-use crate::ast::{
-    AngleBracketedArg, AngleBracketedArgs, Expr, ExprKind, GenericArg, GenericArgs, Ident, Local,
-    LocalKind, Path, PathSegment, Stmt, StmtKind, Ty, TyKind,
-};
+use crate::ast::{AngleBracketedArg, AngleBracketedArgs, ClassBody, Expr, ExprKind, ExtClause, FunSig, GenericArg, GenericArgs, GenericParam, Ident, ImplClause, InterfaceBody, Item, ItemKind, Local, LocalKind, Path, PathSegment, Stmt, StmtKind, Ty, TyKind, Visibility};
+use crate::span_encoding::Span;
 
 pub trait Visitor<'ast>: Sized {
     fn visit_expr(&mut self, expr: &'ast Expr) {
@@ -68,10 +66,80 @@ pub trait Visitor<'ast>: Sized {
     fn visit_stmt_for(&mut self, ident: &'ast Ident, expr: &'ast Expr, block: &'ast Stmt) {
         walk_stmt_for(self, ident, expr, block);
     }
+
+    fn visit_stmt_return(&mut self, expr: Option<&'ast Expr>, span:&'ast Span) {
+        walk_stmt_return(self, expr, span);
+    }
+
+    fn visit_item(&mut self, item: &'ast Item) {
+        walk_item(self, item);
+    }
+    fn visit_item_fun(&mut self, generics: &'ast Vec<GenericParam>, sig: &'ast FunSig, body: Option<&'ast Stmt>, span:&'ast Span, vis:Option<&'ast Visibility>, ident:&'ast Ident) {
+        walk_item_fun(self, generics, sig, body, span, vis, ident);
+    }
+
+    fn visit_item_class(&mut self, generics: &'ast Vec<GenericParam>, ext_clause: Option<&'ast ExtClause>, impl_clause: Option<&'ast ImplClause>, body: &'ast ClassBody, span:&'ast Span, vis:Option<&'ast Visibility>, ident:&'ast Ident) {
+        walk_item_class(self,ext_clause,impl_clause,body, span, vis, ident);
+    }
+
+    fn visit_item_interface(&mut self, generics: &'ast Vec<GenericParam>, ext_clause: Option<&'ast ExtClause>, body: &'ast InterfaceBody, span:&'ast Span, vis:Option<&'ast Visibility>, ident:&'ast Ident) {
+        walk_item_interface(self, generics, ext_clause, body, span, vis, ident);
+    }
+
+
+
+}
+
+pub fn walk_item<'ast, V: Visitor<'ast>>(visitor: &mut V, item: &'ast Item) {
+    let Item { kind, span, vis, ident } = item;
+    match kind {
+        ItemKind::Fun(fun) => visitor.visit_item_fun(&fun.generics, &fun.sig, fun.body.as_ref(), span, vis.as_ref(), ident),
+        ItemKind::Class(class) => visitor.visit_item_class(&class.generics, class.ext_clause.as_ref(), class.impl_clause.as_ref(), &class.body, span, vis.as_ref(), ident),
+        ItemKind::Interface(interface) => visitor.visit_item_interface(&interface.generics, interface.ext_clause.as_ref(), &interface.body, span, vis.as_ref(), ident),
+        _ => {}
+    }
+}
+
+pub fn walk_item_fun<'ast, V: Visitor<'ast>>(
+    visitor: &mut V,
+    generics: &'ast Vec<GenericParam>,
+    sig: &'ast FunSig,
+    body: Option<&'ast Stmt>,
+    span:&'ast Span,
+    vis:Option<&'ast Visibility>,
+    ident:&'ast Ident
+) {
+    if body.is_some() {
+        visitor.visit_stmt(body.unwrap());
+    }
+}
+
+pub fn walk_item_class<'ast, V: Visitor<'ast>>(
+    visitor: &mut V,
+    ext_clause: Option<&'ast ExtClause>,
+    impl_clause: Option<&'ast ImplClause>,
+    body: &'ast ClassBody,
+    span:&'ast Span,
+    vis:Option<&'ast Visibility>,
+    ident:&'ast Ident
+) {
+    todo!()
+}
+
+pub fn walk_item_interface<'ast, V: Visitor<'ast>>(
+    visitor: &mut V,
+    generics: &'ast Vec<GenericParam>,
+    ext_clause: Option<&'ast ExtClause>,
+    body: &'ast InterfaceBody,
+    span:&'ast Span,
+    vis:Option<&'ast Visibility>,
+    ident:&'ast Ident
+) {
+    todo!()
 }
 
 pub fn walk_stmt<'ast, V: Visitor<'ast>>(visitor: &mut V, stmt: &'ast Stmt) {
-    let Stmt { kind, span: _ } = stmt;
+    let Stmt { kind, span } = stmt;
     match kind {
         StmtKind::Expr(expr) => visitor.visit_expr(expr),
         StmtKind::Var(local) => visitor.visit_stmt_var(local),
@@ -81,10 +149,16 @@ pub fn walk_stmt<'ast, V: Visitor<'ast>>(visitor: &mut V, stmt: &'ast Stmt) {
         StmtKind::Block(block) => visitor.visit_stmt_block(block),
         StmtKind::While(condition, block) => visitor.visit_stmt_while(condition, block),
         StmtKind::For(ident, expr, block) => visitor.visit_stmt_for(ident, expr, block),
+        StmtKind::Return(expr) => visitor.visit_stmt_return(expr.as_deref(), span),
         _ => {}
     }
 }
 
+pub fn walk_stmt_return<'ast, V: Visitor<'ast>>(visitor: &mut V, expr: Option<&'ast Expr>, span:&'ast Span) {
+    if expr.is_some() {
+        visitor.visit_expr(expr.unwrap());
+    };
+}
 pub fn walk_stmt_while<'ast, V: Visitor<'ast>>(
     visitor: &mut V,
     condition: &'ast Expr,
@@ -192,6 +266,7 @@ pub fn walk_generic_arg<'ast, V: Visitor<'ast>>(visitor: &mut V, arg: &'ast Gene
 pub fn walk_ty<'ast, V: Visitor<'ast>>(visitor: &mut V, ty: &'ast Ty) {
     match &ty.kind {
         TyKind::Path(path) => visitor.visit_path(path),
+        TyKind::Never => {}
     }
 }
 
@@ -217,6 +292,10 @@ pub fn walk_expr<'ast, V: Visitor<'ast>>(visitor: &mut V, expression: &'ast Expr
             visitor.visit_expr(_rhs);
         }
         ExprKind::Literal(_token) => {}
-        ExprKind::Var(_ident) => {}
+        ExprKind::Path(path) => visitor.visit_path(path),
+        ExprKind::Cast(expr, ty) => {
+            visitor.visit_expr(expr);
+            visitor.visit_ty(ty);
+        }
     }
 }

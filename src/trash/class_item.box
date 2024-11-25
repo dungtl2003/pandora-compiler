@@ -1,0 +1,7 @@
+class Person {
+    var name:String;
+    var age:int;
+    fn hello() -> void {
+
+    }
+}

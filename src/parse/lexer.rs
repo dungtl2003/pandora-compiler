@@ -201,7 +201,6 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         let mut kind = LitKind::Int;
 
         if empty_digit {
-            println!("start: {start}, end: {end}");
             self.report_no_digits_literal(start, end);
             kind = LitKind::Err;
         } else if matches!(base, Base::Binary | Base::Octal) {

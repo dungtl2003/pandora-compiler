@@ -53,6 +53,8 @@ pub enum AssocOp {
     Assign,
     /// `?=` where ? is one of the BinOpToken
     AssignOp(BinOpToken),
+    /// `as`
+    As,
 }
 
 impl AssocOp {
@@ -113,6 +115,7 @@ impl AssocOp {
     pub fn precedence(&self) -> usize {
         use AssocOp::*;
         match *self {
+            As => 11,
             Multiply | Divide | Modulus => 10,
             Add | Subtract => 9,
             ShiftLeft | ShiftRight => 8,
@@ -134,7 +137,7 @@ impl AssocOp {
             Assign | AssignOp(_) => Fixity::Right,
             Multiply | Divide | Modulus | Add | Subtract | ShiftLeft | ShiftRight | BitAnd
             | BitXor | BitOr | Less | Greater | LessEqual | GreaterEqual | Equal | NotEqual
-            | LAnd | LOr => Fixity::Left,
+            | LAnd | LOr | As => Fixity::Left,
         }
     }
 
@@ -143,7 +146,7 @@ impl AssocOp {
         match *self {
             Less | Greater | LessEqual | GreaterEqual | Equal | NotEqual => true,
             Assign | AssignOp(_) | Multiply | Divide | Modulus | Add | Subtract | ShiftLeft
-            | ShiftRight | BitAnd | BitXor | BitOr | LAnd | LOr => false,
+            | ShiftRight | BitAnd | BitXor | BitOr | LAnd | LOr | As => false,
         }
     }
 
@@ -168,7 +171,7 @@ impl AssocOp {
             BitOr => Some(BinOpKind::BitOr),
             LAnd => Some(BinOpKind::And),
             LOr => Some(BinOpKind::Or),
-            Assign | AssignOp(_) => None,
+            Assign | AssignOp(_) | As => None,
         }
     }
 }
