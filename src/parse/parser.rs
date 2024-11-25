@@ -17,6 +17,7 @@ use crate::{
     span_encoding::DUMMY_SP,
 };
 use crate::ast::Item;
+use crate::span_encoding::Span;
 
 pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<Stmt>>> {
     let mut stmts: Vec<Box<Stmt>> = Vec::new();
@@ -76,8 +77,6 @@ impl<'sess> Parser<'sess> {
 
     /// Advance the parser by one token.
     pub fn advance(&mut self) {
-        // println!("debug!:{}",self.token.span);
-
         let (next_token, next_spacing) = self.token_cursor.next();
         // Update the current and previous tokens.
         self.prev_token = mem::replace(&mut self.token, next_token);
@@ -158,8 +157,8 @@ impl<'sess> Parser<'sess> {
         }
         match self.token.kind.break_two_token_op(1) {
             Some((first, second)) if first == expected => {
-                let first_span = self.token.span;
-                let second_span = self.token.span.with_offset(first_span.end());
+                let first_span = Span::new(self.token.span.offset, self.token.span.offset+1);
+                let second_span = first_span.with_offset(self.token.span.end());
                 self.token = Token::new(first, first_span);
                 // Use the spacing of the glued token as the spacing of the
                 // unglued second token.

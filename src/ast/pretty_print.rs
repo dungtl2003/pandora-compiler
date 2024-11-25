@@ -1,5 +1,5 @@
 use crate::span_encoding::Span;
-use super::{AngleBracketedArgs, ClassBody, Expr, ExprKind, ExtClause, FunRetTy, FunSig, GenericArgs, GenericParam, Ident, ImplClause, InterfaceBody, Item, Local, LocalKind, Mutability, Path, PathSegment, SelfKind, SelfParam, Stmt, StmtKind, Ty, TyKind, Visibility, VisibilityKind};
+use super::{AngleBracketedArgs, ClassBody, Expr, ExprKind, ExtClause, FunParam, FunRetTy, FunSig, GenericArgs, GenericParam, Ident, ImplClause, InterfaceBody, Item, Local, LocalKind, Mutability, Path, PathSegment, SelfKind, SelfParam, Stmt, StmtKind, Ty, TyKind, Visibility, VisibilityKind};
 use crate::visitor::Visitor;
 
 pub struct Printer {
@@ -48,7 +48,7 @@ impl<'ast> Visitor<'ast> for Printer {
         self.output
             .push_str(&format!("{}Function: {}\n", space(self.indent), span));
 
-        self.indent += self.indent_spaces; //0
+        self.indent += self.indent_spaces;
         self.output.push_str(&format!(
             "{}Visibility: {}\n",
             space(self.indent),
@@ -65,7 +65,7 @@ impl<'ast> Visitor<'ast> for Printer {
             space(self.indent)
         ));
 
-        self.indent += self.indent_spaces; //1
+        self.indent += self.indent_spaces;
         for generic in generics {
             self.output.push_str(&format!(
                 "{}Ident: {} - {}\n",
@@ -74,32 +74,37 @@ impl<'ast> Visitor<'ast> for Printer {
                 generic.ident.name
             ));
 
-            self.indent += self.indent_spaces; //2
+            self.indent += self.indent_spaces;
             self.output.push_str(&format!(
                 "{}Bounds: \n",
                 space(self.indent),
             ));
 
-            self.indent += self.indent_spaces; //3
-            for bound in generic.bounds.iter() {
-                self.output.push_str(&format!(
-                    "{}{} - {}\n",
-                    space(self.indent),
-                    bound.span,
-                    bound.kind
-
-                ));
+            self.indent += self.indent_spaces;
+            for Ty {kind,span} in generic.bounds.iter() {
+                match kind {
+                    TyKind::Never => {
+                        self.output.push_str(&format!(
+                            "{}{} - void\n",
+                            space(self.indent),
+                            span,
+                        ));
+                    },
+                    TyKind::Path(path) => {
+                        self.visit_path(&path);
+                    }
+                }
             }
-            self.indent -= self.indent_spaces; //3
-            self.indent -= self.indent_spaces; //2
+            self.indent -= self.indent_spaces;
+            self.indent -= self.indent_spaces;
         }
-        self.indent -= self.indent_spaces;//1
+        self.indent -= self.indent_spaces;
 
         self.output.push_str(&format!(
             "{}Inputs: \n",
             space(self.indent),
         ));
-        self.indent += self.indent_spaces; //3
+        self.indent += self.indent_spaces;
         let FunSig{inputs,output,span} = sig;
         let (self_param, params) = inputs;
         if let  Some(SelfParam{kind: self_kind, span: self_span}) = self_param{
@@ -118,14 +123,33 @@ impl<'ast> Visitor<'ast> for Printer {
             };
         }
 
-        for param in params {
-            self.output.push_str(&format!("{}param: {}\n", space(self.indent), param.span));
+        for FunParam{span,ty,ident} in params {
+            self.output.push_str(&format!("{}param: {}\n", space(self.indent), span));
             self.indent += self.indent_spaces; //3
-            self.output.push_str(&format!("{}ident: {} - {}\n", space(self.indent), param.ident.span, param.ident.name));
-            self.output.push_str(&format!("{}type: {} - {}\n", space(self.indent), param.ty.span, param.ty.kind));
-            self.indent -= self.indent_spaces; //3
+            self.output.push_str(&format!("{}ident: {} - {}\n", space(self.indent), ident.span, ident.name));
+            // self.output.push_str(&format!("{}type: {} - {}\n", space(self.indent), param.ty.span, param.ty.kind));
+            let kind= &ty.kind;
+            match kind {
+                TyKind::Never => {
+                    self.output.push_str(&format!(
+                        "{}type: {} - void\n",
+                        space(self.indent),
+                        span,
+                    ));
+                },
+                TyKind::Path(path) => {
+                    self.output.push_str(&format!(
+                        "{}type:\n",
+                        space(self.indent),
+                    ));
+                    self.indent += self.indent_spaces;
+                    self.visit_path(&path);
+                    self.indent -= self.indent_spaces;
+                }
+            }
+            self.indent -= self.indent_spaces;
         };
-        self.indent -= self.indent_spaces; //3
+        self.indent -= self.indent_spaces;
 
         self.output.push_str(&format!(
             "{}Output: ",
@@ -134,8 +158,25 @@ impl<'ast> Visitor<'ast> for Printer {
         match output {
             FunRetTy::Default(span) => self.output.push_str(&format!("{} - void\n", span)),
             FunRetTy::Ty(ty) => {
-                self.output.push_str(&format!("{} - {}\n", ty.span, ty.kind));
+                // self.output.push_str(&format!("{} - {}\n", ty.span, ty.kind));
+                let kind = &ty.kind;
+                match kind {
+                    TyKind::Never => {
+                        self.output.push_str(&format!(
+                            "{}{} - void\n",
+                            space(self.indent),
+                            span,
+                        ));
+                    },
+                    TyKind::Path(path) => {
+                        self.output.push_str("\n");
+                        self.indent += self.indent_spaces;
+                        self.visit_path(&path);
+                        self.indent -= self.indent_spaces;
+                    }
+                }
             },
+
         }
 
         let stmts = if let Some(Stmt {kind:body_kind,span:_}) = body {
@@ -151,7 +192,7 @@ impl<'ast> Visitor<'ast> for Printer {
         self.visit_stmt_block(&stmts);
 
 
-        self.indent -= self.indent_spaces; //0
+        self.indent -= self.indent_spaces; 
 
     }
 
