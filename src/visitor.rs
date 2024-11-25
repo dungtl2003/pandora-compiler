@@ -1,4 +1,4 @@
-use crate::ast::{AngleBracketedArg, AngleBracketedArgs, ClassBody, Expr, ExprKind, ExtClause, FunSig, GenericArg, GenericArgs, GenericParam, Ident, ImplClause, InterfaceBody, Item, ItemKind, Local, LocalKind, Path, PathSegment, Stmt, StmtKind, Ty, TyKind, Visibility};
+use crate::ast::{AngleBracketedArg, AngleBracketedArgs, ClassBody, Expr, ExprKind, ExtClause, FunRetTy, FunSig, GenericArg, GenericArgs, GenericParam, Ident, ImplClause, InterfaceBody, Item, ItemKind, Local, LocalKind, Path, PathSegment, Stmt, StmtKind, Ty, TyKind, Visibility};
 use crate::span_encoding::Span;
 
 pub trait Visitor<'ast>: Sized {
@@ -105,13 +105,30 @@ pub fn walk_item_fun<'ast, V: Visitor<'ast>>(
     generics: &'ast Vec<GenericParam>,
     sig: &'ast FunSig,
     body: Option<&'ast Stmt>,
-    span:&'ast Span,
-    vis:Option<&'ast Visibility>,
-    ident:&'ast Ident
+    _span:&'ast Span,
+    _vis:Option<&'ast Visibility>,
+    _ident:&'ast Ident
 ) {
+    for generic in generics {
+        let GenericParam { bounds,.. } = generic;
+        for bound in bounds {
+            visitor.visit_ty(&bound)
+        }
+    }
+
+    let FunSig{inputs:(self_param,fun_param),output,span} = sig;
+
+    for fun_param in fun_param{
+        visitor.visit_ty(&fun_param.ty)
+    }
+    if let FunRetTy::Ty(ty) = output {
+        visitor.visit_ty(&ty)
+    }
+
     if body.is_some() {
         visitor.visit_stmt(body.unwrap());
     }
+
 }
 
 pub fn walk_item_class<'ast, V: Visitor<'ast>>(
@@ -141,7 +158,7 @@ pub fn walk_item_interface<'ast, V: Visitor<'ast>>(
 pub fn walk_stmt<'ast, V: Visitor<'ast>>(visitor: &mut V, stmt: &'ast Stmt) {
     let Stmt { kind, span } = stmt;
     match kind {
-        StmtKind::Expr(expr) => visitor.visit_expr(expr),
+        StmtKind::Expr(expr) => visitor.visit_stmt_expr(expr),
         StmtKind::Var(local) => visitor.visit_stmt_var(local),
         StmtKind::If(condition, block, optional_else) => {
             visitor.visit_stmt_if(condition, block, optional_else.as_deref())

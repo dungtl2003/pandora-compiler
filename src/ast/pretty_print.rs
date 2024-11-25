@@ -189,10 +189,11 @@ impl<'ast> Visitor<'ast> for Printer {
         };
 
         self.output.push_str(&format!("{}Body: \n", space(self.indent)));
+        self.indent += self.indent_spaces;
         self.visit_stmt_block(&stmts);
+        self.indent -= self.indent_spaces;
 
-
-        self.indent -= self.indent_spaces; 
+        self.indent -= self.indent_spaces;
 
     }
 

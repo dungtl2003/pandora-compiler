@@ -154,7 +154,6 @@ impl Parser<'_> {
         self.advance(); // Eat token after "if"
                         // Parse the condition expression.
         let condition = self.parse_expr()?;
-
         // Parse the block for the `if` statement.
         let if_block = self.parse_stmt_block()?;
 
