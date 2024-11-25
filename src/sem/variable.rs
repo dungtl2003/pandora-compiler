@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 
 use crate::{span_encoding::Span, symbol::Symbol};
 
-use super::ty::Ty;
+use super::Ty;
 
 #[derive(Debug, Clone)]
 pub struct Variable {

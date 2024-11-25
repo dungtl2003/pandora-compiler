@@ -234,6 +234,7 @@ impl Token {
         match self.kind {
             Ident(name, is_raw)              =>
                 ident_can_begin_expr(name, self.span, is_raw), // value name or keyword
+            OpenDelim(..)                     | // block
             Literal(..)                       | // literal
             Not                               | // operator not
             BinOp(Minus)                      => true, // unary minus
@@ -256,6 +257,7 @@ impl Token {
                 Ident {
                     name,
                     span: self.span,
+                    scope_id: None,
                 },
                 is_raw,
             )),

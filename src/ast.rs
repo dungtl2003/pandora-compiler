@@ -260,6 +260,12 @@ pub enum UnOp {
     Ne,
 }
 
+impl Display for UnOp {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 pub type BinOp = Spanned<BinOpKind>;
 
 impl Display for BinOp {

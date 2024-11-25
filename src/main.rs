@@ -1,15 +1,18 @@
 mod ast;
 mod error_handler;
+mod ir;
 #[path = "keyword.rs"]
 mod kw;
 mod lexer;
 mod parse;
+mod sem;
 mod session_global;
 mod span_encoding;
 mod symbol;
 mod visitor;
 
 use crate::error_handler::*;
+use ast::Ast;
 use miette::NamedSource;
 use std::fs;
 use std::sync::Arc;
@@ -17,11 +20,11 @@ use std::sync::Arc;
 fn main() {
     let file_path = "src/trash/".to_string();
     let file_names = vec![
-        "program.box",
+        //"program.box",
         //"var_decl.box",
         //"path.box",
         //"expr.box",
-        //"test.box",
+        "test.box",
         //"main.box",
         //"unterminated_block_comment.box",
         //"number_literal_error.box",
@@ -42,27 +45,26 @@ fn main() {
             file: Arc::new(source),
         };
         let session = session_global::SessionGlobal::new();
+        //type_check(&data, emitter, &session);
+
         //print_lex_2(&data, emitter, &session);
-        //print_lex_3(&data, emitter);
+        //print_lex_3(&data, emitter, &session);
         //print_parse_path(&data, emitter);
-
-        // let tokens = parse::lexer::lex_token_tree(&data, emitter).unwrap();
-        // let mut parser = parse::parser::Parser::new(tokens);
-        // // let expr = parser.parse_expr().unwrap();
-        // let stmt = parser.parse_stmt().unwrap();
-        // let mut printer = ast::pretty_print::Printer::new();
-        // printer.print_stmt(&stmt);
-        // println!("{}", printer.output);
-
-        //ast::pprint(&tokens);
-        // let tokens = lexer::tokenize(&data);
-        // for token in tokens.iter() {
-        //    println!("{token:?}");
-        // }
-        //
         print_parse_stmts(&data, emitter, &session);
         println!("================ END ================");
     }
+}
+
+fn type_check<'sess>(
+    data: &str,
+    emitter: ErrorHandler,
+    session: &'sess session_global::SessionGlobal,
+) {
+    let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
+    let mut ast = parse::parser::parse(tokens, session).unwrap();
+    let sematic_resolver = sem::SematicResolver::new();
+    let context_manager = sematic_resolver.parse(&mut ast).unwrap();
+    println!("{}", context_manager);
 }
 
 fn print_lex_2<'sess>(
@@ -91,8 +93,17 @@ fn print_parse_stmts<'sess>(
     session: &'sess session_global::SessionGlobal,
 ) {
     let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
-    let stmts = parse::parser::parse(tokens, session).unwrap();
+    let ast = parse::parser::parse(tokens, session).unwrap();
     let mut printer = ast::pretty_print::Printer::new();
-    printer.print_stmts(&stmts);
+    printer.print_stmts(&ast.stmts);
     println!("{}", printer.output);
+}
+
+fn parse_stmts<'sess>(
+    data: &str,
+    emitter: ErrorHandler,
+    session: &'sess session_global::SessionGlobal,
+) -> Ast {
+    let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
+    parse::parser::parse(tokens, session).unwrap()
 }

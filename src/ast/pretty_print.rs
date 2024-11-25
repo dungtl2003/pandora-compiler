@@ -35,6 +35,7 @@ impl Printer {
 }
 
 impl<'ast> Visitor<'ast> for Printer {
+    type Result = ();
     fn visit_stmt_for(&mut self, ident: &'ast Ident, expr: &'ast Expr, block: &'ast Stmt) {
         self.output
             .push_str(&format!("{}For statement:\n", space(self.indent)));
@@ -175,17 +176,31 @@ impl<'ast> Visitor<'ast> for Printer {
                 self.indent -= self.indent_spaces;
             }
 
-            ExprKind::Unary(_op, subexpression) => {
+            ExprKind::Unary(op, subexpression) => {
+                self.output.push_str(&format!(
+                    "{}Unary operation: {} {}\n",
+                    space(self.indent),
+                    op,
+                    span
+                ));
                 self.visit_expr(subexpression);
             }
 
-            ExprKind::Assign(_lhs, _rhs, _span) => {
-                self.visit_expr(_lhs);
-                self.visit_expr(_rhs);
+            ExprKind::Assign(lhs, rhs, span) => {
+                self.output
+                    .push_str(&format!("{}Assignment: {}\n", space(self.indent), span));
+                self.visit_expr(lhs);
+                self.visit_expr(rhs);
             }
-            ExprKind::AssignOp(_op, _lhs, _rhs) => {
-                self.visit_expr(_lhs);
-                self.visit_expr(_rhs);
+            ExprKind::AssignOp(op, lhs, rhs) => {
+                self.output.push_str(&format!(
+                    "{}Assignment operation: {} {}\n",
+                    space(self.indent),
+                    op,
+                    span
+                ));
+                self.visit_expr(lhs);
+                self.visit_expr(rhs);
             }
             ExprKind::Literal(token) => {
                 self.output.push_str(&format!(

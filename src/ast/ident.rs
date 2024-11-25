@@ -2,6 +2,7 @@ use crate::{span_encoding::Span, symbol::Symbol};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Ident {
+    pub scope_id: Option<String>,
     pub name: Symbol,
     pub span: Span,
 }
