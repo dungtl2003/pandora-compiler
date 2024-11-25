@@ -43,21 +43,7 @@ impl Printer {
 }
 
 impl<'ast> Visitor<'ast> for Printer {
-    // pub fun add<T ext Plus>(mut self, a: T, b: T) -> int {
-    //     return 1+2;
-    // }
 
-    // generics: Vec<GenericParam>,
-    //      pub ident: Ident,
-    //      pub bounds: Vec<Ty>,
-    // sig: FunSig,
-    //      pub inputs: (Option<SelfParam>, Vec<FunParam>),
-    //          pub ty: Box<Ty>,
-    //          pub ident: Ident,
-    //          pub span: Span,
-    //      pub output: FunRetTy,
-    //      pub span: Span,
-    // body: Option<Stmt>,
     fn visit_item_fun(&mut self, generics: &'ast Vec<GenericParam>, sig: &'ast FunSig, body: Option<&'ast Stmt>, span: &'ast Span, vis: Option<&'ast Visibility>, ident: &'ast Ident) {
         self.output
             .push_str(&format!("{}Function: {}\n", space(self.indent), span));
