@@ -334,6 +334,14 @@ pub enum VisibilityKind {
     Public,
 }
 
+impl Display for VisibilityKind {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            VisibilityKind::Public => write!(f, "public"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Item {
     pub span: Span,
@@ -471,7 +479,7 @@ pub struct Generics {
 #[derive(Clone, Debug)]
 pub struct GenericParam {
     pub ident: Ident,
-    pub bounds: Vec<Ty>,
+    pub bounds: Vec<Box<Ty>>,
 }
 
 #[derive(Debug, Clone)]

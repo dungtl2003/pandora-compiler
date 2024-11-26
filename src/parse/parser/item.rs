@@ -1,8 +1,8 @@
 use super::{PResult, Parser};
 use crate::ast::{
     BinOpToken, Class, ClassBody, ClassField, ClassFieldKind, Delimiter, ExtClause, Fun, FunParam,
-    FunRetTy, FunSig, GenericParam, Ident, ImplClause, Interface, InterfaceBody, Item, ItemKind,
-    Mutability, SelfKind, SelfParam, Stmt, TokenKind, Visibility, VisibilityKind,
+    FunRetTy, FunSig, GenericParam, ImplClause, Interface, InterfaceBody, Item, ItemKind,
+    Mutability, SelfKind, SelfParam, Stmt, Token, TokenKind, Visibility, VisibilityKind,
 };
 use crate::kw::Keyword;
 
@@ -23,23 +23,18 @@ impl Parser<'_> {
         }
     }
 
-    pub fn parse_item_function(&mut self) -> PResult<Box<Item>> {
-        if !self.token.is_keyword(Keyword::Fun) {
-            return Err("Expected function".into());
-        }
-        let mut start_span = self.token.span;
-        let vis = self.parse_item_vis();
+    fn parse_item_function(&mut self) -> PResult<Box<Item>> {
+        debug_assert!(self.token.is_keyword(Keyword::Fun));
+        self.advance();
 
+        let mut start_span = self.token.span;
+
+        let vis = self.check_item_vis();
         if vis.is_some() {
             start_span = self.prev_token.span;
         };
 
-        if !self.is_ident_ahead() {
-            return Err("Expected identifier".into());
-        }
-
-        self.advance(); // Eat ident
-        let ident = self.parse_item_ident()?;
+        let ident = self.parse_ident()?;
 
         let generics = self.parse_item_generics()?;
         let sig = self.parse_item_function_sig()?;
@@ -60,7 +55,7 @@ impl Parser<'_> {
     }
 
     // (mut? self:Type?, a:A, b:B)
-    pub fn parse_item_function_sig(&mut self) -> PResult<FunSig> {
+    fn parse_item_function_sig(&mut self) -> PResult<FunSig> {
         if self.token.kind != TokenKind::OpenDelim(Delimiter::Parenthesis) {
             return Err("Expected parenthesis".into());
         }
@@ -71,7 +66,7 @@ impl Parser<'_> {
             self.advance(); // Eat "mut"
             let start_self_param_span = self.token.span;
             if !self.is_keyword_ahead(&[Keyword::SelfLower]) {
-                return Err("Expected SelfLower".into());
+                return Err("Expected self".into());
             }
             self.advance(); // Eat "self"
             if self.look_ahead(1, |tok| tok.kind == TokenKind::Colon) {
@@ -171,13 +166,13 @@ impl Parser<'_> {
         })
     }
 
-    pub fn parse_item_function_param(&mut self) -> PResult<FunParam> {
+    fn parse_item_function_param(&mut self) -> PResult<FunParam> {
         if !self.token.is_ident() {
             return Err("Expected identifier".into());
         }
         let start_span = self.token.span;
 
-        let ident = self.parse_item_ident()?;
+        let ident = self.parse_ident()?;
         if self.token.kind == TokenKind::Colon {
             self.advance();
         } else {
@@ -190,7 +185,7 @@ impl Parser<'_> {
         Ok(FunParam { ty, ident, span })
     }
 
-    pub fn parse_item_function_body(&mut self) -> PResult<Option<Stmt>> {
+    fn parse_item_function_body(&mut self) -> PResult<Option<Stmt>> {
         if self.token.kind == TokenKind::Semicolon {
             self.advance(); // Eat token after ';'
             return Ok(None);
@@ -207,7 +202,7 @@ impl Parser<'_> {
         }))
     }
 
-    pub fn parse_item_class(&mut self) -> PResult<Box<Item>> {
+    fn parse_item_class(&mut self) -> PResult<Box<Item>> {
         if !self.token.is_keyword(Keyword::Class) {
             return Err("Expected class".into());
         }
@@ -217,14 +212,14 @@ impl Parser<'_> {
         }
 
         let mut start_span = self.token.span;
-        let vis = self.parse_item_vis();
+        let vis = self.check_item_vis();
 
         if vis.is_some() {
             start_span = self.prev_token.span;
         };
 
         self.advance(); // Eat ident
-        let ident = self.parse_item_ident()?;
+        let ident = self.parse_ident()?;
 
         let generics = if self.token.kind == TokenKind::Lt {
             self.parse_item_generics()?
@@ -257,7 +252,7 @@ impl Parser<'_> {
         }))
     }
 
-    pub fn parse_item_class_ext_clause(&mut self) -> PResult<Option<ExtClause>> {
+    fn parse_item_class_ext_clause(&mut self) -> PResult<Option<ExtClause>> {
         if self.token.is_keyword(Keyword::Extends) {
             return Ok(None);
         };
@@ -271,7 +266,7 @@ impl Parser<'_> {
         Ok(Some(ExtClause { ty, span }))
     }
 
-    pub fn parse_item_class_impl_clause(&mut self) -> PResult<Option<ImplClause>> {
+    fn parse_item_class_impl_clause(&mut self) -> PResult<Option<ImplClause>> {
         if self.token.is_keyword(Keyword::Impl) {
             return Ok(None);
         };
@@ -295,7 +290,7 @@ impl Parser<'_> {
         Ok(Some(ImplClause { tys, span }))
     }
 
-    pub fn parse_item_class_body(&mut self) -> PResult<ClassBody> {
+    fn parse_item_class_body(&mut self) -> PResult<ClassBody> {
         if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
             return Err("Expected '{'".into());
         }
@@ -322,7 +317,7 @@ impl Parser<'_> {
     }
 
     // pub? const age:int = 10 + 10, pub? var age:int;
-    pub fn parse_item_class_fields(&mut self) -> PResult<Vec<ClassField>> {
+    fn parse_item_class_fields(&mut self) -> PResult<Vec<ClassField>> {
         let mut class_fields = Vec::new();
 
         while !self.is_keyword_ahead(&[Keyword::Fun])
@@ -335,7 +330,7 @@ impl Parser<'_> {
                 self.advance()
             };
 
-            let vis = self.parse_item_vis();
+            let vis = self.check_item_vis();
 
             // pub? const age = 10 + 10;
             let kind = if self.token.is_keyword(Keyword::Const) {
@@ -343,7 +338,7 @@ impl Parser<'_> {
                     return Err("Expected identifier".into());
                 }
                 self.advance(); // Eat ident
-                let ident = self.parse_item_ident()?;
+                let ident = self.parse_ident()?;
 
                 if self.token.kind != TokenKind::Colon {
                     return Err("Expected ':'".into());
@@ -370,7 +365,7 @@ impl Parser<'_> {
                     return Err("Expected identifier".into());
                 }
                 self.advance(); // Eat ident
-                let ident = self.parse_item_ident()?;
+                let ident = self.parse_ident()?;
 
                 if self.token.kind != TokenKind::Colon {
                     return Err("Expected ':'".into());
@@ -397,7 +392,7 @@ impl Parser<'_> {
         Ok(class_fields)
     }
 
-    pub fn parse_item_class_methods(&mut self) -> PResult<Vec<Item>> {
+    fn parse_item_class_methods(&mut self) -> PResult<Vec<Item>> {
         let mut methods = Vec::new();
 
         while self.is_keyword_ahead(&[Keyword::Fun]) || self.token.is_keyword(Keyword::Fun) {
@@ -411,7 +406,7 @@ impl Parser<'_> {
         Ok(methods)
     }
 
-    pub fn parse_item_interface(&mut self) -> PResult<Box<Item>> {
+    fn parse_item_interface(&mut self) -> PResult<Box<Item>> {
         if !self.token.is_keyword(Keyword::Interface) {
             return Err("Expected interface".into());
         };
@@ -432,7 +427,7 @@ impl Parser<'_> {
         };
 
         self.advance(); // Eat ident
-        let ident = self.parse_item_ident()?;
+        let ident = self.parse_ident()?;
 
         let generics = self.parse_item_generics()?;
         let ext_clause = self.parse_item_class_ext_clause()?;
@@ -452,18 +447,18 @@ impl Parser<'_> {
         }))
     }
 
-    pub fn parse_item_interface_body(&mut self) -> PResult<InterfaceBody> {
+    fn parse_item_interface_body(&mut self) -> PResult<InterfaceBody> {
         if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
             return Err("Expected '{'".into());
         }
-        let mut methods = Vec::new();
+        let methods = Vec::new();
 
         while self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
             if !self.is_keyword_ahead(&[Keyword::Pub]) {
                 return Err("Expected pub".into());
             }
             self.advance(); // Eat "pub"
-            let method = self.parse_item_function()?;
+            let _method = self.parse_item_function()?;
             if self.prev_token.kind != TokenKind::Semicolon {
                 return Err("This is not a function without body".into());
             }
@@ -474,67 +469,49 @@ impl Parser<'_> {
         Ok(InterfaceBody { methods })
     }
 
-    pub fn parse_item_ident(&mut self) -> PResult<Ident> {
-        if !self.token.is_ident() {
-            return Err("Expected identifier".into());
-        }
-        let ident = self.token.ident().unwrap().0;
-        self.advance(); // Eat token after ident
-        Ok(ident)
-    }
-
     // <T ext Type1<T> + Type2<T>, V ext Type1<V> + Type2<V>>
-    pub fn parse_item_generics(&mut self) -> PResult<Vec<GenericParam>> {
-        if self.token.kind != TokenKind::Lt {
-            return Err("Expected '<'".into());
-        }
+    fn parse_item_generics(&mut self) -> PResult<Vec<GenericParam>> {
+        self.expect_lt()?;
 
         let mut generic_params = Vec::new();
-        self.advance(); // Eat token after '<'
-        while self.token.kind != TokenKind::Gt {
-            if !self.token.is_ident() {
-                return Err("Expected '>'".into());
+        let is_args_end = |token: &Token| {
+            matches!(
+                token.kind,
+                TokenKind::Gt | TokenKind::BinOp(BinOpToken::Shr) | TokenKind::Ge
+            )
+        };
+
+        loop {
+            if self.look_ahead(0, is_args_end) {
+                break;
             }
-            let ident = self.parse_item_ident()?;
+
+            let ident = self.parse_ident()?;
             let mut bounds = Vec::new();
 
             if self.token.is_keyword(Keyword::Extends) {
-                self.advance(); // Eat token after "ext"
-                bounds.push(*self.parse_ty()?);
-            }
+                self.advance();
+                bounds.push(self.parse_ty()?);
 
-            while self.token.kind == TokenKind::BinOp(BinOpToken::Plus) {
-                self.advance(); // Eat '+'
-                bounds.push(*self.parse_ty()?);
+                while self.token.kind == TokenKind::BinOp(BinOpToken::Plus) {
+                    self.advance(); // Eat '+'
+                    bounds.push(self.parse_ty()?);
+                }
             }
 
             let generic_param = GenericParam { ident, bounds };
-
             generic_params.push(generic_param);
 
-            if self.token.kind == TokenKind::Comma && self.is_ident_ahead() {
+            if self.token.kind == TokenKind::Comma {
                 self.advance(); // Eat ident
-            } else {
-                break;
-            };
-        }
-        // println!("debug!{}",self.prev_token.span);
-        // println!("debug!!!{}",self.prev_token);
-        // println!("debug!{}",self.token.span);
-        // println!("debug!!!{}",self.token);
-
-        if self.token.kind != TokenKind::Gt {
-            return Err("Expected gt".into());
+            }
         }
 
-        self.advance(); // Eat token after '>'
-                        // println!("debug!{}",self.token.span);
-                        // println!("debug!{}",self.token);
-                        // println!("debug!{}",self.token.span);
+        self.expect_gt()?;
         Ok(generic_params)
     }
 
-    pub fn parse_item_vis(&mut self) -> Option<Visibility> {
+    fn check_item_vis(&mut self) -> Option<Visibility> {
         // current token is a token after pub, check before and return vis
         if self.prev_token.is_keyword(Keyword::Pub) {
             Some(Visibility {

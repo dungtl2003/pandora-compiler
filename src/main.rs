@@ -1,6 +1,7 @@
 mod ast;
 mod error_handler;
 //mod ir;
+mod ir_rust;
 #[path = "keyword.rs"]
 mod kw;
 mod lexer;
@@ -24,7 +25,7 @@ fn main() {
         //"var_decl.box",
         //"path.box",
         //"expr.box",
-        "test.box",
+        //"test.box",
         //"main.box",
         //"unterminated_block_comment.box",
         //"number_literal_error.box",
@@ -47,12 +48,11 @@ fn main() {
             file: Arc::new(source),
         };
         let session = session_global::SessionGlobal::new();
-        type_check(&data, emitter, &session);
+        //type_check(&data, emitter, &session);
 
         //print_lex_2(&data, emitter, &session);
         //print_lex_3(&data, emitter, &session);
-        //print_parse_path(&data, emitter);
-        //print_parse_stmts(&data, emitter, &session);
+        print_parse_stmts(&data, emitter, &session);
         println!("================ END ================");
     }
 }
@@ -98,25 +98,5 @@ fn print_parse_stmts<'sess>(
     let ast = parse::parser::parse(tokens, session).unwrap();
     let mut printer = ast::pretty_print::Printer::new();
     printer.print_stmts(&ast.stmts);
-    println!("{}", printer.output);
-}
-
-fn parse_stmts<'sess>(
-    data: &str,
-    emitter: ErrorHandler,
-    session: &'sess session_global::SessionGlobal,
-) -> Ast {
-    let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
-    parse::parser::parse(tokens, session).unwrap()
-}
-fn print_parse_items<'sess>(
-    data: &str,
-    emitter: ErrorHandler,
-    session: &'sess session_global::SessionGlobal,
-) {
-    let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
-    let items = parse::parser::parse_items(tokens, session).unwrap();
-    let mut printer = ast::pretty_print::Printer::new();
-    printer.print_items(&items);
     println!("{}", printer.output);
 }

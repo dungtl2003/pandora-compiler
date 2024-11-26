@@ -62,11 +62,20 @@ impl Parser<'_> {
             self.parse_stmt_for()
         } else if self.token.is_keyword(Keyword::Return) {
             self.parse_stmt_return()
+        } else if self.token.can_begin_item() {
+            self.parse_stmt_item()
         } else if self.token.kind == TokenKind::Semicolon {
             self.parse_stmt_empty()
         } else {
             unreachable!();
         }
+    }
+
+    pub fn parse_stmt_item(&mut self) -> PResult<Box<Stmt>> {
+        let item = self.parse_item()?;
+        let span = item.span;
+        let kind = StmtKind::Item(item);
+        Ok(Box::new(Stmt { kind, span }))
     }
 
     pub fn parse_stmt_return(&mut self) -> PResult<Box<Stmt>> {

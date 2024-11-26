@@ -128,7 +128,6 @@ impl Parser<'_> {
 
     /// Highest precedence level.
     fn parse_expr_bottom(&mut self) -> PResult<Box<Expr>> {
-
         match self.token.kind {
             TokenKind::Literal(_) => self.parse_expr_lit(),
             TokenKind::Ident(_, _) => self.parse_expr_ident(),

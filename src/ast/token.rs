@@ -248,6 +248,13 @@ impl Token {
         }
     }
 
+    pub fn can_begin_item(&self) -> bool {
+        match self.kind {
+            Ident(name, is_raw) => ident_can_begin_item(name, self.span, is_raw),
+            _ => false,
+        }
+    }
+
     /// Returns `true` if the token is a non-raw identifier for which `pred` holds.
     pub fn is_non_raw_ident_where(&self, pred: impl FnOnce(Ident) -> bool) -> bool {
         match self.ident() {
@@ -325,4 +332,11 @@ pub fn ident_can_begin_expr(name: Symbol, span: Span, is_raw: IdentIsRaw) -> boo
     let ident_token = Token::new(Ident(name, is_raw), span);
 
     !ident_token.is_non_raw_ident_where(|ident| kw::is_keyword(ident.name))
+}
+
+pub fn ident_can_begin_item(name: Symbol, span: Span, is_raw: IdentIsRaw) -> bool {
+    let ident_token = Token::new(Ident(name, is_raw), span);
+
+    ident_token
+        .is_non_raw_ident_where(|ident| ident.is_item_keyword() || ident.is_visibility_keyword())
 }

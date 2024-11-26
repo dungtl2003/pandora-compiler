@@ -1,4 +1,3 @@
-use std::fmt::{Display, Formatter};
 use crate::ast::{
     AngleBracketedArg, AngleBracketedArgs, BinOpToken, GenericArg, GenericArgs, Ident, IdentIsRaw,
     Path, PathSegment, Token, TokenKind,
@@ -25,12 +24,6 @@ pub enum PathStyle {
     Type,
     /// A path with generic arguments disallowed, e.g., `foo::bar::Baz`, used in imports.
     Mod,
-}
-
-impl PathStyle {
-    fn has_generic_ambiguity(&self) -> bool {
-        matches!(self, Self::Expr)
-    }
 }
 
 impl Parser<'_> {
@@ -113,7 +106,6 @@ impl Parser<'_> {
         };
 
         loop {
-            self.advance();
             if self.token.kind == TokenKind::Eof {
                 return Err("Unexpected EOF".into());
             }

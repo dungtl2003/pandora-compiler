@@ -50,4 +50,29 @@ impl Symbol {
             _ => false,
         }
     }
+
+    pub fn is_visibility_keyword(&self) -> bool {
+        let res = kw::from_str(self.sym.as_str());
+
+        match res {
+            Ok(keyword) if matches!(keyword, Keyword::Pub) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_item_keyword(&self) -> bool {
+        let res = kw::from_str(self.sym.as_str());
+
+        match res {
+            Ok(keyword)
+                if matches!(
+                    keyword,
+                    Keyword::Fun | Keyword::Class | Keyword::Interface | Keyword::Enum
+                ) =>
+            {
+                true
+            }
+            _ => false,
+        }
+    }
 }

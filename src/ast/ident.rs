@@ -12,4 +12,12 @@ impl Ident {
     pub fn is_path_segment_keyword(&self) -> bool {
         self.name.is_path_segment_keyword()
     }
+
+    pub fn is_item_keyword(&self) -> bool {
+        self.name.is_item_keyword()
+    }
+
+    pub fn is_visibility_keyword(&self) -> bool {
+        self.name.is_visibility_keyword()
+    }
 }
