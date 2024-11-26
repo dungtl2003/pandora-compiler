@@ -33,6 +33,8 @@ fn main() {
         //"unterminated_char.box",
         //"unescape_error.box",
         //"if_stmt.box",
+        "fun_item.box",
+        //"class_item.box",
     ];
 
     for file_name in file_names {
@@ -106,4 +108,15 @@ fn parse_stmts<'sess>(
 ) -> Ast {
     let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
     parse::parser::parse(tokens, session).unwrap()
+}
+fn print_parse_items<'sess>(
+    data: &str,
+    emitter: ErrorHandler,
+    session: &'sess session_global::SessionGlobal,
+) {
+    let tokens = parse::lexer::lex_token_tree(&data, emitter, session).unwrap();
+    let items = parse::parser::parse_items(tokens, session).unwrap();
+    let mut printer = ast::pretty_print::Printer::new();
+    printer.print_items(&items);
+    println!("{}", printer.output);
 }

@@ -178,6 +178,15 @@ pub enum TyKind {
     Never,
 }
 
+impl Display for TyKind {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            TyKind::Never => write!(f, "void"),
+            TyKind::Path(path) => write!(f, "Path:{:?}", path.segments),
+        }
+    }
+}
+
 /// Local represents a `var` statement. e.g. `var mut <ident>:<ty> = <expr>;`.
 #[derive(Debug, Clone)]
 pub struct Local {
@@ -429,7 +438,7 @@ pub struct ClassBody {
 
 #[derive(Debug, Clone)]
 pub struct ClassField {
-    pub vis: Visibility,
+    pub vis: Option<Visibility>,
     pub kind: ClassFieldKind,
 }
 

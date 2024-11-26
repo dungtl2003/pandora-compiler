@@ -29,7 +29,7 @@ fn print_recursive(stream: &TokenStream, depth: u32) {
                     "{spaces}{:?} [{} - {}]",
                     tok.kind,
                     tok.span.offset,
-                    tok.span.offset + tok.span.length as u32 - 1
+                    tok.span.offset + tok.span.length as u32
                 );
             }
             TokenTree::Delimited(delim_span, delimiter, s) => {

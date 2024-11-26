@@ -17,6 +17,12 @@ pub struct Token {
     pub span: Span,
 }
 
+impl Display for Token {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.kind)
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TokenKind {
     /* Expression-operator symbols. */
@@ -181,7 +187,6 @@ impl Token {
             },
             Not => match joint.kind {
                 Eq => Ne,
-                Gt => RArrow,
                 _ => return None,
             },
             Lt => match joint.kind {
@@ -200,6 +205,7 @@ impl Token {
                 Eq => BinOpEq(op),
                 BinOp(And) if op == And => AndAnd,
                 BinOp(Or) if op == Or => OrOr,
+                Gt if op == Minus => RArrow,
                 _ => return None,
             },
             Colon => match joint.kind {

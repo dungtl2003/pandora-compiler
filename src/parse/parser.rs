@@ -7,6 +7,8 @@ mod ty;
 use std::mem;
 use symbol::Symbol;
 
+use crate::ast::Item;
+use crate::span_encoding::Span;
 use crate::{
     ast::{
         Ast, DelimSpan, Delimiter, Ident, IdentIsRaw, Spacing, Stmt, Token, TokenKind, TokenStream,
@@ -28,6 +30,18 @@ pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Ast> {
 
     let ast = Ast::new(stmts);
     Ok(ast)
+}
+
+pub fn parse_items(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<Item>>> {
+    let mut items: Vec<Box<Item>> = Vec::new();
+    let mut parser = Parser::new(tokens, session);
+
+    while parser.token.kind != TokenKind::Eof {
+        let item = parser.parse_item()?;
+        items.push(item);
+    }
+
+    Ok(items)
 }
 
 pub struct Parser<'sess> {
@@ -144,8 +158,11 @@ impl<'sess> Parser<'sess> {
         }
         match self.token.kind.break_two_token_op(1) {
             Some((first, second)) if first == expected => {
-                let first_span = self.token.span;
-                let second_span = self.token.span.with_offset(first_span.end());
+                let first_span = Span {
+                    offset: self.token.span.offset,
+                    length: 1,
+                };
+                let second_span = first_span.with_offset(self.token.span.end());
                 self.token = Token::new(first, first_span);
                 // Use the spacing of the glued token as the spacing of the
                 // unglued second token.
