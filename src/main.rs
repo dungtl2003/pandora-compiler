@@ -1,6 +1,6 @@
 mod ast;
 mod error_handler;
-mod ir;
+//mod ir;
 #[path = "keyword.rs"]
 mod kw;
 mod lexer;
@@ -45,12 +45,12 @@ fn main() {
             file: Arc::new(source),
         };
         let session = session_global::SessionGlobal::new();
-        //type_check(&data, emitter, &session);
+        type_check(&data, emitter, &session);
 
         //print_lex_2(&data, emitter, &session);
         //print_lex_3(&data, emitter, &session);
         //print_parse_path(&data, emitter);
-        print_parse_stmts(&data, emitter, &session);
+        //print_parse_stmts(&data, emitter, &session);
         println!("================ END ================");
     }
 }

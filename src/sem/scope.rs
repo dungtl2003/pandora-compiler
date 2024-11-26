@@ -9,10 +9,12 @@ use crate::{span_encoding::Span, symbol::Symbol};
 
 use super::{item::Item, table::Table, variable::Variable, PrimTy, Ty, TyKind};
 
+pub type Wrapper<T> = Rc<RefCell<T>>;
+
 pub struct ContextManager {
-    pub scopes: Vec<Vec<Rc<RefCell<SematicScope>>>>,
+    pub scopes: Vec<Vec<Wrapper<SematicScope>>>,
     /// This only tracks when building the context. It is not used for lookups.
-    pub current_scope: Rc<RefCell<SematicScope>>,
+    pub current_scope: Wrapper<SematicScope>,
 }
 
 impl Display for ContextManager {
@@ -47,28 +49,29 @@ impl ContextManager {
     }
 
     /// Returns the parent scope of the current scope (unless the current scope is the root scope).
-    pub fn previous_scope(&mut self) -> Rc<RefCell<SematicScope>> {
+    pub fn previous_scope(&mut self) -> Wrapper<SematicScope> {
         let level = self.current_scope.borrow().level();
 
         if level == 0 {
-            return self.current_scope.clone();
+            return Rc::clone(&self.current_scope);
         }
 
         let parent_id = self.current_scope.borrow().prefix_id();
         let parent_level = level - 1;
-        self.current_scope = self
-            .scopes
-            .get(parent_level)
-            .unwrap()
-            .iter()
-            .find(|scope| scope.borrow().id == parent_id)
-            .unwrap()
-            .clone();
+        self.current_scope = Rc::clone(
+            &self
+                .scopes
+                .get(parent_level)
+                .unwrap()
+                .iter()
+                .find(|scope| scope.borrow().id == parent_id)
+                .unwrap(),
+        );
 
-        self.current_scope.clone()
+        Rc::clone(&self.current_scope)
     }
 
-    pub fn enter_new_scope(&mut self) -> Rc<RefCell<SematicScope>> {
+    pub fn enter_new_scope(&mut self) -> Wrapper<SematicScope> {
         let next_level = self.current_scope.borrow().level() + 1;
         let new_child_id = self.current_scope.borrow_mut().child_id();
 
@@ -85,24 +88,26 @@ impl ContextManager {
     }
 
     pub fn lookup_variable(
-        &mut self,
+        &self,
         name: Symbol,
         span: Span,
         scope_id: &str,
-    ) -> Option<Variable> {
+    ) -> Option<Wrapper<Variable>> {
         if scope_id.is_empty() {
             return None;
         }
 
         let level = self.level(scope_id) as isize;
 
-        let scope = self
-            .scopes
-            .get_mut(level as usize)
-            .unwrap()
-            .iter()
-            .find(|scope| scope.borrow().id == scope_id)
-            .unwrap();
+        let scope: Wrapper<SematicScope> = Rc::clone(
+            &self
+                .scopes
+                .get(level as usize)
+                .unwrap()
+                .iter()
+                .find(|scope| scope.borrow().id == scope_id)
+                .unwrap(),
+        );
 
         let variable = scope.borrow().lookup_variable(name, span);
 
@@ -115,7 +120,7 @@ impl ContextManager {
     }
 
     // FIX: This function is not implemented correctly.
-    pub fn lookup_type(&mut self, name: Symbol, scope_id: Option<String>) -> Option<Ty> {
+    pub fn lookup_type(&self, name: Symbol, scope_id: Option<String>) -> Option<Ty> {
         if Ty::is_primitive(name.as_str()) {
             return Some(Ty {
                 kind: TyKind::Prim(PrimTy::from_str_ty(name.as_str()).unwrap()),
@@ -131,7 +136,7 @@ impl ContextManager {
 
         let scope = self
             .scopes
-            .get_mut(level as usize)
+            .get(level as usize)
             .unwrap()
             .iter()
             .find(|scope| scope.borrow().id == scope_id)
@@ -169,7 +174,9 @@ pub struct SematicScope {
 #[derive(Debug)]
 pub struct SematicContext {
     pub items: Table<Item>,
-    pub variables: Table<Variable>,
+    // Maybe in the future, we want to add value in to variables. So we need a way to borrow and
+    // modify value easily. We can use Rc<RefCell<T>> for this purpose.
+    pub variables: Table<Wrapper<Variable>>,
 }
 
 impl SematicScope {
@@ -185,20 +192,21 @@ impl SematicScope {
     }
 
     pub fn insert_variable(&mut self, variable: Variable) {
+        let variable = Rc::new(RefCell::new(variable));
         self.context.variables.push(variable);
     }
 
-    pub fn lookup_variable(&self, name: Symbol, span: Span) -> Option<Variable> {
+    pub fn lookup_variable(&self, name: Symbol, span: Span) -> Option<Rc<RefCell<Variable>>> {
         let variables = self
             .context
             .variables
             .iter()
-            .filter(|var| var.name == name)
+            .filter(|var| var.borrow().name == name)
             .rev(); // Reverse to get the most recent variable (shadowing)
 
         for var in variables {
-            if span.is_after(var.span) {
-                return Some(var.clone());
+            if span.is_after(var.borrow().span) {
+                return Some(Rc::clone(var));
             }
         }
 

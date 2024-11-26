@@ -36,7 +36,7 @@ impl SematicResolver {
         let condition_ty = self.check_and_get_expr_ty(condition).unwrap();
 
         match condition_ty {
-            TyKind::Prim(PrimTy::Bool(_)) => {}
+            TyKind::Prim(PrimTy::Bool) => {}
             _ => {
                 return Err(format!(
                     "Type mismatch: expected bool, found {:?}",
@@ -59,7 +59,7 @@ impl SematicResolver {
             binding_mode,
             ident,
             ty,
-            kind,
+            kind: _,
             span,
         } = local.as_ref();
 

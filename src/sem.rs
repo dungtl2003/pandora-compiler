@@ -1,14 +1,10 @@
-use std::{
-    cell::{RefCell, RefMut},
-    rc::Rc,
-};
+use std::rc::Rc;
 
-use scope::{ContextManager, SematicScope};
-use type_check::path::PathStyle;
-use variable::{BindingMode, Mutability, Variable};
+use scope::{ContextManager, SematicScope, Wrapper};
+use variable::Variable;
 
 use crate::{
-    ast::{Ast, Local, LocalKind, Stmt, StmtKind},
+    ast::{Ast, Stmt, StmtKind},
     span_encoding::Span,
     symbol::Symbol,
 };
@@ -19,7 +15,7 @@ pub mod scope;
 mod stmt;
 mod table;
 mod type_check;
-mod variable;
+pub mod variable;
 
 pub struct SematicResolver {
     context: ContextManager,
@@ -38,16 +34,16 @@ impl SematicResolver {
     }
 
     pub fn lookup_variable(
-        &mut self,
+        &self,
         name: Symbol,
         span: Span,
         scope_id: &str,
-    ) -> Option<Variable> {
+    ) -> Option<Wrapper<Variable>> {
         self.context.lookup_variable(name, span, scope_id)
     }
 
     // FIX: Currently, this function does not care about the path.
-    pub fn lookup_type(&mut self, name: Symbol, scope_id: Option<String>) -> Option<Ty> {
+    pub fn lookup_type(&self, name: Symbol, scope_id: Option<String>) -> Option<Ty> {
         self.context.lookup_type(name, scope_id)
     }
 
@@ -88,8 +84,8 @@ impl SematicResolver {
         res
     }
 
-    pub fn resolve_variable(&mut self, name: Symbol, span: Span) -> Option<Variable> {
-        let binding = Rc::clone(&self.context.current_scope);
+    pub fn resolve_variable(&self, name: Symbol, span: Span) -> Option<Wrapper<Variable>> {
+        let binding: Wrapper<SematicScope> = Rc::clone(&self.context.current_scope);
         let binding = binding.borrow();
         let scope_id = binding.id.as_str();
 
@@ -101,7 +97,7 @@ impl SematicResolver {
         let scope = self
             .context
             .scopes
-            .get_mut(level as usize)
+            .get(level as usize)
             .unwrap()
             .iter()
             .find(|scope| scope.borrow().id == scope_id)
@@ -109,12 +105,12 @@ impl SematicResolver {
 
         let variable = scope.borrow().lookup_variable(name, span);
 
-        if variable.is_some() {
-            return variable;
+        if variable.is_none() {
+            let parent_id = binding.prefix_id();
+            self.lookup_variable(name, span, &parent_id)
+        } else {
+            variable
         }
-
-        let prefix_id = scope.borrow().prefix_id();
-        self.lookup_variable(name, span, &prefix_id)
     }
 
     fn enter_scope(&mut self) {
@@ -125,7 +121,7 @@ impl SematicResolver {
         self.context.previous_scope();
     }
 
-    fn insert_variable(&mut self, variable: Variable) -> String {
+    fn insert_variable(&self, variable: Variable) -> String {
         self.context.insert_variable(variable)
     }
 }
@@ -151,25 +147,25 @@ pub enum TyKind {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum PrimTy {
-    Int(Option<i64>),
-    Float(Option<f64>),
-    Bool(Option<bool>),
+    Int,
+    Float,
+    Bool,
 }
 
 impl PrimTy {
     pub fn to_str_ty(&self) -> &str {
         match self {
-            PrimTy::Int(_) => "int",
-            PrimTy::Float(_) => "float",
-            PrimTy::Bool(_) => "bool",
+            PrimTy::Int => "int",
+            PrimTy::Float => "float",
+            PrimTy::Bool => "bool",
         }
     }
 
     pub fn from_str_ty(s: &str) -> Option<Self> {
         match s {
-            "int" => Some(PrimTy::Int(None)),
-            "float" => Some(PrimTy::Float(None)),
-            "bool" => Some(PrimTy::Bool(None)),
+            "int" => Some(PrimTy::Int),
+            "float" => Some(PrimTy::Float),
+            "bool" => Some(PrimTy::Bool),
             _ => None,
         }
     }

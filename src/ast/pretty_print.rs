@@ -35,7 +35,6 @@ impl Printer {
 }
 
 impl<'ast> Visitor<'ast> for Printer {
-    type Result = ();
     fn visit_stmt_for(&mut self, ident: &'ast Ident, expr: &'ast Expr, block: &'ast Stmt) {
         self.output
             .push_str(&format!("{}For statement:\n", space(self.indent)));

@@ -1,6 +1,3 @@
-use core::fmt;
-use std::fmt::{Display, Formatter};
-
 #[derive(Debug)]
 pub struct Table<T> {
     items: Vec<T>,

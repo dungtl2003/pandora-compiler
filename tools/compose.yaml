@@ -1,0 +1,10 @@
+services:
+  rust-dev:
+    build:
+      context: ..
+      dockerfile: tools/Dockerfile
+    volumes:
+      - ..:/project
+    working_dir: /project
+    stdin_open: true
+    tty: true

@@ -134,7 +134,7 @@ impl Parser<'_> {
             TokenKind::OpenDelim(Delimiter::Parenthesis) => {
                 self.parse_expr_grouped(Delimiter::Parenthesis)
             }
-            _ => Err("Unexpected token".into()),
+            _ => Err(format!("Unexpected token: {:?}", self.token).into()),
         }
     }
 
