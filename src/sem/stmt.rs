@@ -24,7 +24,7 @@ impl SematicResolver {
     }
 
     fn resolve_stmt_expr(&mut self, expr: &mut Box<Expr>) -> SResult<()> {
-        self.check_and_get_expr_ty(expr).map(|_| ())
+        self.resolve_and_get_expr_ty(expr).map(|_| ())
     }
 
     fn resolve_stmt_if(
@@ -33,7 +33,7 @@ impl SematicResolver {
         then_block: &mut Box<Stmt>,
         else_block: &mut Option<Box<Stmt>>,
     ) -> SResult<()> {
-        let condition_ty = self.check_and_get_expr_ty(condition).unwrap();
+        let condition_ty = self.resolve_and_get_expr_ty(condition).unwrap();
 
         match condition_ty {
             TyKind::Prim(PrimTy::Bool) => {}
@@ -80,14 +80,16 @@ impl SematicResolver {
             kind: ty_kind.clone(),
         };
 
+        let mut is_init = false;
         if let ast::LocalKind::Init(expr) = &local.kind {
-            let expr_ty = self.check_and_get_expr_ty(expr).unwrap();
+            let expr_ty = self.resolve_and_get_expr_ty(expr).unwrap();
             if ty_kind != expr_ty {
                 return Err(format!(
                     "Type mismatch: expected {:?}, found {:?}",
                     ty, expr_ty
                 ));
             }
+            is_init = true;
         }
 
         let variable = Variable {
@@ -95,6 +97,7 @@ impl SematicResolver {
             ty,
             span: span.clone(),
             binding_mode,
+            is_initialized: is_init,
         };
 
         let scope_id = self.insert_variable(variable);

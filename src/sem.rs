@@ -4,12 +4,11 @@ use scope::{ContextManager, SematicScope, Wrapper};
 use variable::Variable;
 
 use crate::{
-    ast::{Ast, Stmt, StmtKind},
+    ast::{Ast, Ident, Path, Stmt, StmtKind},
     span_encoding::Span,
     symbol::Symbol,
 };
 
-mod expr;
 mod item;
 pub mod scope;
 mod stmt;
@@ -84,6 +83,15 @@ impl SematicResolver {
         res
     }
 
+    // FIX: Currently, we only take the last segment of the path.
+    pub fn resolve_variable_from_path(&self, path: &Box<Path>) -> Option<Wrapper<Variable>> {
+        let Path { segments, .. } = path.as_ref();
+        let last_segment = segments.last().unwrap();
+        let Ident { name, span, .. } = last_segment.ident.clone();
+
+        self.resolve_variable(name, span)
+    }
+
     pub fn resolve_variable(&self, name: Symbol, span: Span) -> Option<Wrapper<Variable>> {
         let binding: Wrapper<SematicScope> = Rc::clone(&self.context.current_scope);
         let binding = binding.borrow();
@@ -135,6 +143,13 @@ impl Ty {
     pub fn is_primitive(ty: &str) -> bool {
         PrimTy::from_str_ty(ty).is_some()
     }
+
+    pub fn to_rust_ty_str(&self) -> String {
+        match &self.kind {
+            TyKind::Prim(prim_ty) => prim_ty.to_rust_str_ty().to_string(),
+            TyKind::Void => "()".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -157,6 +172,14 @@ impl PrimTy {
         match self {
             PrimTy::Int => "int",
             PrimTy::Float => "float",
+            PrimTy::Bool => "bool",
+        }
+    }
+
+    pub fn to_rust_str_ty(&self) -> &str {
+        match self {
+            PrimTy::Int => "i64",
+            PrimTy::Float => "f64",
             PrimTy::Bool => "bool",
         }
     }

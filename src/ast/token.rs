@@ -120,6 +120,24 @@ pub struct Lit {
     pub symbol: Symbol,
 }
 
+impl Lit {
+    pub fn to_rust_lit_str(&self) -> String {
+        match self.kind {
+            LitKind::Bool => self.symbol.as_str().to_string(),
+            LitKind::Char => self.symbol.as_str().to_string(),
+            LitKind::Int => self.symbol.as_str().to_string(),
+            LitKind::Float => self.symbol.as_str().to_string(),
+            LitKind::Str => format!("\"{}\"", self.symbol.as_str()),
+            LitKind::RawStr(n) => format!(
+                "r{0}\"{1}\"{0}",
+                "#".repeat(n as usize),
+                self.symbol.as_str()
+            ),
+            LitKind::Err => unreachable!(),
+        }
+    }
+}
+
 impl Display for Lit {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{:?}", self.kind)

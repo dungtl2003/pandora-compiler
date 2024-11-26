@@ -265,12 +265,16 @@ impl Parser<'_> {
         if self.token.kind != TokenKind::Semicolon {
             return Err("Expected ';'".into());
         }
+        let span = start.to(self.token.span);
+
+        self.advance();
+
         let kind = if let Some(init) = init {
             LocalKind::Init(init)
         } else {
             LocalKind::Decl
         };
-        let span = start.to(self.token.span);
+
         let local = Local {
             binding_mode,
             ident,

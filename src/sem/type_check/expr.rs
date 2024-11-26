@@ -11,22 +11,22 @@ use super::{
 impl SematicResolver {
     // TODO: Support computation for more types, not just primitive types
     /// Check and get the type of an expression
-    pub fn check_and_get_expr_ty(&mut self, expr: &Box<Expr>) -> SResult<TyKind> {
+    pub fn resolve_and_get_expr_ty(&mut self, expr: &Box<Expr>) -> SResult<TyKind> {
         let Expr { kind, .. } = expr.as_ref();
         match kind {
-            ExprKind::Binary(op, lhs, rhs) => self.check_and_get_binary_ty(&op.node, lhs, rhs),
-            ExprKind::Unary(op, expr) => self.check_and_get_unary_ty(op, expr),
-            ExprKind::Literal(lit) => self.check_and_get_literal_ty(lit),
+            ExprKind::Binary(op, lhs, rhs) => self.resolve_and_get_binary_ty(&op.node, lhs, rhs),
+            ExprKind::Unary(op, expr) => self.resolve_and_get_unary_ty(op, expr),
+            ExprKind::Literal(lit) => self.resolve_and_get_literal_ty(lit),
             ExprKind::Assign(lhs, rhs, _) | ExprKind::AssignOp(_, lhs, rhs) => {
-                self.check_and_get_assign_ty(lhs, rhs)
+                self.resolve_and_get_assign_ty(lhs, rhs)
             }
             ExprKind::Path(path) => self.check_and_get_path_ty(path.as_ref(), PathStyle::Variable),
             _ => todo!(),
         }
     }
 
-    fn check_and_get_unary_ty(&mut self, op: &UnOp, expr: &Box<Expr>) -> SResult<TyKind> {
-        let expr_ty = self.check_and_get_expr_ty(expr);
+    fn resolve_and_get_unary_ty(&mut self, op: &UnOp, expr: &Box<Expr>) -> SResult<TyKind> {
+        let expr_ty = self.resolve_and_get_expr_ty(expr);
         match op {
             UnOp::Ne => match expr_ty {
                 Ok(TyKind::Prim(PrimTy::Int)) => Ok(TyKind::Prim(PrimTy::Int)),
@@ -46,14 +46,9 @@ impl SematicResolver {
         }
     }
 
-    fn check_and_get_assign_ty(&mut self, lhs: &Box<Expr>, rhs: &Box<Expr>) -> SResult<TyKind> {
-        match lhs.as_ref().kind {
-            ExprKind::Path(_) => {}
-            _ => return Err("Invalid left-hand side of assignment".to_string()),
-        }
-
-        let lhs_ty = self.check_and_get_expr_ty(lhs)?;
-        let rhs_ty = self.check_and_get_expr_ty(rhs)?;
+    fn resolve_and_get_assign_ty(&mut self, lhs: &Box<Expr>, rhs: &Box<Expr>) -> SResult<TyKind> {
+        let lhs_ty = self.resolve_and_get_expr_ty(lhs)?;
+        let rhs_ty = self.resolve_and_get_expr_ty(rhs)?;
 
         if lhs_ty != rhs_ty {
             return Err(format!(
@@ -62,17 +57,30 @@ impl SematicResolver {
             ));
         }
 
+        // After checking the types, we can resolve the left-hand side of the assignment (There
+        // shouldn't be a case when the variable is not found)
+        let left_var = match &lhs.as_ref().kind {
+            ExprKind::Path(path) => self.resolve_variable_from_path(&path),
+            _ => return Err("Left-hand side of assignment must be a variable".to_string()),
+        }
+        .unwrap();
+
+        if !left_var.borrow().can_be_assigned() {
+            return Err("Cannot assign to immutable variable".to_string());
+        }
+
+        left_var.borrow_mut().is_initialized = true;
         Ok(TyKind::Void)
     }
 
-    fn check_and_get_binary_ty(
+    fn resolve_and_get_binary_ty(
         &mut self,
         op: &BinOpKind,
         lhs: &Box<Expr>,
         rhs: &Box<Expr>,
     ) -> SResult<TyKind> {
-        let lhs_ty = self.check_and_get_expr_ty(lhs)?;
-        let rhs_ty = self.check_and_get_expr_ty(rhs)?;
+        let lhs_ty = self.resolve_and_get_expr_ty(lhs)?;
+        let rhs_ty = self.resolve_and_get_expr_ty(rhs)?;
 
         if lhs_ty != rhs_ty {
             return Err(format!(
@@ -146,7 +154,7 @@ impl SematicResolver {
         }
     }
 
-    fn check_and_get_literal_ty(&mut self, lit: &Lit) -> SResult<TyKind> {
+    fn resolve_and_get_literal_ty(&mut self, lit: &Lit) -> SResult<TyKind> {
         let Lit { kind, symbol: _ } = lit;
         let ty_kind = match kind {
             LitKind::Int => TyKind::Prim(PrimTy::Int),

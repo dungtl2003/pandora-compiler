@@ -16,6 +16,7 @@ pub use token::{
 
 use crate::span_encoding::{Span, Spanned};
 
+#[derive(Debug)]
 pub struct Ast {
     pub stmts: Vec<Box<Stmt>>,
 }
@@ -173,7 +174,7 @@ pub enum TyKind {
     /// A path (`module::module::...::Type`).
     ///
     /// Type parameters are stored in the `Path` itself.
-    Path(Path),
+    Path(Box<Path>),
 
     Never,
 }
@@ -269,6 +270,16 @@ pub enum UnOp {
     Ne,
 }
 
+impl UnOp {
+    pub fn to_rust_op_str(&self) -> String {
+        (match self {
+            UnOp::Not => "!",
+            UnOp::Ne => "-",
+        })
+        .to_string()
+    }
+}
+
 impl Display for UnOp {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
@@ -276,6 +287,32 @@ impl Display for UnOp {
 }
 
 pub type BinOp = Spanned<BinOpKind>;
+
+impl BinOp {
+    pub fn to_rust_op_str(&self) -> String {
+        (match self.node {
+            BinOpKind::Add => "+",
+            BinOpKind::Sub => "-",
+            BinOpKind::Mul => "*",
+            BinOpKind::Div => "/",
+            BinOpKind::Mod => "%",
+            BinOpKind::Eq => "==",
+            BinOpKind::Ne => "!=",
+            BinOpKind::Lt => "<",
+            BinOpKind::Le => "<=",
+            BinOpKind::Gt => ">",
+            BinOpKind::Ge => ">=",
+            BinOpKind::And => "&&",
+            BinOpKind::Or => "||",
+            BinOpKind::BitAnd => "&",
+            BinOpKind::BitOr => "|",
+            BinOpKind::BitXor => "^",
+            BinOpKind::Shl => "<<",
+            BinOpKind::Shr => ">>",
+        })
+        .to_string()
+    }
+}
 
 impl Display for BinOp {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {

@@ -1,6 +1,5 @@
-var a: float = 5.3;
-{
-var b: float = 7.2;
-var c: float = a + b;
-var b: int = 8;
-}
+var a: float = 5.2;
+var b: int;
+var c: int = 7;
+
+b = 5;

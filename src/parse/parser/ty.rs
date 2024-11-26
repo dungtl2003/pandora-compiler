@@ -6,7 +6,7 @@ impl Parser<'_> {
     pub fn parse_ty(&mut self) -> PResult<Box<Ty>> {
         let path = self.parse_path(PathStyle::Type)?;
         let span = path.span;
-        let kind = TyKind::Path(*path);
+        let kind = TyKind::Path(path);
         Ok(Box::new(Ty { kind, span }))
     }
 }
