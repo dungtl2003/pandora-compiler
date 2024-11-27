@@ -243,6 +243,11 @@ pub enum ExprKind {
     Path(Box<Path>),
     /// A cast (e.g., `foo as float`).
     Cast(Box<Expr>, Box<Ty>),
+    /// A function call.
+    ///
+    /// The first field resolves to the function itself,
+    /// and the second field is the list of arguments.
+    Call(Box<Expr>, Vec<Box<Expr>>),
 }
 
 impl Display for Expr {
@@ -400,6 +405,7 @@ impl Item {
 #[derive(Debug, Clone)]
 pub enum ItemKind {
     /// E.g. `import foo;`, `import foo::bar` or `import foo::bar as baz`.
+    // FIX: it only supports `foo::bar` for now.
     Import(ImportTree),
 
     /// E.g. `class Foo { ... }`.
@@ -521,7 +527,7 @@ pub struct GenericParam {
 
 #[derive(Debug, Clone)]
 pub struct ImportTree {
-    pub prefix: Path,
+    pub prefix: Box<Path>,
     pub kind: ImportTreeKind,
     pub span: Span,
 }

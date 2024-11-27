@@ -151,3 +151,13 @@
     VARIABLE\_EXPRESSION -> IDENTIFIER
     \end{rg}
 }
+
+\newcommand{\regexfuncallexpr}{
+    \begin{rg}
+    FUNCTION\_CALL\_EXPRESSION -> 
+
+    \hspace{5.4cm}EXPRESSION \w{(}CALL\_PARAMS?\w{)}
+
+    CALL\_PARAMS -> EXPRESSION (\w{,} EXPRESSION)*\w{,}?
+    \end{rg}
+}

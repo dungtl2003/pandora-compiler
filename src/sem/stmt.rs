@@ -71,7 +71,7 @@ impl SematicResolver {
         // FIX: This is not the correct way to get the type of the variable.
         let ty_kind = match ty.kind {
             ast::TyKind::Path(ref path) => {
-                self.check_and_get_path_ty(path, PathStyle::Type).unwrap()
+                self.resolve_and_get_path_ty(path, PathStyle::Type).unwrap()
             }
             ast::TyKind::Never => TyKind::Void,
         };

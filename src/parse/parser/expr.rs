@@ -99,10 +99,13 @@ impl Parser<'_> {
     fn parse_assoc_op_cast(
         &mut self,
         lhs: Box<Expr>,
-        lhs_span: Span,
+        _lhs_span: Span,
         expr_kind: fn(Box<Expr>, Box<Ty>) -> ExprKind,
     ) -> PResult<Box<Expr>> {
-        todo!();
+        let ty = self.parse_ty()?;
+        let span = self.mk_expr_sp(&lhs, ty.span);
+        let cast = expr_kind(lhs, ty);
+        Ok(self.mk_expr(cast, span))
     }
 
     /// Parses a prefix-unary-operator expr.
@@ -122,8 +125,56 @@ impl Parser<'_> {
                 let expr = self.mk_unary(UnOp::Ne, expr);
                 Ok(self.mk_expr(expr, span))
             }
-            _ => self.parse_expr_bottom(),
+            _ => self.parse_expr_dot_or_call(),
         }
+    }
+
+    /// Parses a dot or call expression.
+    /// DotOrCall = Expr '.' Ident | Expr '(' [Expr] ')'
+    fn parse_expr_dot_or_call(&mut self) -> PResult<Box<Expr>> {
+        let base = self.parse_expr_bottom()?;
+        if self.token.is_kind(TokenKind::Dot) {
+            self.parse_expr_dot(base)
+        } else if self.token.is_open_paren() {
+            self.parse_expr_call(base)
+        } else {
+            Ok(base)
+        }
+    }
+
+    /// Parses a call expression.
+    /// Call = Expr '(' [Expr] ')'
+    fn parse_expr_call(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
+        debug_assert!(self.token.is_open_paren());
+        self.advance();
+
+        let mut args = Vec::new();
+        loop {
+            if self.token.is_close_paren() {
+                break;
+            }
+
+            let arg = self.parse_expr()?;
+            args.push(arg);
+
+            if self.token.is_kind(TokenKind::Comma) {
+                self.advance();
+            } else {
+                return Err("Expected comma or close parenthesis".to_string());
+            }
+        }
+
+        let span = self.mk_expr_sp(&base, self.token.span);
+        let call = ExprKind::Call(base, args);
+        self.advance();
+
+        Ok(self.mk_expr(call, span))
+    }
+
+    /// Parses a dot expression.
+    /// Dot = Expr '.' Ident
+    fn parse_expr_dot(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
+        todo!();
     }
 
     /// Highest precedence level.

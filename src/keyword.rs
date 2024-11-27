@@ -32,6 +32,8 @@ pub enum Keyword {
     #[strum(serialize = "self")]
     SelfLower,
     Const,
+    Import,
+    Yeet,
 }
 
 pub fn is_keyword(symbol: Symbol) -> bool {

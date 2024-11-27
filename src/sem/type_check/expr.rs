@@ -1,6 +1,6 @@
 use crate::{
-    ast::{BinOpKind, Expr, ExprKind, Lit, LitKind, UnOp},
-    sem::{PrimTy, TyKind},
+    ast::{self, BinOpKind, Expr, ExprKind, Lit, LitKind, UnOp},
+    sem::{PrimTy, Ty, TyKind},
 };
 
 use super::{
@@ -20,8 +20,64 @@ impl SematicResolver {
             ExprKind::Assign(lhs, rhs, _) | ExprKind::AssignOp(_, lhs, rhs) => {
                 self.resolve_and_get_assign_ty(lhs, rhs)
             }
-            ExprKind::Path(path) => self.check_and_get_path_ty(path.as_ref(), PathStyle::Variable),
-            _ => todo!(),
+            ExprKind::Path(path) => {
+                self.resolve_and_get_path_ty(path.as_ref(), PathStyle::Variable)
+            }
+            ExprKind::Cast(expr, ty) => self.resolve_and_get_cast_ty(ty, expr),
+            ExprKind::Call(expr, call_params) => self.resolve_and_get_call_ty(expr, call_params),
+        }
+    }
+
+    fn resolve_and_get_call_ty(
+        &mut self,
+        expr: &Box<Expr>,
+        call_params: &Vec<Box<Expr>>,
+    ) -> SResult<TyKind> {
+        let path = match expr.kind {
+            ExprKind::Path(path) => path,
+            _ => return Err("Function call must be a path".to_string()),
+        };
+
+        let func_name = path.segments.last().unwrap().ident.name;
+    }
+
+    // FIX: only supports primitive types for now
+    fn resolve_and_get_cast_ty(&mut self, ty: &Box<ast::Ty>, expr: &Box<Expr>) -> SResult<TyKind> {
+        let ty = match &ty.as_ref().kind {
+            ast::TyKind::Path(path) => self.resolve_and_get_path_ty(&path, PathStyle::Type)?,
+            ast::TyKind::Never => TyKind::Void,
+        };
+
+        let expr_ty = self.resolve_and_get_expr_ty(expr)?;
+
+        if !ty.is_primitive() {
+            return Err(format!(
+                "Cannot cast to non-primitive type {:?} (for now)",
+                ty
+            ));
+        }
+
+        if !expr_ty.is_primitive() {
+            return Err(format!(
+                "Cannot cast non-primitive type {:?} (for now)",
+                expr_ty
+            ));
+        }
+
+        let ty_prim = match ty {
+            TyKind::Prim(ref prim_ty) => prim_ty,
+            _ => unreachable!(),
+        };
+
+        let expr_prim = match expr_ty {
+            TyKind::Prim(prim_ty) => prim_ty,
+            _ => unreachable!(),
+        };
+
+        if expr_prim.can_cast_to(&ty_prim) {
+            Ok(ty.clone())
+        } else {
+            Err(format!("Cannot cast from {:?} to {:?}", expr_prim, ty_prim))
         }
     }
 

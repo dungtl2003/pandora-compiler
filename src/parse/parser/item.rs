@@ -1,8 +1,10 @@
+use super::path::PathStyle;
 use super::{PResult, Parser};
 use crate::ast::{
     BinOpToken, Class, ClassBody, ClassField, ClassFieldKind, Delimiter, ExtClause, Fun, FunParam,
-    FunRetTy, FunSig, GenericParam, ImplClause, Interface, InterfaceBody, Item, ItemKind,
-    Mutability, SelfKind, SelfParam, Stmt, Token, TokenKind, Visibility, VisibilityKind,
+    FunRetTy, FunSig, GenericParam, ImplClause, ImportTree, ImportTreeKind, Interface,
+    InterfaceBody, Item, ItemKind, Mutability, SelfKind, SelfParam, Stmt, Token, TokenKind,
+    Visibility, VisibilityKind,
 };
 use crate::kw::Keyword;
 
@@ -18,9 +20,55 @@ impl Parser<'_> {
             self.parse_item_function()
         } else if self.token.is_keyword(Keyword::Interface) {
             self.parse_item_interface()
+        } else if self.token.is_keyword(Keyword::Import) {
+            self.parse_item_import()
         } else {
-            todo!()
+            Err("Expected item".into())
         }
+    }
+
+    // FIX: not a proper implementation
+    fn parse_item_import(&mut self) -> PResult<Box<Item>> {
+        let mut start_span = self.token.span;
+
+        let vis = self.check_item_vis();
+        if vis.is_some() {
+            start_span = self.prev_token.span;
+        };
+
+        if !self.token.is_keyword(Keyword::Import) {
+            return Err("Expected import keyword".into());
+        };
+
+        self.advance(); // Eat "import"
+
+        let import_tree = self.parse_item_import_tree()?;
+        let span = start_span.to(self.prev_token.span);
+        let ident = match import_tree.kind {
+            ImportTreeKind::Simple(Some(ref ident)) => ident.clone(),
+            _ => return Err("Expected identifier".into()),
+        };
+        let kind = ItemKind::Import(import_tree);
+
+        Ok(Box::new(Item {
+            span,
+            kind,
+            vis,
+            ident,
+        }))
+    }
+
+    fn parse_item_import_tree(&mut self) -> PResult<ImportTree> {
+        let mut path = self.parse_path(PathStyle::Mod)?;
+        let span = path.span;
+        let last_segment = path.segments.pop().unwrap();
+
+        let prefix = path;
+        let ident = last_segment.ident;
+        let kind = ImportTreeKind::Simple(Some(ident));
+
+        let import_tree = ImportTree { prefix, kind, span };
+        Ok(import_tree)
     }
 
     fn parse_item_function(&mut self) -> PResult<Box<Item>> {

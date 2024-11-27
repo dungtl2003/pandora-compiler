@@ -173,6 +173,18 @@ impl Token {
         Token { kind, span }
     }
 
+    pub fn is_kind(&self, kind: TokenKind) -> bool {
+        self.kind == kind
+    }
+
+    pub fn is_open_paren(&self) -> bool {
+        matches!(self.kind, OpenDelim(Delimiter::Parenthesis))
+    }
+
+    pub fn is_close_paren(&self) -> bool {
+        matches!(self.kind, CloseDelim(Delimiter::Parenthesis))
+    }
+
     pub fn to_ast_binop_kind(&self) -> Option<BinOpKind> {
         match self.kind {
             BinOp(Plus) => Some(BinOpKind::Add),

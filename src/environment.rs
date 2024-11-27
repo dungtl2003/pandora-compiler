@@ -1,14 +1,22 @@
+pub mod item;
+mod scope;
+mod table;
+pub mod ty;
+pub mod variable;
+
 use core::fmt;
 use std::{
     cell::RefCell,
-    collections::HashMap,
     fmt::{Display, Formatter},
     rc::Rc,
 };
 
-use crate::{span_encoding::Span, symbol::Symbol};
+use item::Item;
+use scope::SematicScope;
+use ty::Ty;
+use variable::Variable;
 
-use super::{item::Item, table::Table, variable::Variable, PrimTy, Ty, TyKind};
+use crate::{span_encoding::Span, symbol::Symbol};
 
 pub type Wrapper<T> = Rc<RefCell<T>>;
 
@@ -49,7 +57,8 @@ impl Environment {
         }
     }
 
-    /// Returns the parent scope of the current scope (unless the current scope is the root scope).
+    /// Returns the parent scope of the current scope.
+    /// This should be used when building the table, not for lookups process.
     pub fn previous_scope(&mut self) -> Wrapper<SematicScope> {
         let level = self.current_scope.borrow().level();
 
@@ -72,6 +81,8 @@ impl Environment {
         Rc::clone(&self.current_scope)
     }
 
+    /// Returns the new child scope of the current scope.
+    /// This should be used when building the table, not for lookups process.
     pub fn enter_new_scope(&mut self) -> Wrapper<SematicScope> {
         let next_level = self.current_scope.borrow().level() + 1;
         let new_child_id = self.current_scope.borrow_mut().child_id();
@@ -88,9 +99,12 @@ impl Environment {
         Rc::clone(&self.current_scope)
     }
 
+    /// Returns the variable if it exists in the current scope or any of its parent scopes.
+    /// If the variable is not found, it returns None. This function is used ONLY after the table is
+    /// built.
     pub fn lookup_variable(
         &self,
-        name: Symbol,
+        name: &str,
         span: Span,
         scope_id: &str,
     ) -> Option<Wrapper<Variable>> {
@@ -120,8 +134,7 @@ impl Environment {
         self.lookup_variable(name, span, &prefix_id)
     }
 
-    // FIX: This function is not implemented correctly.
-    pub fn lookup_type(&self, name: Symbol, scope_id: &str) -> Option<Ty> {
+    pub fn lookup_item(&self, name: &str, scope_id: &str) -> Option<Rc<Item>> {
         if scope_id.is_empty() {
             return None;
         }
@@ -138,14 +151,14 @@ impl Environment {
                 .unwrap(),
         );
 
-        let ty = scope.borrow().lookup_type(name);
+        let item = scope.borrow().lookup_item(name);
 
-        if ty.is_some() {
-            return ty;
+        if item.is_some() {
+            return item;
         }
 
         let prefix_id = scope.borrow().prefix_id();
-        self.lookup_type(name, &prefix_id)
+        self.lookup_item(name, &prefix_id)
     }
 
     /// Inserts a variable into the current scope and returns the scope id of the current scope.
@@ -155,109 +168,13 @@ impl Environment {
         scope_id
     }
 
-    pub fn insert_type(&self, ty: Ty) -> String {
+    pub fn insert_item(&self, item: Item) -> Result<String, String> {
         let scope_id = self.current_scope.borrow().id.clone();
-        self.current_scope.borrow_mut().insert_type(ty);
-        scope_id
+        self.current_scope.borrow_mut().insert_item(item)?;
+        Ok(scope_id)
     }
 
-    pub fn level(&self, scope_id: &str) -> usize {
+    fn level(&self, scope_id: &str) -> usize {
         scope_id.split('.').count() - 1
-    }
-}
-
-#[derive(Debug)]
-pub struct SematicScope {
-    pub context: SematicContext,
-    pub id: String,
-    child_id_counter: u64,
-}
-
-#[derive(Debug)]
-pub struct SematicContext {
-    pub items: Table<HashMap<String, Item>>,
-    // Maybe in the future, we want to add value in to variables. So we need a way to borrow and
-    // modify value easily. We can use Rc<RefCell<T>> for this purpose.
-    pub variables: Table<Wrapper<Variable>>,
-    // Right now, we cannot resolve real type path. We only take the last segment of the path and
-    // save as string. In the future, we can add a way to resolve the path (hopefully).
-    pub types: Table<String>,
-}
-
-impl SematicScope {
-    pub fn new(id: String) -> Self {
-        Self {
-            context: SematicContext {
-                items: Table::new(),
-                variables: Table::new(),
-                types: Table::new(),
-            },
-            id,
-            child_id_counter: 0,
-        }
-    }
-
-    pub fn insert_variable(&mut self, variable: Variable) {
-        let variable = Rc::new(RefCell::new(variable));
-        self.context.variables.push(variable);
-    }
-
-    pub fn insert_type(&mut self, ty: String) {
-        self.context.types.push(ty);
-    }
-
-    pub fn lookup_variable(&self, name: Symbol, span: Span) -> Option<Rc<RefCell<Variable>>> {
-        let variables = self
-            .context
-            .variables
-            .iter()
-            .filter(|var| var.borrow().name == name)
-            .rev(); // Reverse to get the most recent variable (shadowing)
-
-        for var in variables {
-            if span.is_after(var.borrow().span) {
-                return Some(Rc::clone(var));
-            }
-        }
-
-        None
-    }
-
-    // FIX: Currently, this function does not care about the path.
-    pub fn lookup_item(&self, name: Symbol) -> Option<String> {
-        let items = self
-            .context
-            .items
-            .iter()
-            .filter(|pair| pair.get(name.as_str()).is_some())
-            .rev(); // Reverse to get the most recent item (shadowing)
-
-        for var in variables {
-            if span.is_after(var.borrow().span) {
-                return Some(Rc::clone(var));
-            }
-        }
-
-        None
-    }
-
-    /// Returns the level of the scope. The level is 0-based.   
-    pub fn level(&self) -> usize {
-        self.id.split('.').count() - 1
-    }
-
-    /// Returns the prefix id of the scope. The prefix id is the id without the last part.
-    pub fn prefix_id(&self) -> String {
-        let mut ids = self.id.split('.').collect::<Vec<&str>>();
-        ids.pop();
-        ids.join(".")
-    }
-
-    /// Returns a new child id for the scope. The child id is the id with a new part appended. The
-    /// counter is incremented.
-    pub fn child_id(&mut self) -> String {
-        let id = format!("{}.{}", self.id, self.child_id_counter);
-        self.child_id_counter += 1;
-        id
     }
 }

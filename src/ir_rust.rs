@@ -7,7 +7,7 @@ use std::{
 use crate::{
     ast::{Ast, Ident, Stmt},
     sem::{
-        scope::{ContextManager, Wrapper},
+        scope::{Environment, Wrapper},
         variable::Variable,
     },
 };
@@ -19,11 +19,11 @@ mod ty;
 
 pub struct IrRustGenerator<'ctx> {
     builder: Builder,
-    context: &'ctx ContextManager,
+    context: &'ctx Environment,
 }
 
 impl<'ctx> IrRustGenerator<'ctx> {
-    pub fn new(context: &'ctx ContextManager) -> Self {
+    pub fn new(context: &'ctx Environment) -> Self {
         Self {
             builder: Builder::new(),
             context,

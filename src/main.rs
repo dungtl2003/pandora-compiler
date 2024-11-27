@@ -1,10 +1,12 @@
 mod ast;
 mod error_handler;
 //mod ir;
+mod environment;
 mod ir_rust;
 #[path = "keyword.rs"]
 mod kw;
 mod lexer;
+mod libs;
 mod parse;
 mod sem;
 mod session_global;
