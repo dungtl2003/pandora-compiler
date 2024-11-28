@@ -1,50 +1,9 @@
-use crate::ast::Delimiter;
+use super::{PResult, Parser};
+use crate::ast::{Delimiter, Fun, FunParam, FunSig};
 use crate::{
     ast::{BindingMode, Local, LocalKind, Mutability, Stmt, StmtKind, TokenKind},
     kw::Keyword,
 };
-
-// use crate::interner::Interner;
-use super::{PResult, Parser};
-
-// block_statement = { statement* }
-// statement = block_statement
-//             | declaration_statement
-//             | expression_statement
-//             | if_statement
-//             | loop_statement
-//
-//
-// loop_statement = predicate_loop_statement
-//                 | iterator_loop_statement
-//
-// predicate_loop_statement = 'while' expression block_statement
-// iterator_loop_statement = 'for' identifier 'in' expression block_statement
-//
-//
-// expression_statement = expression ';'
-// expression = assignment_expression
-//              | binary_expression
-//              | unary_expression
-//              | literal
-//
-//
-// declaration_statement = declaration
-// declaration = variable_declaration
-//               | function_declaration
-//               | class_declaration
-//               | enum_declaration
-//               | interface_declaration
-//
-//
-// variable_declaration = 'var' 'mut'? identifier: type_specifier ('=' expression)? ';'
-// type_specifier = path
-// path = segment ('::' segment)*
-// segment = identifier ('<' generic_args '>')?
-// generic_args = angle_bracketed_args
-// angle_bracketed_args = '<' angle_bracketed_arg (',' angle_bracketed_arg)* '>'
-// angle_bracketed_arg = generic_arg
-// generic_arg = type_specifier
 
 impl Parser<'_> {
     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
@@ -60,22 +19,57 @@ impl Parser<'_> {
             self.parse_stmt_while()
         } else if self.token.is_keyword(Keyword::For) {
             self.parse_stmt_for()
-        } else if self.token.is_keyword(Keyword::Return) {
+        } else if self.token.is_keyword(Keyword::Yeet) {
             self.parse_stmt_return()
-        } else if self.token.can_begin_item() {
-            self.parse_stmt_item()
         } else if self.token.kind == TokenKind::Semicolon {
             self.parse_stmt_empty()
+        } else if self.token.is_keyword(Keyword::Fun) {
+            self.parse_stmt_func_decl()
+        } else if self.token.is_keyword(Keyword::Add) {
+            self.parse_stmt_import()
         } else {
-            unreachable!();
+            return Err(format!("Expected statement, found {}", self.token));
         }
     }
 
-    pub fn parse_stmt_item(&mut self) -> PResult<Box<Stmt>> {
-        let item = self.parse_item()?;
-        let span = item.span;
-        let kind = StmtKind::Item(item);
-        Ok(Box::new(Stmt { kind, span }))
+    pub fn parse_stmt_import(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::Add) {
+            return Err(format!("Expected '{}'", Keyword::Add.as_ref()).into());
+        }
+
+        let start_span = self.token.span;
+        self.advance(); // Eat "import"
+
+        let path = self.parse_path()?;
+        if self.token.kind != TokenKind::Semicolon {
+            return Err("Expected ';'".into());
+        }
+        let span = start_span.to(self.token.span);
+        self.advance(); // Eat token after ';'
+
+        let kind = StmtKind::Import(path);
+        let stmt = Box::new(Stmt { kind, span });
+
+        Ok(stmt)
+    }
+
+    pub fn parse_stmt_func_decl(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::Fun) {
+            return Err("Expected function declaration".into());
+        }
+
+        let start_span = self.token.span;
+
+        self.advance(); // Eat "fn"
+        let sig = self.parse_stmt_func_sig()?;
+        let body = self.parse_stmt_block()?;
+
+        let end_span = self.prev_token.span;
+        let span = start_span.to(end_span);
+        let kind = StmtKind::FuncDecl(Box::new(Fun { sig, body }));
+        let stmt = Box::new(Stmt { kind, span });
+
+        Ok(stmt)
     }
 
     pub fn parse_stmt_return(&mut self) -> PResult<Box<Stmt>> {
@@ -288,7 +282,7 @@ impl Parser<'_> {
         Ok(stmt)
     }
 
-    fn parse_stmt_empty(&mut self) -> PResult<Box<Stmt>> {
+    pub fn parse_stmt_empty(&mut self) -> PResult<Box<Stmt>> {
         if self.token.kind != TokenKind::Semicolon {
             return Err("Expected ';'".into());
         }
@@ -299,5 +293,66 @@ impl Parser<'_> {
             kind: StmtKind::Empty,
             span,
         }))
+    }
+
+    fn parse_stmt_func_sig(&mut self) -> PResult<FunSig> {
+        let start = self.token.span;
+        let name = self.parse_ident()?;
+
+        if !self.token.is_open_delim(Delimiter::Parenthesis) {
+            return Err("Expected '('. Function signature must have a parameter list.".into());
+        }
+        self.advance(); // Eat '('
+
+        let mut inputs: Vec<FunParam> = Vec::new();
+        loop {
+            if self.token.is_close_delim(Delimiter::Parenthesis) {
+                break;
+            }
+
+            let start = self.token.span;
+            let ident = self.parse_ident()?;
+
+            if self.token.kind != TokenKind::Colon {
+                return Err("Expected ':'. Function parameter must have a type.".into());
+            }
+            self.advance(); // Eat ':'
+
+            let ty = self.parse_ty()?;
+            let end = self.prev_token.span;
+            inputs.push(FunParam {
+                ident,
+                ty,
+                span: start.to(end),
+            });
+
+            if self.token.kind != TokenKind::Comma {
+                break;
+            }
+
+            self.advance(); // Eat ','
+        }
+
+        if !self.token.is_close_delim(Delimiter::Parenthesis) {
+            return Err("Expected ')'. Function signature must have a closing parenthesis.".into());
+        }
+        self.advance(); // Eat ')'
+
+        let output = if self.token.kind == TokenKind::RArrow {
+            self.advance(); // Eat '->'
+            Some(self.parse_ty()?)
+        } else {
+            None
+        };
+
+        let end = self.prev_token.span;
+        let span = start.to(end);
+
+        Ok(FunSig {
+            name,
+            inputs,
+            output,
+            span,
+        })
     }
 }

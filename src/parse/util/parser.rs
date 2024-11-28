@@ -1,4 +1,7 @@
-use crate::ast::{BinOpKind, BinOpToken, Token, TokenKind};
+use crate::{
+    ast::{BinOpKind, BinOpToken, Token, TokenKind},
+    kw::Keyword,
+};
 
 #[derive(PartialEq, Debug)]
 pub enum Fixity {
@@ -61,6 +64,11 @@ impl AssocOp {
     /// Creates a new AssocOP from a token
     pub fn from_token(t: &Token) -> Option<AssocOp> {
         use AssocOp::*;
+        // Special case for `as`
+        if t.is_keyword(Keyword::As) {
+            return Some(As);
+        }
+
         match t.kind {
             TokenKind::BinOpEq(k) => Some(AssignOp(k)),
             TokenKind::Eq => Some(Assign),

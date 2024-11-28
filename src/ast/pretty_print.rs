@@ -1,8 +1,4 @@
-use super::{
-    AngleBracketedArgs, Class, Expr, ExprKind, Fun, FunParam, FunRetTy, FunSig, GenericArgs, Ident,
-    Interface, Item, ItemKind, Local, LocalKind, Path, PathSegment, SelfKind, SelfParam, Stmt,
-    StmtKind, Ty, TyKind,
-};
+use super::{Expr, ExprKind, Fun, FunSig, Ident, Local, LocalKind, Path, PathSegment, Stmt, Ty};
 use crate::visitor::Visitor;
 
 pub struct Printer {
@@ -29,197 +25,55 @@ impl Printer {
     pub fn print_stmt(&mut self, stmt: &Stmt) {
         self.visit_stmt(stmt);
     }
-
-    pub fn print_item(&mut self, item: &Item) {
-        self.visit_item(item);
-    }
 }
 
 impl<'ast> Visitor<'ast> for Printer {
-    fn visit_item(&mut self, item: &'ast Item) {
-        let Item {
-            kind,
-            span,
-            vis,
-            ident,
-        } = item;
-
-        self.output.push_str(&format!(
-            "{}Item: {} {}\n",
-            space(self.indent),
-            ident.name,
-            span
-        ));
-
-        self.indent += self.indent_spaces;
-        match vis {
-            Some(vis) => {
-                self.output.push_str(&format!(
-                    "{}Visibility: {} {}\n",
-                    space(self.indent),
-                    vis.kind,
-                    vis.span
-                ));
-            }
-            None => {}
-        }
-
-        self.output
-            .push_str(&format!("{}Kind:\n", space(self.indent)));
-
-        self.indent += self.indent_spaces;
-        match kind {
-            ItemKind::Fun(fun) => self.visit_item_fun(fun),
-            ItemKind::Class(class) => self.visit_item_class(class),
-            ItemKind::Interface(interface) => self.visit_item_interface(interface),
-            _ => {}
-        }
-        self.indent -= self.indent_spaces;
-
-        self.indent -= self.indent_spaces;
-    }
-
-    fn visit_item_fun(&mut self, fun: &'ast Fun) {
-        let Fun {
-            generics,
-            sig,
-            body,
-        } = fun;
-
-        self.output
-            .push_str(&format!("{}Function:\n", space(self.indent)));
-
-        self.indent += self.indent_spaces;
-        self.output
-            .push_str(&format!("{}Generics: \n", space(self.indent)));
-
-        for generic in generics {
-            self.output.push_str(&format!(
-                "{}Ident: {} {}\n",
-                space(self.indent),
-                generic.ident.name,
-                generic.ident.span,
-            ));
-
-            self.indent += self.indent_spaces;
-            self.output
-                .push_str(&format!("{}Bounds: \n", space(self.indent),));
-
-            self.indent += self.indent_spaces;
-            for ty in generic.bounds.iter() {
-                self.visit_ty(ty);
-            }
-            self.indent -= self.indent_spaces;
-            self.indent -= self.indent_spaces;
-        }
-
-        self.output
-            .push_str(&format!("{}Inputs: \n", space(self.indent),));
-        self.indent += self.indent_spaces;
+    fn visit_stmt_func_decl(&mut self, fun: &'ast Fun) {
+        let Fun { sig, body } = fun;
         let FunSig {
+            name,
             inputs,
             output,
             span,
         } = sig;
-        let (self_param, params) = inputs;
-        if let Some(SelfParam {
-            kind: self_kind,
-            span: self_span,
-        }) = self_param
-        {
-            self.output
-                .push_str(&format!("{}Self: {} - ", space(self.indent), self_span));
-            match self_kind {
-                SelfKind::Value(mutability) => {
-                    self.output.push_str(&format!("{}\n", mutability));
-                }
-                SelfKind::Explicit(ty, mutability) => {
-                    self.output
-                        .push_str(&format!("{} {} - {}\n", mutability, ty.kind, ty.span));
-                }
-            };
-        }
 
-        for FunParam { span, ty, ident } in params {
+        self.output.push_str(&format!(
+            "{}Function declaration: {}\n",
+            space(self.indent),
+            span
+        ));
+        self.indent += self.indent_spaces;
+
+        self.output.push_str(&format!(
+            "{}Name: {} {}\n",
+            space(self.indent),
+            name.name,
+            name.span
+        ));
+
+        self.output
+            .push_str(&format!("{}Inputs:\n", space(self.indent)));
+        self.indent += self.indent_spaces;
+        for input in inputs {
+            self.visit_ty(&input.ty);
+        }
+        self.indent -= self.indent_spaces;
+
+        if let Some(output) = output {
             self.output
-                .push_str(&format!("{}Param: {}\n", space(self.indent), span));
-            self.indent += self.indent_spaces; //3
-            self.output.push_str(&format!(
-                "{}Ident: {} {}\n",
-                space(self.indent),
-                ident.name,
-                ident.span,
-            ));
-            let kind = &ty.kind;
-            match kind {
-                TyKind::Never => {
-                    self.output
-                        .push_str(&format!("{}Type: Void {}\n", space(self.indent), span,));
-                }
-                TyKind::Path(path) => {
-                    self.output
-                        .push_str(&format!("{}Type:\n", space(self.indent),));
-                    self.indent += self.indent_spaces;
-                    self.visit_path(&path);
-                    self.indent -= self.indent_spaces;
-                }
-            }
+                .push_str(&format!("{}Output:\n", space(self.indent)));
+            self.indent += self.indent_spaces;
+            self.visit_ty(output);
             self.indent -= self.indent_spaces;
         }
-        self.indent -= self.indent_spaces;
 
         self.output
-            .push_str(&format!("{}Output:\n", space(self.indent),));
+            .push_str(&format!("{}Body:\n", space(self.indent)));
         self.indent += self.indent_spaces;
-        match output {
-            FunRetTy::Default(span) => {
-                self.output
-                    .push_str(&format!("{}Void {}\n", space(self.indent), span))
-            }
-            FunRetTy::Ty(ty) => {
-                let kind = &ty.kind;
-                match kind {
-                    TyKind::Never => {
-                        self.output
-                            .push_str(&format!("{}Void {}\n", space(self.indent), span,));
-                    }
-                    TyKind::Path(path) => {
-                        self.indent += self.indent_spaces;
-                        self.visit_path(&path);
-                        self.indent -= self.indent_spaces;
-                    }
-                }
-            }
-        }
-        self.indent -= self.indent_spaces;
-
-        let stmts = if let Some(Stmt {
-            kind: body_kind,
-            span: _,
-        }) = body
-        {
-            match body_kind {
-                StmtKind::Block(stmts) => stmts,
-                _ => &vec![],
-            }
-        } else {
-            &vec![]
-        };
-
-        self.output
-            .push_str(&format!("{}Body: \n", space(self.indent)));
-        self.indent += self.indent_spaces;
-        self.visit_stmt_block(&stmts);
+        self.visit_stmt(body);
         self.indent -= self.indent_spaces;
     }
 
-    fn visit_item_class(&mut self, class: &'ast Class) {
-        todo!()
-    }
-
-    fn visit_item_interface(&mut self, interface: &'ast Interface) {
-        todo!()
-    }
     fn visit_stmt_for(&mut self, ident: &'ast Ident, expr: &'ast Expr, block: &'ast Stmt) {
         self.output
             .push_str(&format!("{}For statement:\n", space(self.indent)));
@@ -402,12 +256,44 @@ impl<'ast> Visitor<'ast> for Printer {
                     span
                 ));
             }
-            ExprKind::Path(path) => {
-                self.visit_path(path);
+            ExprKind::Identifier(ident) => {
+                self.output.push_str(&format!(
+                    "{}Identifier: {} {}\n",
+                    space(self.indent),
+                    ident.name,
+                    ident.span
+                ));
             }
             ExprKind::Cast(expr, ty) => {
+                self.output
+                    .push_str(&format!("{}Cast:\n", space(self.indent)));
+                self.indent += self.indent_spaces;
+                self.output
+                    .push_str(&format!("{}From:\n", space(self.indent),));
                 self.visit_expr(expr);
+                self.output
+                    .push_str(&format!("{}To:\n", space(self.indent),));
+                self.indent += self.indent_spaces;
                 self.visit_ty(ty);
+                self.indent -= self.indent_spaces;
+            }
+            ExprKind::FunCall(fun, args) => {
+                self.output.push_str(&format!(
+                    "{}Function call: {} {}\n",
+                    space(self.indent),
+                    fun.span,
+                    span
+                ));
+                self.indent += self.indent_spaces;
+                self.output
+                    .push_str(&format!("{}Function name:\n", space(self.indent)));
+                self.visit_expr(fun);
+                self.output
+                    .push_str(&format!("{}Arguments:\n", space(self.indent)));
+                for arg in args {
+                    self.visit_expr(arg);
+                }
+                self.indent -= self.indent_spaces;
             }
         }
         self.indent -= self.indent_spaces;
@@ -425,56 +311,22 @@ impl<'ast> Visitor<'ast> for Printer {
     }
 
     fn visit_path_segment(&mut self, segment: &'ast PathSegment) {
-        let PathSegment { ident, args } = segment;
+        let PathSegment { ident } = segment;
         self.output.push_str(&format!(
             "{}Segment: {} {}\n",
             space(self.indent),
             ident.name,
             ident.span
         ));
-
-        if let Some(args) = args {
-            self.indent += self.indent_spaces;
-            self.visit_generic_args(args);
-            self.indent -= self.indent_spaces;
-        }
-    }
-
-    fn visit_generic_args(&mut self, args: &'ast GenericArgs) {
-        match args {
-            GenericArgs::AngleBracketed(args) => {
-                self.output.push_str(&format!(
-                    "{}GenericArgs: {}\n",
-                    space(self.indent),
-                    args.span
-                ));
-                self.visit_angle_bracketed_args(args);
-            }
-        }
-    }
-
-    fn visit_angle_bracketed_args(&mut self, args: &'ast AngleBracketedArgs) {
-        self.indent += self.indent_spaces;
-        for arg in &args.args {
-            self.visit_angle_bracketed_arg(arg);
-        }
-        self.indent -= self.indent_spaces;
     }
 
     fn visit_ty(&mut self, ty: &'ast Ty) {
-        self.output
-            .push_str(&format!("{}Type:\n", space(self.indent)));
-        self.indent += self.indent_spaces;
-        match &ty.kind {
-            TyKind::Path(path) => {
-                self.visit_path(path);
-            }
-            TyKind::Never => {
-                self.output
-                    .push_str(&format!("{}Void\n", space(self.indent)));
-            }
-        }
-        self.indent -= self.indent_spaces;
+        self.output.push_str(&format!(
+            "{}Type: {} {}\n",
+            space(self.indent),
+            ty.name,
+            ty.span
+        ));
     }
 }
 

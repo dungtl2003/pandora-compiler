@@ -177,12 +177,18 @@ impl Token {
         self.kind == kind
     }
 
-    pub fn is_open_paren(&self) -> bool {
-        matches!(self.kind, OpenDelim(Delimiter::Parenthesis))
+    pub fn is_open_delim(&self, delim: Delimiter) -> bool {
+        match self.kind {
+            OpenDelim(d) => d == delim,
+            _ => false,
+        }
     }
 
-    pub fn is_close_paren(&self) -> bool {
-        matches!(self.kind, CloseDelim(Delimiter::Parenthesis))
+    pub fn is_close_delim(&self, delim: Delimiter) -> bool {
+        match self.kind {
+            CloseDelim(d) => d == delim,
+            _ => false,
+        }
     }
 
     pub fn to_ast_binop_kind(&self) -> Option<BinOpKind> {
@@ -278,18 +284,18 @@ impl Token {
         }
     }
 
-    pub fn can_begin_item(&self) -> bool {
-        match self.kind {
-            Ident(name, is_raw) => ident_can_begin_item(name, self.span, is_raw),
-            _ => false,
-        }
-    }
-
     /// Returns `true` if the token is a non-raw identifier for which `pred` holds.
     pub fn is_non_raw_ident_where(&self, pred: impl FnOnce(Ident) -> bool) -> bool {
         match self.ident() {
             Some((id, IdentIsRaw::No)) => pred(id),
             _ => false,
+        }
+    }
+
+    pub fn get_ident_if_non_raw(&self) -> Option<Ident> {
+        match self.ident() {
+            Some((id, IdentIsRaw::No)) => Some(id),
+            _ => None,
         }
     }
 
@@ -300,7 +306,6 @@ impl Token {
                 Ident {
                     name,
                     span: self.span,
-                    scope_id: None,
                 },
                 is_raw,
             )),
@@ -311,6 +316,10 @@ impl Token {
     /// Some token that will be thrown away later.
     pub fn dummy() -> Self {
         Token::new(TokenKind::Question, DUMMY_SP)
+    }
+
+    pub fn is_doc_comment(&self) -> bool {
+        matches!(self.kind, DocComment(..))
     }
 
     pub fn is_keyword(&self, keyword: Keyword) -> bool {
@@ -362,11 +371,4 @@ pub fn ident_can_begin_expr(name: Symbol, span: Span, is_raw: IdentIsRaw) -> boo
     let ident_token = Token::new(Ident(name, is_raw), span);
 
     !ident_token.is_non_raw_ident_where(|ident| kw::is_keyword(ident.name))
-}
-
-pub fn ident_can_begin_item(name: Symbol, span: Span, is_raw: IdentIsRaw) -> bool {
-    let ident_token = Token::new(Ident(name, is_raw), span);
-
-    ident_token
-        .is_non_raw_ident_where(|ident| ident.is_item_keyword() || ident.is_visibility_keyword())
 }

@@ -1,7 +1,7 @@
 use core::fmt;
 use std::fmt::{Display, Formatter};
 
-use crate::session_global::BytePos;
+use crate::session::BytePos;
 
 pub const DUMMY_SP: Span = Span {
     offset: 0,

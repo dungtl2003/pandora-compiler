@@ -1,4 +1,4 @@
-use crate::session_global::SourceFile;
+use crate::session::SourceFile;
 use miette::{Diagnostic, Report};
 use std::sync::Arc;
 

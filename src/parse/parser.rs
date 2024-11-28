@@ -1,5 +1,4 @@
 mod expr;
-mod item;
 mod path;
 mod stmt;
 mod ty;
@@ -7,7 +6,6 @@ mod ty;
 use std::mem;
 use symbol::Symbol;
 
-use crate::ast::Item;
 use crate::span_encoding::Span;
 use crate::{
     ast::{
@@ -15,11 +13,11 @@ use crate::{
         TokenTree, TokenTreeCursor,
     },
     kw::{self, Keyword},
-    session_global::SessionGlobal,
+    session::Session,
     span_encoding::DUMMY_SP,
 };
 
-pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Ast> {
+pub fn parse(tokens: TokenStream, session: &Session) -> PResult<Ast> {
     let mut stmts: Vec<Box<Stmt>> = Vec::new();
     let mut parser = Parser::new(tokens, session);
 
@@ -32,20 +30,8 @@ pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Ast> {
     Ok(ast)
 }
 
-pub fn parse_items(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<Item>>> {
-    let mut items: Vec<Box<Item>> = Vec::new();
-    let mut parser = Parser::new(tokens, session);
-
-    while parser.token.kind != TokenKind::Eof {
-        let item = parser.parse_item()?;
-        items.push(item);
-    }
-
-    Ok(items)
-}
-
 pub struct Parser<'sess> {
-    pub session: &'sess SessionGlobal,
+    pub session: &'sess Session,
     /// The current token.
     pub token: Token,
     /// The spacing for the current token.
@@ -57,7 +43,7 @@ pub struct Parser<'sess> {
 }
 
 impl<'sess> Parser<'sess> {
-    pub fn new(stream: TokenStream, session: &'sess SessionGlobal) -> Self {
+    pub fn new(stream: TokenStream, session: &'sess Session) -> Self {
         let mut parser = Parser {
             session,
             token: Token::dummy(),

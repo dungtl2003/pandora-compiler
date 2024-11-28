@@ -6,7 +6,7 @@ use crate::{
     span_encoding::Span,
 };
 
-use super::{path::PathStyle, PResult, Parser, TokenType};
+use super::{PResult, Parser, TokenType};
 use crate::span_encoding;
 
 impl Parser<'_> {
@@ -100,8 +100,9 @@ impl Parser<'_> {
         &mut self,
         lhs: Box<Expr>,
         _lhs_span: Span,
-        expr_kind: fn(Box<Expr>, Box<Ty>) -> ExprKind,
+        expr_kind: fn(Box<Expr>, Ty) -> ExprKind,
     ) -> PResult<Box<Expr>> {
+        self.advance(); // eat 'as'
         let ty = self.parse_ty()?;
         let span = self.mk_expr_sp(&lhs, ty.span);
         let cast = expr_kind(lhs, ty);
@@ -125,18 +126,16 @@ impl Parser<'_> {
                 let expr = self.mk_unary(UnOp::Ne, expr);
                 Ok(self.mk_expr(expr, span))
             }
-            _ => self.parse_expr_dot_or_call(),
+            _ => self.parse_expr_call(),
         }
     }
 
     /// Parses a dot or call expression.
     /// DotOrCall = Expr '.' Ident | Expr '(' [Expr] ')'
-    fn parse_expr_dot_or_call(&mut self) -> PResult<Box<Expr>> {
+    fn parse_expr_call(&mut self) -> PResult<Box<Expr>> {
         let base = self.parse_expr_bottom()?;
-        if self.token.is_kind(TokenKind::Dot) {
-            self.parse_expr_dot(base)
-        } else if self.token.is_open_paren() {
-            self.parse_expr_call(base)
+        if self.token.is_open_delim(Delimiter::Parenthesis) {
+            self.parse_expr_call_with(base)
         } else {
             Ok(base)
         }
@@ -144,37 +143,35 @@ impl Parser<'_> {
 
     /// Parses a call expression.
     /// Call = Expr '(' [Expr] ')'
-    fn parse_expr_call(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
-        debug_assert!(self.token.is_open_paren());
+    fn parse_expr_call_with(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
+        debug_assert!(self.token.is_open_delim(Delimiter::Parenthesis));
         self.advance();
 
         let mut args = Vec::new();
         loop {
-            if self.token.is_close_paren() {
+            if self.token.is_close_delim(Delimiter::Parenthesis) {
                 break;
             }
 
             let arg = self.parse_expr()?;
             args.push(arg);
 
-            if self.token.is_kind(TokenKind::Comma) {
-                self.advance();
-            } else {
-                return Err("Expected comma or close parenthesis".to_string());
+            if !self.token.is_kind(TokenKind::Comma) {
+                break;
             }
+
+            self.advance(); // eat comma
+        }
+
+        if !self.token.is_close_delim(Delimiter::Parenthesis) {
+            return Err("Expected ')'".into());
         }
 
         let span = self.mk_expr_sp(&base, self.token.span);
-        let call = ExprKind::Call(base, args);
+        let call = ExprKind::FunCall(base, args);
         self.advance();
 
         Ok(self.mk_expr(call, span))
-    }
-
-    /// Parses a dot expression.
-    /// Dot = Expr '.' Ident
-    fn parse_expr_dot(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
-        todo!();
     }
 
     /// Highest precedence level.
@@ -194,15 +191,11 @@ impl Parser<'_> {
         if self.look_ahead(0, |tok| tok.ident().unwrap().0.name.is_bool_lit()) {
             self.parse_expr_lit()
         } else {
-            self.parse_expr_path()
+            let ident = self.parse_ident()?;
+            let span = ident.span;
+            let expr = ExprKind::Identifier(ident);
+            Ok(self.mk_expr(expr, span))
         }
-    }
-
-    fn parse_expr_path(&mut self) -> PResult<Box<Expr>> {
-        self.parse_path(PathStyle::Expr).map(|path| {
-            let span = path.span;
-            self.mk_expr(ExprKind::Path(path), span)
-        })
     }
 
     fn parse_expr_grouped(&mut self, delim: Delimiter) -> PResult<Box<Expr>> {
