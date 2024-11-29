@@ -1,1 +1,10 @@
-pub fun add<T ext std::st::<E> + he::<G> + H + I>(a: T, b: int) -> T;
+pub fun add<T ext Plus::<T>>(a: T, b: int) -> T {
+    var c : int;
+    var d : int = 1;
+    if a<b {
+        for a b {}
+    } else {}
+
+    while a<b {}
+
+};

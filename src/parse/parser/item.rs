@@ -1,10 +1,9 @@
-use super::{PResult, Parser};
-use crate::ast::{
-    BinOpToken, Class, ClassBody, ClassField, ClassFieldKind, Delimiter, ExtClause, Fun, FunParam,
-    FunRetTy, FunSig, GenericParam, ImplClause, Interface, InterfaceBody, Item, ItemKind,
-    Mutability, SelfKind, SelfParam, Stmt, Token, TokenKind, Visibility, VisibilityKind,
-};
+use miette::{SourceOffset, SourceSpan};
+use crate::ast::{BinOpToken, Class, ClassBody, ClassField, ClassFieldKind, Delimiter, ExtClause, Fun, FunParam, FunRetTy, FunSig, GenericParam, Ident, ImplClause, Interface, InterfaceBody, Item, ItemKind, Mutability, SelfKind, SelfParam, Stmt, StmtKind, Token, TokenKind, Visibility, VisibilityKind};
 use crate::kw::Keyword;
+use crate::span_encoding::Span;
+use crate::symbol::Symbol;
+use super::{PError, PResult, Parser};
 
 impl Parser<'_> {
     pub fn parse_item(&mut self) -> PResult<Box<Item>> {
@@ -25,7 +24,6 @@ impl Parser<'_> {
 
     fn parse_item_function(&mut self) -> PResult<Box<Item>> {
         debug_assert!(self.token.is_keyword(Keyword::Fun));
-        self.advance();
 
         let mut start_span = self.token.span;
 
@@ -34,7 +32,23 @@ impl Parser<'_> {
             start_span = self.prev_token.span;
         };
 
-        let ident = self.parse_ident()?;
+        let ident = if !self.is_ident_ahead(){
+            self.perrs.push(PError::ExpectedToken{
+                expected:format!("{}", "Identifier"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
+            Ident{
+                scope_id:None,
+                name:Symbol::new("unknown"),
+                span:Span::dummy(),
+            }
+        } else {
+            self.advance(); // Eat ident
+            self.parse_ident()?
+        };
+
+
 
         let generics = self.parse_item_generics()?;
         let sig = self.parse_item_function_sig()?;
@@ -57,7 +71,11 @@ impl Parser<'_> {
     // (mut? self:Type?, a:A, b:B)
     fn parse_item_function_sig(&mut self) -> PResult<FunSig> {
         if self.token.kind != TokenKind::OpenDelim(Delimiter::Parenthesis) {
-            return Err("Expected parenthesis".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "'('"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
         let start_span = self.token.span;
 
@@ -66,13 +84,21 @@ impl Parser<'_> {
             self.advance(); // Eat "mut"
             let start_self_param_span = self.token.span;
             if !self.is_keyword_ahead(&[Keyword::SelfLower]) {
-                return Err("Expected self".into());
+                return Err(PError::ExpectedToken{
+                    expected:format!("{}", "\"self\""),
+                    found: format!("{}", self.token),
+                    span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                });
             }
             self.advance(); // Eat "self"
             if self.look_ahead(1, |tok| tok.kind == TokenKind::Colon) {
                 self.advance(); // Eat ':'
-                if !self.is_ident_ahead() {
-                    return Err("Expected identifier".into());
+                if !self.is_ident_ahead(){
+                    return Err(PError::ExpectedToken{
+                        expected:format!("{}", "Identifier"),
+                        found: format!("{}", self.token),
+                        span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                    });
                 }
                 self.advance(); // Eat ident
                 let ty = self.parse_ty()?;
@@ -91,8 +117,12 @@ impl Parser<'_> {
             self.advance(); // Eat "self"
             if self.look_ahead(1, |tok| tok.kind == TokenKind::Colon) {
                 self.advance(); // Eat ':'
-                if !self.is_ident_ahead() {
-                    return Err("Expected identifier".into());
+                if !self.is_ident_ahead(){
+                    return Err(PError::ExpectedToken{
+                        expected:format!("{}", "Identifier"),
+                        found: format!("{}", self.token),
+                        span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                    });
                 }
                 self.advance(); // Eat ident
                 let ty = self.parse_ty()?;
@@ -119,7 +149,11 @@ impl Parser<'_> {
 
         while self.token.kind != TokenKind::CloseDelim(Delimiter::Parenthesis) {
             if !self.token.is_ident() {
-                return Err("Expected identifier".into());
+                return Err(PError::ExpectedToken{
+                    expected:format!("{}", "Identifier"),
+                    found: format!("{}", self.token),
+                    span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                });
             }
 
             let pram = self.parse_item_function_param()?;
@@ -132,17 +166,30 @@ impl Parser<'_> {
             };
         }
         if self.token.kind != TokenKind::CloseDelim(Delimiter::Parenthesis) {
-            return Err("Expected ')'".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "')'"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
 
-        if self.look_ahead(1, |tok| tok.kind != TokenKind::RArrow) {
-            return Err("Expected ->".into());
+        if self.look_ahead(1,|tok|tok.kind != TokenKind::RArrow){
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "\"->\""),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
 
         self.advance(); // Eat "->"
 
         if !self.is_ident_ahead() {
-            return Err("Expected type".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "a type"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
+
         }
 
         let output = if self.is_keyword_ahead(&[Keyword::Void]) {
@@ -153,7 +200,11 @@ impl Parser<'_> {
             self.advance(); // Eat ident
             FunRetTy::Ty(self.parse_ty()?)
         } else {
-            return Err("Expected a type".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "a type"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         };
 
         let span = start_span.to(self.prev_token.span);
@@ -168,7 +219,11 @@ impl Parser<'_> {
 
     fn parse_item_function_param(&mut self) -> PResult<FunParam> {
         if !self.token.is_ident() {
-            return Err("Expected identifier".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "identifier"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
         let start_span = self.token.span;
 
@@ -176,7 +231,11 @@ impl Parser<'_> {
         if self.token.kind == TokenKind::Colon {
             self.advance();
         } else {
-            return Err("Expected ':'".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "':'"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
         let ty = self.parse_ty()?;
 
@@ -191,7 +250,11 @@ impl Parser<'_> {
             return Ok(None);
         }
         if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
-            return Err("Expected '{'".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "'{'"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
 
         let stmt = self.parse_stmt_block()?;
@@ -204,11 +267,19 @@ impl Parser<'_> {
 
     fn parse_item_class(&mut self) -> PResult<Box<Item>> {
         if !self.token.is_keyword(Keyword::Class) {
-            return Err("Expected class".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "\"class\""),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
 
-        if !self.is_ident_ahead() {
-            return Err("Expected identifier".into());
+        if !self.is_ident_ahead(){
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "identifier"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
 
         let mut start_span = self.token.span;
@@ -257,7 +328,11 @@ impl Parser<'_> {
             return Ok(None);
         };
         if !self.is_ident_ahead() {
-            return Err("Expected identifier".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "identifier"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
         self.advance(); // Eat ident
         let start_span = self.token.span;
@@ -271,7 +346,11 @@ impl Parser<'_> {
             return Ok(None);
         };
         if !self.is_ident_ahead() {
-            return Err("Expected identifier".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "identifier"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
         self.advance(); // Eat ident
         let start_span = self.token.span;
@@ -292,7 +371,11 @@ impl Parser<'_> {
 
     fn parse_item_class_body(&mut self) -> PResult<ClassBody> {
         if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
-            return Err("Expected '{'".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "'{'"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
         let mut fields = Vec::new();
         let mut methods = Vec::new();
@@ -335,23 +418,39 @@ impl Parser<'_> {
             // pub? const age = 10 + 10;
             let kind = if self.token.is_keyword(Keyword::Const) {
                 if !self.is_ident_ahead() {
-                    return Err("Expected identifier".into());
+                    return Err(PError::ExpectedToken{
+                        expected:format!("{}", "identifier"),
+                        found: format!("{}", self.token),
+                        span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                    });
                 }
                 self.advance(); // Eat ident
                 let ident = self.parse_ident()?;
 
                 if self.token.kind != TokenKind::Colon {
-                    return Err("Expected ':'".into());
+                    return Err(PError::ExpectedToken{
+                        expected:format!("{}", "':'"),
+                        found: format!("{}", self.token),
+                        span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                    });
                 }
 
                 if !self.is_ident_ahead() {
-                    return Err("Expected identifier".into());
+                    return Err(PError::ExpectedToken{
+                        expected:format!("{}", "identifier"),
+                        found: format!("{}", self.token),
+                        span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                    });
                 }
                 self.advance(); // Eat ident after ':'
                 let ty = self.parse_ty()?;
 
                 if self.token.kind != TokenKind::Eq {
-                    return Err("Expected '='".into());
+                    return Err(PError::ExpectedToken{
+                        expected:format!("{}", "'='"),
+                        found: format!("{}", self.token),
+                        span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                    });
                 }
 
                 self.advance(); // Eat token after '='
@@ -362,24 +461,40 @@ impl Parser<'_> {
                 // pub? var age:int;
                 self.advance(); // Eat "var"
                 if !self.is_ident_ahead() {
-                    return Err("Expected identifier".into());
+                    return Err(PError::ExpectedToken{
+                        expected:format!("{}", "identifier"),
+                        found: format!("{}", self.token),
+                        span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                    });
                 }
                 self.advance(); // Eat ident
                 let ident = self.parse_ident()?;
 
                 if self.token.kind != TokenKind::Colon {
-                    return Err("Expected ':'".into());
+                    return Err(PError::ExpectedToken{
+                        expected:format!("{}", "':'"),
+                        found: format!("{}", self.token),
+                        span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                    });
                 }
 
                 if !self.is_ident_ahead() {
-                    return Err("Expected identifier".into());
+                    return Err(PError::ExpectedToken{
+                        expected:format!("{}", "identifier"),
+                        found: format!("{}", self.token),
+                        span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                    });
                 }
                 self.advance(); // Eat ident after ':'
                 let ty = self.parse_ty()?;
 
                 ClassFieldKind::Var(ident, ty)
             } else {
-                return Err("Expected const or var".into());
+                return  Err(PError::ExpectedToken{
+                    expected:format!("{}", "const or var"),
+                    found: format!("{}", self.token),
+                    span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                });
             };
 
             let class_field = ClassField { vis, kind };
@@ -406,13 +521,21 @@ impl Parser<'_> {
         Ok(methods)
     }
 
-    fn parse_item_interface(&mut self) -> PResult<Box<Item>> {
-        if !self.token.is_keyword(Keyword::Interface) {
-            return Err("Expected interface".into());
+    pub fn parse_item_interface(&mut self) -> PResult<Box<Item>> {
+        if !self.token.is_keyword(Keyword::Interface)  {
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "\"interface\""),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         };
 
-        if !self.is_ident_ahead() {
-            return Err("Expected identifier".into());
+        if !self.is_ident_ahead(){
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "identifier"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
 
         let mut start_span = self.token.span;
@@ -449,18 +572,30 @@ impl Parser<'_> {
 
     fn parse_item_interface_body(&mut self) -> PResult<InterfaceBody> {
         if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
-            return Err("Expected '{'".into());
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "'{'"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
         let methods = Vec::new();
 
         while self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
             if !self.is_keyword_ahead(&[Keyword::Pub]) {
-                return Err("Expected pub".into());
+                return Err(PError::ExpectedToken{
+                    expected:format!("{}", "\"pub\""),
+                    found: format!("{}", self.token),
+                    span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                });
             }
             self.advance(); // Eat "pub"
             let _method = self.parse_item_function()?;
             if self.prev_token.kind != TokenKind::Semicolon {
-                return Err("This is not a function without body".into());
+                return Err(PError::ExpectedToken{
+                    expected:format!("{}", "';'"),
+                    found: format!("{}", self.token),
+                    span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                });
             }
         }
 

@@ -10,18 +10,24 @@ use crate::session_global::{BytePos, SessionGlobal};
 use crate::span_encoding::Span;
 use crate::symbol::Symbol;
 
-use super::parser::PResult;
+use super::parser::{PError, PResult};
 
 pub fn lex_token_tree<'sess, 'src>(
     src: &'src str,
-    emitter: ErrorHandler,
     session: &'sess SessionGlobal,
 ) -> PResult<TokenStream> {
-    let string_reader = StringReader::new(src, session, emitter);
+    let string_reader = StringReader::new(src, session);
 
-    let (tokenstream, res) = tokentrees::TokenTreesReader::lex_all_token_trees(string_reader);
+    let (tokenstream, res, perrs) = tokentrees::TokenTreesReader::lex_all_token_trees(string_reader);
     if res.is_err() {
         return Err(res.unwrap_err());
+    }
+
+    if !perrs.is_empty() {
+        for perr in perrs {
+            session.error_handler.emit_err(perr);
+        }
+        return Err(PError::Normal)
     }
 
     Ok(tokenstream)
@@ -29,11 +35,10 @@ pub fn lex_token_tree<'sess, 'src>(
 
 pub fn tokenize<'sess, 'src>(
     src: &'src str,
-    emitter: ErrorHandler,
     session: &'sess SessionGlobal,
 ) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
-    let mut string_reader = StringReader::new(src, session, emitter);
+    let mut string_reader = StringReader::new(src, session);
 
     loop {
         let token = string_reader.next_token();
@@ -51,21 +56,18 @@ struct StringReader<'sess, 'src> {
     pos: BytePos,
     cursor: Cursor<'src>,
     session: &'sess SessionGlobal,
-    emitter: ErrorHandler,
 }
 
 impl<'sess, 'src> StringReader<'sess, 'src> {
     fn new(
         src: &'src str,
         session: &'sess SessionGlobal,
-        emitter: ErrorHandler,
     ) -> StringReader<'sess, 'src> {
         StringReader {
             src,
             pos: 0,
             cursor: Cursor::new(src),
             session,
-            emitter,
         }
     }
 
@@ -414,7 +416,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         }
 
         if let Some((nested_open_idx, nested_close_idx)) = last_nested_block_comment_idxs {
-            self.emitter.report_unterminated_block_comment(
+            self.session.error_handler.report_unterminated_block_comment(
                 msg,
                 (start as usize + nested_open_idx, 2).into(),
                 (start as usize + nested_close_idx, 2).into(),
@@ -423,24 +425,27 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn report_unterminated_character_literal(&self, start_quote_pos: BytePos) {
-        self.emitter
+        self.session
+            .error_handler
             .report_unterminated_character_literal((start_quote_pos as usize, 1).into());
     }
 
     fn report_unescape_character_literal(&self, err: EscapeError, start: BytePos, end: BytePos) {
         match err {
             EscapeError::ZeroChars => self
-                .emitter
+                .session
+                .error_handler
                 .report_empty_char_literal(((start + 1) as usize, 1).into()),
             EscapeError::MoreThanOneChar => self
-                .emitter
+                .session
+                .error_handler
                 .report_more_than_one_char_literal((start as usize, (end - start) as usize).into()),
             EscapeError::LoneSlash => unimplemented!(),
-            EscapeError::InvalidEscape => self.emitter.report_unknown_char_escape(
+            EscapeError::InvalidEscape => self.session.error_handler.report_unknown_char_escape(
                 self.char_from(start + 1),
                 ((start + 1) as usize, 1).into(),
             ),
-            EscapeError::EscapeOnlyChar => self.emitter.report_escape_only_char(
+            EscapeError::EscapeOnlyChar => self.session.error_handler.report_escape_only_char(
                 self.char_from(start + 1),
                 ((start + 1) as usize, 1).into(),
             ),
@@ -448,7 +453,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn report_unknown_symbol(&self, start: BytePos, end: BytePos) {
-        self.emitter.report_unknown_symbol(
+        self.session.error_handler.report_unknown_symbol(
             self.str_from_to(start, end).to_string(),
             (start as usize, end as usize).into(),
         );
@@ -457,7 +462,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     fn report_raw_string_error(&self, start: BytePos) {
         match lexer::validate_raw_string(self.str_from(start)) {
             Err(RawStrError::InvalidStarter { bad_char }) => {
-                self.emitter.report_raw_str_invalid_starter(
+                self.session.error_handler.report_raw_str_invalid_starter(
                     bad_char,
                     (start as usize, self.pos as usize).into(),
                 );
@@ -474,14 +479,14 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
                 } else {
                     None
                 };
-                self.emitter.report_raw_str_unterminated(
+                self.session.error_handler.report_raw_str_unterminated(
                     start_span,
                     expected,
                     possible_terminator_span.map(|value| value.into()),
                 );
             }
             Err(RawStrError::TooManyHashes { found }) => {
-                self.emitter.report_raw_str_too_many_hashes(
+                self.session.error_handler.report_raw_str_too_many_hashes(
                     found,
                     (start as usize, (self.pos - start) as usize).into(),
                 )
@@ -491,22 +496,26 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn report_no_digits_literal(&self, start: BytePos, end: BytePos) {
-        self.emitter
+        self.session
+            .error_handler
             .report_no_digits_literal((start as usize, (end - start) as usize).into());
     }
 
     fn report_invalid_digits_literal(&self, base: u32, pos: BytePos) {
-        self.emitter
+        self.session
+            .error_handler
             .report_invalid_digit_literal(base, (pos as usize, 1).into());
     }
 
     fn report_empty_exponent_float(&self, pos: BytePos, len: usize) {
-        self.emitter
+        self.session
+            .error_handler
             .report_empty_exponent_float((pos as usize, len).into());
     }
 
     fn report_float_literal_unsupported_base(&self, base: String, pos: BytePos, len: usize) {
-        self.emitter
+        self.session
+            .error_handler
             .report_float_literal_unsupported_base(base, (pos as usize, len).into());
     }
 }

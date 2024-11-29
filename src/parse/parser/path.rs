@@ -1,9 +1,11 @@
+use std::fmt::{Display, Formatter};
+use miette::{SourceOffset, SourceSpan};
 use crate::ast::{
     AngleBracketedArg, AngleBracketedArgs, BinOpToken, GenericArg, GenericArgs, Ident, IdentIsRaw,
     Path, PathSegment, Token, TokenKind,
 };
 
-use super::{PResult, Parser};
+use super::{PError, PResult, Parser};
 
 /// Specifies how to parse a path.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -107,7 +109,9 @@ impl Parser<'_> {
 
         loop {
             if self.token.kind == TokenKind::Eof {
-                return Err("Unexpected EOF".into());
+                return Err(PError::UnexpectedEof{
+                    span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                });
             }
             if self.look_ahead(0, is_args_end) {
                 break;

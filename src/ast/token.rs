@@ -19,7 +19,18 @@ pub struct Token {
 
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.kind)
+        match self.kind {
+            TokenKind::Ident(sym,_) => write!(f, "\"{}\"", sym),
+            _ => write!(f, "{:?}", self.kind),
+        }
+    }
+}
+impl Display for TokenKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenKind::Ident(sym,_) => write!(f, "{}", sym),
+            _ => write!(f, "{:?}", self),
+        }
     }
 }
 

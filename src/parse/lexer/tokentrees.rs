@@ -1,10 +1,11 @@
+use super::StringReader;
+use crate::parse::parser::PError;
 use crate::{
     ast::{DelimSpan, Delimiter, Spacing, Token, TokenKind, TokenStream, TokenTree},
     parse::parser::PResult,
     span_encoding::Span,
 };
-
-use super::StringReader;
+use miette::{SourceOffset, SourceSpan};
 
 pub struct TokenTreesReader<'sess, 'src> {
     string_reader: StringReader<'sess, 'src>,
@@ -14,19 +15,33 @@ pub struct TokenTreesReader<'sess, 'src> {
 
     /// Stack of open delimiters and their spans. Used for error message and recovery.
     open_delims: Vec<(Delimiter, Span)>,
+
+    perrs: Vec<PError>,
 }
 
 impl<'sess, 'src> TokenTreesReader<'sess, 'src> {
     pub fn lex_all_token_trees(
         string_reader: StringReader<'sess, 'src>,
-    ) -> (TokenStream, PResult<()>) {
+    ) -> (TokenStream, PResult<()>, Vec<PError>) {
         let mut tt_reader = TokenTreesReader {
             string_reader,
             token: Token::dummy(),
             open_delims: Vec::new(),
+            perrs: Vec::new(),
         };
 
-        tt_reader.lex_token_trees(false)
+        let (tokenstream,res) = tt_reader.lex_token_trees(false);
+
+        for open_delim in tt_reader.open_delims {
+            tt_reader.perrs.push(PError::OpenDelimNotClosed {
+                span:SourceSpan::new(
+                    SourceOffset::from(open_delim.1.offset as usize),
+                    open_delim.1.length,
+                )
+            })
+        }
+
+        (tokenstream,res,tt_reader.perrs)
     }
 
     // Lex into a token stream. The `Spacing` in the result is that of the
@@ -40,20 +55,40 @@ impl<'sess, 'src> TokenTreesReader<'sess, 'src> {
             match self.token.kind {
                 TokenKind::OpenDelim(delim) => match self.lex_token_tree_open_delim(delim) {
                     Ok(val) => buf.push(val),
-                    Err(err) => return (TokenStream::new(buf), Err(err)),
+                    // Err(err) => return (TokenStream::new(buf), Err(err)),
+                    Err(_) => {},
                 },
                 TokenKind::CloseDelim(_delim) => {
                     if !is_delimited {
-                        return (
-                            TokenStream::new(buf),
-                            Err("unexpected closing delimiter".into()),
-                        );
+                        self.perrs.push(PError::UnexpectedClosingDelimiterLexer {
+                            span: SourceSpan::new(
+                                SourceOffset::from(self.token.span.offset as usize),
+                                self.token.span.length,
+                            ),
+                        });
+                        // Err("unexpected closing delimiter".into());
+                        self.eat(false);
+                    } else {
+                        return (TokenStream::new(buf), Ok(()));
                     }
-                    return (TokenStream::new(buf), Ok(()));
                 }
                 TokenKind::Eof => {
                     if is_delimited {
-                        return (TokenStream::new(buf), Err("unexpected EOF".into()));
+                        // return (
+                        //     TokenStream::new(buf),
+                        //     Err(PError::UnexpectedEof {
+                        //         span: SourceSpan::new(
+                        //             SourceOffset::from(self.token.span.offset as usize),
+                        //             self.token.span.length,
+                        //         ),
+                        //     }),
+                        // );
+                        self.perrs.push(PError::UnexpectedEof {
+                            span: SourceSpan::new(
+                                SourceOffset::from(self.token.span.offset as usize),
+                                self.token.span.length,
+                            ),
+                        });
                     }
                     return (TokenStream::new(buf), Ok(()));
                 }
@@ -96,7 +131,13 @@ impl<'sess, 'src> TokenTreesReader<'sess, 'src> {
             // Incorrect delimiter.
             TokenKind::CloseDelim(close_delim) => {
                 // The top delim will not have any matched close delim for it, so throw it away.
-                self.open_delims.pop();
+                let open_delim= self.open_delims.pop();
+                self.perrs.push(PError::OpenDelimNotClosed {
+                    span:SourceSpan::new(
+                        SourceOffset::from(open_delim.unwrap().1.offset as usize),
+                        open_delim.unwrap().1.length,
+                    )
+                });
                 // If the incorrect delimiter matches an earlier opening
                 // delimiter, then don't consume it (it can be used to
                 // close the earlier one). Otherwise, consume it.

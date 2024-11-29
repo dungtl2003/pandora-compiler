@@ -1,3 +1,4 @@
+use miette::{SourceOffset, SourceSpan};
 use crate::{
     ast::{
         BinOp, BinOpKind, BinOpToken, Delimiter, Expr, ExprKind, Lit, LitKind, TokenKind, Ty, UnOp,
@@ -6,11 +7,21 @@ use crate::{
     span_encoding::Span,
 };
 
-use super::{path::PathStyle, PResult, Parser, TokenType};
+use super::{path::PathStyle, PError, PResult, Parser, TokenType};
 use crate::span_encoding;
 
 impl Parser<'_> {
     pub fn parse_expr(&mut self) -> PResult<Box<Expr>> {
+        if !self.token.can_begin_expr() {
+            self.perrs.push(PError::ExpectedExpr {
+                found: format!("{}", self.token),
+                span: SourceSpan::new(
+                    SourceOffset::from(self.token.span.offset as usize),
+                    self.token.span.length,
+                ),
+            });
+            return Err(PError::Normal);
+        };
         let lhs = self.parse_expr_prefix()?;
         self.parse_expr_rest(0, lhs)
     }
@@ -134,7 +145,12 @@ impl Parser<'_> {
             TokenKind::OpenDelim(Delimiter::Parenthesis) => {
                 self.parse_expr_grouped(Delimiter::Parenthesis)
             }
-            _ => Err(format!("Unexpected token: {:?}", self.token).into()),
+            _ => Err(PError::ExpectedToken{
+                    expected:format!("{}, {}, {}", "Literal", "Ident", "OpenDelim"),
+                    found: format!("{}", self.token),
+                    span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                })
+            // _ => Err("Unexpected token".into()),
         }
     }
 
@@ -183,10 +199,19 @@ impl Parser<'_> {
                     self.advance();
                     Ok(Lit { kind, symbol })
                 } else {
-                    Err("Expected literal".into())
+                    Err(PError::ExpectedToken{
+                        expected:format!("{}", "Literal"),
+                        found: format!("{}", self.token),
+                        span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+                    })
+                    // Err("Expected literal".into())
                 }
             }
-            _ => Err("Expected literal".into()),
+            _ => Err(PError::ExpectedToken{
+                expected:format!("{}", "Literal"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            }),
         }
     }
 

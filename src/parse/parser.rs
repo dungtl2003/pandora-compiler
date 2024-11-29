@@ -5,10 +5,12 @@ mod stmt;
 mod ty;
 
 use std::mem;
+use miette::{Diagnostic, SourceOffset, SourceSpan};
 use symbol::Symbol;
 
 use crate::ast::Item;
 use crate::span_encoding::Span;
+use thiserror::Error;
 use crate::{
     ast::{
         Ast, DelimSpan, Delimiter, Ident, IdentIsRaw, Spacing, Stmt, Token, TokenKind, TokenStream,
@@ -18,31 +20,40 @@ use crate::{
     session_global::SessionGlobal,
     span_encoding::DUMMY_SP,
 };
+use crate::error_handler::ErrorHandler;
 
 pub fn parse(tokens: TokenStream, session: &SessionGlobal) -> PResult<Ast> {
     let mut stmts: Vec<Box<Stmt>> = Vec::new();
     let mut parser = Parser::new(tokens, session);
-
     while parser.token.kind != TokenKind::Eof {
-        let stmt = parser.parse_stmt()?;
-        stmts.push(stmt);
+        let stmt = parser.parse_stmt();
+        if stmt.is_ok(){
+            stmts.push(stmt?);
+        }
+    }
+    for err in parser.perrs {
+        session.error_handler.emit_err(err);
     }
 
     let ast = Ast::new(stmts);
     Ok(ast)
 }
 
-pub fn parse_items(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<Item>>> {
-    let mut items: Vec<Box<Item>> = Vec::new();
-    let mut parser = Parser::new(tokens, session);
-
-    while parser.token.kind != TokenKind::Eof {
-        let item = parser.parse_item()?;
-        items.push(item);
-    }
-
-    Ok(items)
-}
+// pub fn parse_items(tokens: TokenStream, session: &SessionGlobal) -> PResult<Vec<Box<Item>>> {
+//     let mut items: Vec<Box<Item>> = Vec::new();
+//     let mut parser = Parser::new(tokens, session);
+//
+//     while parser.token.kind != TokenKind::Eof {
+//         let item = parser.parse_item()?;
+//         items.push(item);
+//     }
+//
+//     for err in parser.perrs {
+//         session.error_handler.emit_err(err);
+//     }
+//
+//     Ok(items)
+// }
 
 pub struct Parser<'sess> {
     pub session: &'sess SessionGlobal,
@@ -54,6 +65,7 @@ pub struct Parser<'sess> {
     pub prev_token: Token,
     expected_tokens: Vec<TokenType>,
     token_cursor: TokenCursor,
+    pub perrs: Vec<PError>,
 }
 
 impl<'sess> Parser<'sess> {
@@ -68,6 +80,7 @@ impl<'sess> Parser<'sess> {
                 tree_cursor: stream.into_trees(),
                 stack: Vec::new(),
             },
+            perrs: Vec::new(),
         };
 
         // Make parser point to the first token.
@@ -141,10 +154,11 @@ impl<'sess> Parser<'sess> {
         if self.token.kind == expected {
             Ok(())
         } else {
-            Err(format!(
-                "expected {:?}, found {:?}",
-                expected, self.token.kind
-            ))
+            Err(PError::ExpectedToken{
+                expected:format!("{}", expected),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            })
         }
     }
 
@@ -188,7 +202,11 @@ impl<'sess> Parser<'sess> {
         if self.eat_lt() {
             Ok(())
         } else {
-            Err(format!("expected '<', found {:?}", self.token.kind))
+            Err(PError::ExpectedToken{
+                expected:format!("{}", "'<'"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            })
         }
     }
 
@@ -198,7 +216,11 @@ impl<'sess> Parser<'sess> {
         if self.break_and_eat(TokenKind::Gt) {
             Ok(())
         } else {
-            Err(format!("expected '>', found {:?}", self.token.kind))
+            Err(PError::ExpectedToken{
+                expected:format!("{}", "'>'"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            })
         }
     }
 
@@ -206,10 +228,11 @@ impl<'sess> Parser<'sess> {
         let (ident, is_raw) = self.ident_or_err()?;
 
         if matches!(is_raw, IdentIsRaw::No) && kw::is_keyword(ident.name) {
-            return Err(format!(
-                "expected identifier, found keyword {:?}",
-                ident.name
-            ));
+            return Err(PError::ExpectedToken{
+                expected:format!("{}", "identifier"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            });
         }
         self.advance();
         Ok(ident)
@@ -218,7 +241,11 @@ impl<'sess> Parser<'sess> {
     fn ident_or_err(&mut self) -> PResult<(Ident, IdentIsRaw)> {
         match self.token.ident() {
             Some(ident) => Ok(ident),
-            None => Err(format!("expected identifier, found {:?}", self.token.kind)),
+            None => Err(PError::ExpectedToken{
+                expected:format!("{}", "identifier"),
+                found: format!("{}", self.token),
+                span: SourceSpan::new(SourceOffset::from(self.token.span.offset as usize),self.token.span.length)
+            }),
         }
     }
 
@@ -303,5 +330,67 @@ impl TokenCursor {
 }
 
 // TODO: Update later.
-pub type PError = String;
+
+// pub type PError = String;
+#[derive(Debug, Diagnostic, Error)]
+pub enum PError {
+    #[error("Expected {expected}, but found {found}")]
+    #[diagnostic(code(parser::expected_token))]
+    ExpectedToken {
+        expected: String,
+        found: String,
+        #[label("here")]
+        span: SourceSpan,
+    },
+    #[error("Unexpected closing delimiter")]
+    #[diagnostic(code(parser::unexpected_closing_delimiter))]
+    UnexpectedClosingDelimiter {
+        #[label("closing delimiter ends here")]
+        span: SourceSpan,
+    },
+    #[error("Unexpected closing delimiter")]
+    #[diagnostic(code(parse::lexer::unexpected_closing_delimiter))]
+    UnexpectedClosingDelimiterLexer {
+        #[label("closing delimiter ends here")]
+        span: SourceSpan,
+    },
+    #[error("Expected {expected}, but found {found}")]
+    #[diagnostic(code(parser::unexpected_token))]
+    UnexpectedToken {
+        expected: String,
+        found: String,
+        #[label("here")]
+        span: SourceSpan,
+    },
+    #[error("Unexpected end of input")]
+    #[diagnostic(code(parser::unexpected_eof))]
+    UnexpectedEof {
+        #[label("input ends here")]
+        span: SourceSpan,
+    },
+    #[error("Expected an expression, but found {found}")]
+    #[diagnostic(code(parser::expected_expression))]
+    ExpectedExpr {
+        found: String,
+        #[label("here")]
+        span: SourceSpan,
+    },
+    #[error("Expected a statement")]
+    #[diagnostic(code(parser::expected_statement))]
+    ExpectedStmt {
+        #[label("here")]
+        span: SourceSpan,
+    },
+    #[error("Open delimiter is not closed")]
+    #[diagnostic(code(parse::lexer::open_delim_not_closed))]
+    OpenDelimNotClosed {
+        #[label("here")]
+        span: SourceSpan,
+    },
+    #[error("Normal err")]
+    #[diagnostic(code(parser::unexpected_eof))]
+    Normal,
+    // Thêm các loại lỗi khác
+}
+
 pub type PResult<T> = Result<T, PError>;
