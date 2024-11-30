@@ -19,14 +19,18 @@ set mut m2: [[int]] = [
 m2[0][1] = 100;
 
 for row in m2 {
-    println(arrlen(row) as str);
     for col in row {
         print(col as str + " ");
     }
     println("");
 }
 
-// set mut rubix: [[[int; 3]; 3]; 3] = [[[0; 3]; 3]; 3];
-// rubix[0][1] = [1, 2, 3];
-// print_rubix(rubix);
-// println("rubix[0][1][2] = " + rubix[0][1][2] as str);
+println("");
+println("");
+
+set mut rubix: [[[int; 3]; 3]; 3] = [[[0; 3]; 3]; 3];
+rubix[0][1][2] = 30;
+rubix[2][2] = [1, 6, 7];
+rubix[1] = [[6, 9, 6], [9, 6, 9], [9, 6, 6]];
+print_rubix(rubix);
+println("rubix[0][1][2] = " + rubix[0][1][2] as str);

@@ -18,7 +18,6 @@ use std::sync::Arc;
 
 fn main() {
     let file_path = "src/example/".to_string();
-    let mut arr: [i32; 5] = [0; 5];
     let file_names = vec![
         //"program.box",
         //"var_decl.box",
@@ -27,10 +26,11 @@ fn main() {
         //"test.box",
         //"if_stmt.box",
         //"while_stmt.box",
-        //"function.box",
+        "function.box",
         //"for_loop.box",
         //"bubble_sort.box",
-        "matrix.box",
+        //"matrix.box",
+        //"sudoku.box",
         //"array.box",
         //"unterminated_block_comment.box",
         //"number_literal_error.box",

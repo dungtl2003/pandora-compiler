@@ -52,7 +52,6 @@ pub fn interpret_stmt_for(
     };
 
     let value = interpret_expr(env, expr, in_loop, false)?;
-    println!("value in for: {:?}", value);
     let value_ty = value.to_ty();
     let values = value.into_iter().map_err(|e| e.to_string())?;
 

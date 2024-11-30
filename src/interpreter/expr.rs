@@ -434,7 +434,7 @@ pub fn interpret_expr_ident(env: &mut Environment, ident: &Ident) -> Result<Valu
     }
 
     let variable = result.unwrap();
-    let value = variable.borrow().value.clone();
+    let value = variable.borrow().val.clone();
     if value.is_none() {
         return Err(format!("Variable '{}' is not initialized", ident.name).into());
     }
@@ -573,6 +573,59 @@ fn find_array_variable(
     }
 }
 
+fn update_array_index(env: &mut Environment, arr: &Box<Expr>, value: Vec<Value>) {
+    // This will store all the index access of the array (in reverse).
+    let mut indices: Vec<i64> = Vec::new();
+    let mut e = arr;
+    let var = loop {
+        match &e.kind {
+            ExprKind::Index(array, index, _) => {
+                let index = interpret_expr(env, index, false, false).unwrap();
+                match index {
+                    Value::Int(index) => indices.push(index),
+                    _ => unreachable!(),
+                }
+                e = array;
+            }
+            ExprKind::Identifier(array_name) => {
+                let var = env.lookup_variable(array_name.name.as_str());
+                if var.is_none() {
+                    panic!("Variable '{}' not found", array_name.name);
+                }
+                break var.unwrap();
+            }
+            _ => unreachable!(),
+        }
+    };
+
+    // Now we have the variable, we can update the value by traversing the indices in reverse.
+    let mut var_bind = var.borrow_mut();
+    let mut elements: &mut Vec<Value> = match var_bind.val.as_mut().unwrap() {
+        Value::Array(elements) => elements,
+        _ => unreachable!(),
+    };
+
+    for index in indices.iter().rev() {
+        let index = *index as usize;
+
+        if index >= elements.len() {
+            panic!(
+                "Index out of bounds, expected index between 0 and {} but got {}",
+                elements.len() - 1,
+                index
+            );
+        }
+
+        elements = match &mut elements[index] {
+            Value::Array(elements) => elements,
+            _ => unreachable!("This is not the last index so it must be an array"),
+        };
+    }
+
+    // Now we have the last array's dimension, we can update the value.
+    *elements = value;
+}
+
 fn interpret_expr_assign_ident_with_known_value(
     env: &mut Environment,
     ident: &Ident,
@@ -598,7 +651,7 @@ fn interpret_expr_assign_ident_with_known_value(
         .into());
     }
 
-    var.borrow_mut().value = Some(rhs);
+    var.borrow_mut().val = Some(rhs);
     Ok(Value::Unit)
 }
 
@@ -609,10 +662,9 @@ fn interpret_expr_assign_array_index_with_known_value(
     rhs: Value,
     in_loop: bool,
 ) -> Result<Value, IError> {
-    let var = find_array_variable(env, array)?;
-    let array = interpret_expr(env, array, in_loop, false)?;
+    let arr = interpret_expr(env, array, in_loop, false)?;
 
-    match array {
+    match arr {
         Value::Array(mut elements) => {
             let index = interpret_expr(env, index, in_loop, false)?;
 
@@ -628,7 +680,7 @@ fn interpret_expr_assign_array_index_with_known_value(
                     }
                     elements[index as usize] = rhs;
 
-                    var.borrow_mut().value = Some(Value::Array(elements));
+                    update_array_index(env, array, elements);
                     Ok(Value::Unit)
                 }
                 _ => Err(format!("Index must be an integer, found '{}'", index.to_ty()).into()),
@@ -636,7 +688,7 @@ fn interpret_expr_assign_array_index_with_known_value(
         }
         _ => Err(format!(
             "Indexing must be performed on an array, found '{}'",
-            array.to_ty()
+            arr.to_ty()
         )
         .into()),
     }

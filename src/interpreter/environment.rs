@@ -107,7 +107,7 @@ impl Environment {
         let var = Variable {
             name: name.to_string(),
             is_mut,
-            value,
+            val: value,
             ty,
         };
 
