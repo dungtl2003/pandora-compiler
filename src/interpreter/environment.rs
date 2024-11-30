@@ -196,7 +196,7 @@ impl Environment {
             .parent()
             .ok_or_else(|| "Could not determine source file directory".to_string())?;
 
-        let lib_filename = format!("{}.box", name);
+        let lib_filename = format!("{}.boxx", name);
         let lib_path = source_dir.join(&lib_filename);
 
         if !lib_path.exists() {
