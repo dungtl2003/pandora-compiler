@@ -64,8 +64,8 @@ pub trait Visitor<'ast>: Sized {
         walk_stmt_empty(self);
     }
 
-    fn visit_stmt_import(&mut self, path: &'ast Path) {
-        walk_stmt_import(self, path);
+    fn visit_stmt_import(&mut self, ident: &'ast Ident) {
+        walk_stmt_import(self, ident);
     }
 }
 
@@ -99,15 +99,13 @@ pub fn walk_stmt<'ast, V: Visitor<'ast>>(visitor: &mut V, stmt: &'ast Stmt) {
         }
         StmtKind::Break => {}
         StmtKind::Continue => {}
-        StmtKind::Import(path) => {
-            visitor.visit_stmt_import(path);
+        StmtKind::Import(name) => {
+            visitor.visit_stmt_import(name);
         }
     }
 }
 
-pub fn walk_stmt_import<'ast, V: Visitor<'ast>>(visitor: &mut V, path: &'ast Path) {
-    visitor.visit_path(path);
-}
+pub fn walk_stmt_import<'ast, V: Visitor<'ast>>(_visitor: &mut V, _ident: &'ast Ident) {}
 
 pub fn walk_stmt_func_decl<'ast, V: Visitor<'ast>>(visitor: &mut V, fun: &'ast Fun) {
     let Fun { sig, body } = fun;
@@ -182,7 +180,7 @@ pub fn walk_stmt_empty<'ast, V: Visitor<'ast>>(_visitor: &mut V) {}
 
 pub fn walk_stmt_var<'ast, V: Visitor<'ast>>(visitor: &mut V, local: &'ast Local) {
     let Local {
-        binding_mode: _,
+        is_mut: _,
         ident: _,
         ty,
         kind,
@@ -241,6 +239,28 @@ pub fn walk_expr<'ast, V: Visitor<'ast>>(visitor: &mut V, expression: &'ast Expr
             for arg in args {
                 visitor.visit_expr(arg);
             }
+        }
+        ExprKind::LibAccess(lib, _ident) => {
+            visitor.visit_expr(lib);
+        }
+        ExprKind::LibFunCall(lib_func, args) => {
+            visitor.visit_expr(lib_func);
+            for arg in args {
+                visitor.visit_expr(arg);
+            }
+        }
+        ExprKind::Array(elements) => {
+            for element in elements {
+                visitor.visit_expr(element);
+            }
+        }
+        ExprKind::Index(array, index, _) => {
+            visitor.visit_expr(array);
+            visitor.visit_expr(index);
+        }
+        ExprKind::Repeat(element, count) => {
+            visitor.visit_expr(element);
+            visitor.visit_expr(count);
         }
     }
 }

@@ -1,0 +1,7 @@
+add std;
+
+set arr: [int] = [1, 2, 3, 5, 4];
+
+for element in arr {
+    std.println(element as str);
+}

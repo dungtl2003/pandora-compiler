@@ -126,19 +126,69 @@ impl Parser<'_> {
                 let expr = self.mk_unary(UnOp::Ne, expr);
                 Ok(self.mk_expr(expr, span))
             }
-            _ => self.parse_expr_call(),
+            _ => self.parse_expr_dot_or_call(),
         }
     }
 
     /// Parses a dot or call expression.
-    /// DotOrCall = Expr '.' Ident | Expr '(' [Expr] ')'
-    fn parse_expr_call(&mut self) -> PResult<Box<Expr>> {
+    /// DotOrCall = Expr '.' Ident | Expr '(' [Expr] ')' | Expr '[' [Expr] ']'
+    fn parse_expr_dot_or_call(&mut self) -> PResult<Box<Expr>> {
         let base = self.parse_expr_bottom()?;
-        if self.token.is_open_delim(Delimiter::Parenthesis) {
-            self.parse_expr_call_with(base)
+        if self.token.is_kind(TokenKind::Dot)
+            || self.token.is_open_delim(Delimiter::Parenthesis)
+            || self.token.is_open_delim(Delimiter::Bracket)
+        {
+            self.parse_expr_dot_or_call_with(base)
         } else {
             Ok(base)
         }
+    }
+
+    // FIX: this should be a loop
+    fn parse_expr_dot_or_call_with(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
+        debug_assert!(
+            self.token.is_kind(TokenKind::Dot)
+                || self.token.is_open_delim(Delimiter::Parenthesis)
+                || self.token.is_open_delim(Delimiter::Bracket)
+        );
+
+        let mut base = base;
+        loop {
+            if self.token.kind == TokenKind::Dot {
+                base = self.parse_expr_dot(base)?;
+            } else if self.token.is_open_delim(Delimiter::Parenthesis) {
+                base = self.parse_expr_call_with(base)?;
+            } else if self.token.is_open_delim(Delimiter::Bracket) {
+                base = self.parse_expr_array_index(base)?;
+            } else {
+                break;
+            }
+        }
+
+        Ok(base)
+    }
+
+    fn parse_expr_dot(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
+        debug_assert!(self.token.is_kind(TokenKind::Dot));
+        let start = self.token.span;
+        self.advance();
+        let field = self.parse_ident()?;
+        let span = start.to(self.token.span);
+        let dot = ExprKind::LibAccess(base, field);
+        Ok(self.mk_expr(dot, span))
+    }
+
+    fn parse_expr_array_index(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
+        debug_assert!(self.token.is_open_delim(Delimiter::Bracket));
+        let start = self.token.span;
+        self.advance();
+        let index = self.parse_expr()?;
+        let index_span = index.span;
+        self.expect(TokenKind::CloseDelim(Delimiter::Bracket))?;
+        let span = start.to(self.token.span);
+        self.advance();
+        let index = self.mk_expr(ExprKind::Index(base, index, index_span), span);
+        Ok(index)
     }
 
     /// Parses a call expression.
@@ -146,6 +196,11 @@ impl Parser<'_> {
     fn parse_expr_call_with(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
         debug_assert!(self.token.is_open_delim(Delimiter::Parenthesis));
         self.advance();
+
+        let is_lib_func = match base.kind {
+            ExprKind::LibAccess(..) => true,
+            _ => false,
+        };
 
         let mut args = Vec::new();
         loop {
@@ -163,12 +218,14 @@ impl Parser<'_> {
             self.advance(); // eat comma
         }
 
-        if !self.token.is_close_delim(Delimiter::Parenthesis) {
-            return Err("Expected ')'".into());
-        }
+        self.expect(TokenKind::CloseDelim(Delimiter::Parenthesis))?;
 
         let span = self.mk_expr_sp(&base, self.token.span);
-        let call = ExprKind::FunCall(base, args);
+        let call = if is_lib_func {
+            ExprKind::LibFunCall(base, args)
+        } else {
+            ExprKind::FunCall(base, args)
+        };
         self.advance();
 
         Ok(self.mk_expr(call, span))
@@ -182,8 +239,53 @@ impl Parser<'_> {
             TokenKind::OpenDelim(Delimiter::Parenthesis) => {
                 self.parse_expr_grouped(Delimiter::Parenthesis)
             }
+            TokenKind::OpenDelim(Delimiter::Bracket) => self.parse_expr_array(),
             _ => Err(format!("Unexpected token: {:?}", self.token).into()),
         }
+    }
+
+    fn parse_expr_array(&mut self) -> PResult<Box<Expr>> {
+        debug_assert!(self.token.is_open_delim(Delimiter::Bracket));
+        let start = self.token.span;
+        self.advance();
+
+        let mut elements = Vec::new();
+        loop {
+            if self.token.is_close_delim(Delimiter::Bracket) {
+                break;
+            }
+
+            let element = self.parse_expr()?;
+            elements.push(element);
+
+            // Check for array repeat syntax `[expr; len]`
+            if self.token.is_kind(TokenKind::Semicolon) {
+                if elements.len() != 1 {
+                    return Err("Expected only 1 element before semicolon".into());
+                }
+                self.advance(); // eat semicolon
+                let len = self.parse_expr()?;
+                self.expect(TokenKind::CloseDelim(Delimiter::Bracket))?;
+                let span = start.to(self.token.span);
+                self.advance();
+                let repeat = ExprKind::Repeat(elements[0].clone(), len);
+                return Ok(self.mk_expr(repeat, span));
+            }
+
+            if !self.token.is_kind(TokenKind::Comma) {
+                break;
+            }
+
+            self.advance(); // eat comma
+        }
+
+        self.expect(TokenKind::CloseDelim(Delimiter::Bracket))?;
+
+        let span = self.mk_expr_sp(&elements[0], self.token.span);
+        let array = ExprKind::Array(elements);
+        self.advance();
+
+        Ok(self.mk_expr(array, span))
     }
 
     fn parse_expr_ident(&mut self) -> PResult<Box<Expr>> {

@@ -1,7 +1,11 @@
-use crate::environment::item::Item;
+use crate::interpreter::eval::Value;
 
-mod std;
+pub mod math;
+pub mod std;
 
 pub trait Library {
-    fn get_item(&self, name: &str) -> Option<Item>;
+    fn get_function(
+        &self,
+        name: &str,
+    ) -> Option<&Box<dyn Fn(Vec<(Value, bool)>) -> Result<Value, String>>>;
 }

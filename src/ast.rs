@@ -13,10 +13,7 @@ pub use token::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,
 };
 
-use crate::{
-    span_encoding::{Span, Spanned},
-    symbol::Symbol,
-};
+use crate::span_encoding::{Span, Spanned};
 
 #[derive(Debug)]
 pub struct Ast {
@@ -26,39 +23,6 @@ pub struct Ast {
 impl Ast {
     pub fn new(stmts: Vec<Box<Stmt>>) -> Self {
         Ast { stmts }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct BindingMode(pub Mutability);
-
-impl Display for BindingMode {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Mutability {
-    Immutable,
-    Mutable,
-}
-
-impl Display for Mutability {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            Mutability::Immutable => write!(f, "immutable"),
-            Mutability::Mutable => write!(f, "mutable"),
-        }
-    }
-}
-
-impl BindingMode {
-    pub fn prefix_str(self) -> &'static str {
-        match self.0 {
-            Mutability::Immutable => "",
-            Mutability::Mutable => "mut ",
-        }
     }
 }
 
@@ -90,8 +54,8 @@ pub enum StmtKind {
     While(Box<Expr>, Box<Stmt>),
     /// A for loop: 'for' ident 'in' expr block_stmt
     For(Ident, Box<Expr>, Box<Stmt>),
-    /// An import statement: 'import' path ';'
-    Import(Box<Path>),
+    /// An import statement: 'import' ident ';'
+    Import(Ident),
     /// An empty statement: ';'.
     Empty,
 }
@@ -121,14 +85,42 @@ pub struct PathSegment {
 
 #[derive(Debug, Clone)]
 pub struct Ty {
-    pub name: Symbol,
+    pub kind: TyKind,
     pub span: Span,
+}
+
+impl Display for Ty {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match &self.kind {
+            TyKind::Array(ty, expr) => match expr {
+                Some(expr) => {
+                    write!(f, "[{}; {}]", ty, expr)
+                }
+                None => {
+                    write!(f, "[{}]", ty)
+                }
+            },
+            TyKind::Named(ident) => {
+                write!(f, "{}", ident.name)
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum TyKind {
+    /// An array type.
+    ///
+    /// E.g., `[int; 4]`.
+    Array(Box<Ty>, Option<Box<Expr>>),
+    /// A named type.
+    Named(Ident),
 }
 
 /// Local represents a `var` statement. e.g. `var mut <ident>:<ty> = <expr>;`.
 #[derive(Debug, Clone)]
 pub struct Local {
-    pub binding_mode: BindingMode,
+    pub is_mut: bool,
     pub ident: Ident,
     pub ty: Ty,
     pub kind: LocalKind,
@@ -174,6 +166,20 @@ pub enum ExprKind {
     /// The first field resolves to the function itself,
     /// and the second field is the list of arguments.
     FunCall(Box<Expr>, Vec<Box<Expr>>),
+    /// Library access (e.g. `foo.bar`).
+    LibAccess(Box<Expr>, Ident),
+    /// Library function call (e.g. `foo.bar()`).
+    LibFunCall(Box<Expr>, Vec<Box<Expr>>),
+    /// Array
+    Array(Vec<Box<Expr>>),
+    /// An indexing operation (e.g., `foo[2]`).
+    /// The span represents the span of the `[2]`, including brackets.
+    Index(Box<Expr>, Box<Expr>, Span),
+    /// An array literal constructed from one repeated element.
+    ///
+    /// E.g., `[1; 5]`. The left expression is the element to be
+    /// repeated; the right expression is the number of times to repeat it.
+    Repeat(Box<Expr>, Box<Expr>),
 }
 
 impl Display for Expr {
@@ -291,6 +297,37 @@ pub enum BinOpKind {
     Shr,
 }
 
+impl Display for BinOpKind {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_str())
+    }
+}
+
+impl BinOpKind {
+    pub fn to_str(&self) -> &str {
+        match self {
+            BinOpKind::Add => "+",
+            BinOpKind::Sub => "-",
+            BinOpKind::Mul => "*",
+            BinOpKind::Div => "/",
+            BinOpKind::Mod => "%",
+            BinOpKind::Eq => "==",
+            BinOpKind::Ne => "!=",
+            BinOpKind::Lt => "<",
+            BinOpKind::Le => "<=",
+            BinOpKind::Gt => ">",
+            BinOpKind::Ge => ">=",
+            BinOpKind::And => "&&",
+            BinOpKind::Or => "||",
+            BinOpKind::BitAnd => "&",
+            BinOpKind::BitOr => "|",
+            BinOpKind::BitXor => "^",
+            BinOpKind::Shl => "<<",
+            BinOpKind::Shr => ">>",
+        }
+    }
+}
+
 /// A function definition.
 #[derive(Debug, Clone)]
 pub struct Fun {
@@ -314,5 +351,6 @@ pub struct FunSig {
 pub struct FunParam {
     pub ty: Ty,
     pub ident: Ident,
+    pub is_mut: bool,
     pub span: Span,
 }

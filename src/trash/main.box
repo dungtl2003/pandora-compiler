@@ -1,14 +1,10 @@
 add std;
-add os::path;
 
-fun main() {
-    var a: int = 5;
-    var b: float = 6;
-    var c: float; 
-    c = a as float + b;
-    print_hello(c as str);
-}
+std.print("Enter age: ");
+var age: int = std.input() as int;
 
-fun print_hello(s: str) -> void {
-    print("{s}");
+if age < 18 {
+    std.println("You are not allowed to watch this movie");
+} else {
+    std.println("Actually, you are allowed to watch this");
 }

@@ -1,0 +1,51 @@
+fun print_array(arr: [int]) {
+    for e in arr {
+        print(e as str + " ");
+    }
+    println("");
+}
+
+fun input_array() -> [int] {
+    print("Type your desired array's length: ");
+    set len: int = input() as int;
+    set mut arr: [int] = [0; len];
+    set mut i: int = 0;
+
+    during i < len {
+        print("arr[" + i as str + "] = ");
+        arr[i] = input() as int;
+        i += 1;
+    }
+
+    yeet arr;
+}
+
+fun bubble_sort(arr: [int]) -> [int] {
+    set len: int = arrlen(arr);
+    set mut arr: [int] = arr;
+    set mut i: int = len - 1;
+    set mut j: int = 0;
+
+    during i > 0 {
+        j = 0;
+        during j < i {
+            when arr[j] > arr[j + 1] {
+                set temp: int = arr[j];
+                arr[j] = arr[j + 1];
+                arr[j + 1] = temp;
+            }
+
+            j += 1;
+        }
+
+        i -= 1;
+    }
+
+    yeet arr;
+}
+
+set arr: [int] = input_array();
+println("Original array:");
+print_array(arr);
+println("Sorted array:");
+print_array(bubble_sort(arr));

@@ -45,4 +45,8 @@ impl Symbol {
     pub fn is_keyword(&self) -> bool {
         kw::from_str(self.sym.as_str()).is_ok()
     }
+
+    pub fn is_mutability(&self) -> bool {
+        self.sym == Keyword::Mut
+    }
 }

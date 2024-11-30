@@ -28,6 +28,22 @@ impl Printer {
 }
 
 impl<'ast> Visitor<'ast> for Printer {
+    fn visit_stmt_import(&mut self, ident: &'ast Ident) {
+        self.output.push_str(&format!(
+            "{}Import statement: {}\n",
+            space(self.indent),
+            ident.span
+        ));
+        self.indent += self.indent_spaces;
+        self.output.push_str(&format!(
+            "{}Library name: {} {}\n",
+            space(self.indent),
+            ident.name,
+            ident.span
+        ));
+        self.indent -= self.indent_spaces;
+    }
+
     fn visit_stmt_func_decl(&mut self, fun: &'ast Fun) {
         let Fun { sig, body } = fun;
         let FunSig {
@@ -162,15 +178,16 @@ impl<'ast> Visitor<'ast> for Printer {
         let Local {
             kind,
             ident,
-            binding_mode,
+            is_mut,
             ty,
             ..
         } = local;
 
         self.output.push_str(&format!(
-            "{}Binding mode: {}\n",
+            "{}Mutability: {} {}\n",
             space(self.indent),
-            binding_mode,
+            is_mut,
+            ident.span
         ));
         self.output.push_str(&format!(
             "{}Identifier: {} {}\n",
@@ -295,6 +312,81 @@ impl<'ast> Visitor<'ast> for Printer {
                 }
                 self.indent -= self.indent_spaces;
             }
+            ExprKind::LibAccess(lib, ident) => {
+                self.output.push_str(&format!(
+                    "{}Library access: {}\n",
+                    space(self.indent),
+                    ident.span
+                ));
+                self.indent += self.indent_spaces;
+                self.visit_expr(lib);
+                self.indent -= self.indent_spaces;
+                self.output.push_str(&format!(
+                    "{}Item: {} {}\n",
+                    space(self.indent),
+                    ident.name,
+                    ident.span
+                ));
+            }
+            ExprKind::LibFunCall(lib_func, args) => {
+                self.output.push_str(&format!(
+                    "{}Library function call: {} {}\n",
+                    space(self.indent),
+                    lib_func.span,
+                    span
+                ));
+                self.indent += self.indent_spaces;
+                self.output
+                    .push_str(&format!("{}Function name:\n", space(self.indent)));
+                self.visit_expr(lib_func);
+                self.output
+                    .push_str(&format!("{}Arguments:\n", space(self.indent)));
+                for arg in args {
+                    self.visit_expr(arg);
+                }
+                self.indent -= self.indent_spaces;
+            }
+            ExprKind::Array(exprs) => {
+                self.output
+                    .push_str(&format!("{}Array: {}\n", space(self.indent), span));
+                self.indent += self.indent_spaces;
+                for expr in exprs {
+                    self.visit_expr(expr);
+                }
+                self.indent -= self.indent_spaces;
+            }
+            ExprKind::Index(expr, index, span) => {
+                self.output.push_str(&format!(
+                    "{}Indexing: {} {}\n",
+                    space(self.indent),
+                    span,
+                    span
+                ));
+                self.indent += self.indent_spaces;
+                self.output
+                    .push_str(&format!("{}Array:\n", space(self.indent)));
+                self.visit_expr(expr);
+                self.output
+                    .push_str(&format!("{}Index:\n", space(self.indent)));
+                self.visit_expr(index);
+                self.indent -= self.indent_spaces;
+            }
+            ExprKind::Repeat(element, count) => {
+                self.output.push_str(&format!(
+                    "{}Repeat: {} {}\n",
+                    space(self.indent),
+                    span,
+                    span
+                ));
+                self.indent += self.indent_spaces;
+                self.output
+                    .push_str(&format!("{}Element:\n", space(self.indent)));
+                self.visit_expr(element);
+                self.output
+                    .push_str(&format!("{}Count:\n", space(self.indent)));
+                self.visit_expr(count);
+                self.indent -= self.indent_spaces;
+            }
         }
         self.indent -= self.indent_spaces;
     }
@@ -321,12 +413,8 @@ impl<'ast> Visitor<'ast> for Printer {
     }
 
     fn visit_ty(&mut self, ty: &'ast Ty) {
-        self.output.push_str(&format!(
-            "{}Type: {} {}\n",
-            space(self.indent),
-            ty.name,
-            ty.span
-        ));
+        self.output
+            .push_str(&format!("{}Type: {} {}\n", space(self.indent), ty, ty.span));
     }
 }
 

@@ -1,21 +1,19 @@
 use super::{PResult, Parser};
 use crate::ast::{Delimiter, Fun, FunParam, FunSig};
 use crate::{
-    ast::{BindingMode, Local, LocalKind, Mutability, Stmt, StmtKind, TokenKind},
+    ast::{Local, LocalKind, Stmt, StmtKind, TokenKind},
     kw::Keyword,
 };
 
 impl Parser<'_> {
     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
-        if self.token.is_keyword(Keyword::Var) {
+        if self.token.is_keyword(Keyword::Set) {
             self.parse_stmt_var_decl()
-        } else if self.token.is_keyword(Keyword::If) {
+        } else if self.token.is_keyword(Keyword::When) {
             self.parse_stmt_if()
-        } else if self.token.can_begin_expr() {
-            self.parse_stmt_expr()
         } else if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
             self.parse_stmt_block()
-        } else if self.token.is_keyword(Keyword::While) {
+        } else if self.token.is_keyword(Keyword::During) {
             self.parse_stmt_while()
         } else if self.token.is_keyword(Keyword::For) {
             self.parse_stmt_for()
@@ -27,9 +25,51 @@ impl Parser<'_> {
             self.parse_stmt_func_decl()
         } else if self.token.is_keyword(Keyword::Add) {
             self.parse_stmt_import()
+        } else if self.token.is_keyword(Keyword::Br) {
+            self.parse_stmt_break()
+        } else if self.token.is_keyword(Keyword::Skip) {
+            self.parse_stmt_continue()
+        } else if self.token.can_begin_expr() {
+            self.parse_stmt_expr()
         } else {
             return Err(format!("Expected statement, found {}", self.token));
         }
+    }
+
+    pub fn parse_stmt_continue(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::Skip) {
+            return Err("Expected 'skip'".into());
+        }
+
+        let span = self.token.span;
+        self.advance(); // Eat token after "skip"
+
+        self.expect(TokenKind::Semicolon)?;
+        let span = span.to(self.token.span);
+        self.advance(); // Eat token after ';'
+
+        Ok(Box::new(Stmt {
+            kind: StmtKind::Continue,
+            span,
+        }))
+    }
+
+    pub fn parse_stmt_break(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::Br) {
+            return Err("Expected 'exit'".into());
+        }
+
+        let span = self.token.span;
+        self.advance(); // Eat token after "exit"
+
+        self.expect(TokenKind::Semicolon)?;
+        let span = span.to(self.token.span);
+        self.advance(); // Eat token after ';'
+
+        Ok(Box::new(Stmt {
+            kind: StmtKind::Break,
+            span,
+        }))
     }
 
     pub fn parse_stmt_import(&mut self) -> PResult<Box<Stmt>> {
@@ -40,10 +80,8 @@ impl Parser<'_> {
         let start_span = self.token.span;
         self.advance(); // Eat "import"
 
-        let path = self.parse_path()?;
-        if self.token.kind != TokenKind::Semicolon {
-            return Err("Expected ';'".into());
-        }
+        let path = self.parse_ident()?;
+        self.expect(TokenKind::Semicolon)?;
         let span = start_span.to(self.token.span);
         self.advance(); // Eat token after ';'
 
@@ -94,7 +132,7 @@ impl Parser<'_> {
 
     /// predicate_loop_statement = 'while' expression block_statement
     pub fn parse_stmt_while(&mut self) -> PResult<Box<Stmt>> {
-        if !self.token.is_keyword(Keyword::While) {
+        if !self.token.is_keyword(Keyword::During) {
             return Err("Expected 'while'".into());
         }
 
@@ -143,7 +181,7 @@ impl Parser<'_> {
 
     /// if_statement = 'if' expression block_statement ('else' (block_statement | if_statement))?
     pub fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
-        if !self.token.is_keyword(Keyword::If) {
+        if !self.token.is_keyword(Keyword::When) {
             return Err(format!("Expected 'if', found {:?}", self.token).into());
         }
 
@@ -156,9 +194,9 @@ impl Parser<'_> {
         let if_block = self.parse_stmt_block()?;
 
         // Optionally parse an `else` block.
-        let else_block = if self.token.is_keyword(Keyword::Else) {
+        let else_block = if self.token.is_keyword(Keyword::Alt) {
             self.advance(); // Eat token after `else`
-            if self.token.is_keyword(Keyword::If) {
+            if self.token.is_keyword(Keyword::When) {
                 let else_block = self.parse_stmt_if()?;
                 Some(else_block)
             } else if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
@@ -181,9 +219,7 @@ impl Parser<'_> {
 
     /// block_statement = '{' statement* '}'
     pub fn parse_stmt_block(&mut self) -> PResult<Box<Stmt>> {
-        if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
-            return Err(format!("Expected '{{' in block statement, found {:?}", self.token).into());
-        }
+        self.expect(TokenKind::OpenDelim(Delimiter::Brace))?;
 
         let start = self.token.span;
         self.advance(); // Eat token after '{'
@@ -213,9 +249,7 @@ impl Parser<'_> {
             span,
         });
 
-        if self.token.kind != TokenKind::Semicolon {
-            return Err("Expected ';'".into());
-        }
+        self.expect(TokenKind::Semicolon)?;
         self.advance(); // Eat token after ';'
 
         Ok(stmt)
@@ -223,30 +257,23 @@ impl Parser<'_> {
 
     /// variable_declaration = 'var' 'mut'? identifier: type_specifier ('=' expression)? ';'
     pub fn parse_stmt_var_decl(&mut self) -> PResult<Box<Stmt>> {
-        if !self.token.is_keyword(Keyword::Var) {
+        if !self.token.is_keyword(Keyword::Set) {
             return Err("Expected 'var'".into());
         }
 
         let start = self.token.span;
-        let binding_mode = if self.is_keyword_ahead(&[Keyword::Mut]) {
+        self.advance(); // 'set'
+
+        let is_mut = if self.token.is_keyword(Keyword::Mut) {
             self.advance(); // 'mut'
-            BindingMode(Mutability::Mutable)
+            true
         } else {
-            BindingMode(Mutability::Immutable)
+            false
         };
 
-        if !self.is_ident_ahead() {
-            return Err("Expected identifier".into());
-        }
-        self.advance(); // identifier
-        let ident = self.token.ident().unwrap().0;
-
-        if !self.look_ahead(1, |tok| tok.kind == TokenKind::Colon) {
-            return Err("Expected ':'".into());
-        }
+        let ident = self.parse_ident()?;
+        self.expect(TokenKind::Colon)?;
         self.advance(); // ':'
-
-        self.advance(); // type
         let ty = self.parse_ty()?;
 
         let init = if self.token.kind == TokenKind::Eq {
@@ -256,9 +283,7 @@ impl Parser<'_> {
             None
         };
 
-        if self.token.kind != TokenKind::Semicolon {
-            return Err("Expected ';'".into());
-        }
+        self.expect(TokenKind::Semicolon)?;
         let span = start.to(self.token.span);
 
         self.advance();
@@ -270,7 +295,7 @@ impl Parser<'_> {
         };
 
         let local = Local {
-            binding_mode,
+            is_mut,
             ident,
             ty,
             kind,
@@ -283,9 +308,7 @@ impl Parser<'_> {
     }
 
     pub fn parse_stmt_empty(&mut self) -> PResult<Box<Stmt>> {
-        if self.token.kind != TokenKind::Semicolon {
-            return Err("Expected ';'".into());
-        }
+        self.expect(TokenKind::Semicolon)?;
 
         let span = self.token.span;
         self.advance();
@@ -313,16 +336,22 @@ impl Parser<'_> {
             let start = self.token.span;
             let ident = self.parse_ident()?;
 
-            if self.token.kind != TokenKind::Colon {
-                return Err("Expected ':'. Function parameter must have a type.".into());
-            }
+            self.expect(TokenKind::Colon)?;
             self.advance(); // Eat ':'
+
+            let is_mut = if self.token.is_keyword(Keyword::Mut) {
+                self.advance(); // Eat 'mut'
+                true
+            } else {
+                false
+            };
 
             let ty = self.parse_ty()?;
             let end = self.prev_token.span;
             inputs.push(FunParam {
                 ident,
                 ty,
+                is_mut,
                 span: start.to(end),
             });
 

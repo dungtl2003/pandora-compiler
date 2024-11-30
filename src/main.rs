@@ -4,6 +4,7 @@ mod interpreter;
 #[path = "keyword.rs"]
 mod kw;
 mod lexer;
+mod libs;
 mod parse;
 mod session;
 mod span_encoding;
@@ -16,14 +17,21 @@ use std::fs;
 use std::sync::Arc;
 
 fn main() {
-    let file_path = "src/trash/".to_string();
+    let file_path = "src/example/".to_string();
+    let mut arr: [i32; 5] = [0; 5];
     let file_names = vec![
         //"program.box",
         //"var_decl.box",
         //"path.box",
         //"expr.box",
         //"test.box",
-        "main.box",
+        //"if_stmt.box",
+        //"while_stmt.box",
+        //"function.box",
+        //"for_loop.box",
+        //"bubble_sort.box",
+        "matrix.box",
+        //"array.box",
         //"unterminated_block_comment.box",
         //"number_literal_error.box",
         //"unterminated_raw_str.box",
@@ -45,10 +53,17 @@ fn main() {
 
         //print_lex_2(&data, &session);
         //print_lex_3(&data, &session);
-        print_parse_stmts(&data, &session);
+        //print_parse_stmts(&data, &session);
+        interpret_file(&data, &session);
 
         println!("================ END ================");
     }
+}
+
+fn interpret_file(data: &str, session: &session::Session) {
+    let tokens = parse::lexer::lex_token_tree(&data, &session).unwrap();
+    let ast = parse::parser::parse(tokens, &session).unwrap();
+    interpreter::interpret(&ast, &session).unwrap();
 }
 
 fn print_lex_2<'sess>(data: &str, session: &'sess session::Session) {
