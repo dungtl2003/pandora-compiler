@@ -53,18 +53,21 @@ fn main() {
         .map_err(|e| format!("Failed to read file: {e}"))
         .unwrap();
 
-    let source = SourceFile::new(filename, Arc::new(contents.clone()));
+    let contents = Arc::new(contents);
+
+    let source = SourceFile::new(filename, Arc::clone(&contents));
     let file = Arc::new(source);
     let session = session::Session::new(Arc::clone(&file));
 
-    // lexing
-    let tokens = parse::lexer::lex_token_tree(&contents, &session).unwrap();
-
     // parsing
-    let ast = parse::parser::parse(tokens, &session).unwrap();
+    let ast = parse::parser::parse(contents.as_str(), &session);
+    if ast.is_none() {
+        process::exit(1);
+    }
+    let ast = ast.unwrap();
 
     // interpret
-    interpreter::interpret(&ast, &session).unwrap();
+    interpreter::interpret(&ast, &session);
 }
 
 fn help() {

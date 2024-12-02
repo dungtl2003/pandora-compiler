@@ -1,6 +1,8 @@
 use core::fmt;
 use std::fmt::{Display, Formatter};
 
+use miette::SourceSpan;
+
 use crate::session::BytePos;
 
 pub const DUMMY_SP: Span = Span {
@@ -24,6 +26,11 @@ impl Span {
             length: (end - start) as usize,
         }
     }
+
+    pub fn to_source_span(&self) -> SourceSpan {
+        (self.offset as usize, self.length).into()
+    }
+
     pub fn dummy() -> Self {
         DUMMY_SP
     }

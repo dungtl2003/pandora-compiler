@@ -19,7 +19,7 @@ pub struct Token {
 
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.kind)
+        write!(f, "{}", self.kind)
     }
 }
 
@@ -84,6 +84,59 @@ pub enum TokenKind {
     Eof,
 }
 
+impl Display for TokenKind {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Eq => write!(f, "="),
+            Lt => write!(f, "<"),
+            Le => write!(f, "<="),
+            EqEq => write!(f, "=="),
+            Ne => write!(f, "!="),
+            Ge => write!(f, ">="),
+            Gt => write!(f, ">"),
+            AndAnd => write!(f, "&&"),
+            OrOr => write!(f, "||"),
+            Not => write!(f, "!"),
+            Tilde => write!(f, "~"),
+            BinOp(op) => write!(f, "{}", op),
+            BinOpEq(op) => write!(f, "{}=", op),
+            Dot => write!(f, "."),
+            Comma => write!(f, ","),
+            Semicolon => write!(f, ";"),
+            Colon => write!(f, ":"),
+            PathSep => write!(f, "::"),
+            RArrow => write!(f, "->"),
+            Question => write!(f, "?"),
+            OpenDelim(delim) => {
+                let s = match delim {
+                    Delimiter::Parenthesis => "(",
+                    Delimiter::Brace => "{",
+                    Delimiter::Bracket => "[",
+                };
+                write!(f, "{}", s)
+            }
+            CloseDelim(delim) => {
+                let s = match delim {
+                    Delimiter::Parenthesis => ")",
+                    Delimiter::Brace => "}",
+                    Delimiter::Bracket => "]",
+                };
+                write!(f, "{}", s)
+            }
+            Literal(lit) => write!(f, "{}", lit.to_ty_str()),
+            Ident(_name, is_raw) => {
+                if *is_raw == IdentIsRaw::Yes {
+                    return write!(f, "raw identifier");
+                } else {
+                    return write!(f, "identifier");
+                }
+            }
+            DocComment(_, _, _) => write!(f, "doc comment"),
+            Eof => write!(f, "EOF"),
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum BinOpToken {
     Plus,
@@ -96,6 +149,23 @@ pub enum BinOpToken {
     Or,
     Shl,
     Shr,
+}
+
+impl Display for BinOpToken {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Plus => write!(f, "+"),
+            Minus => write!(f, "-"),
+            Star => write!(f, "*"),
+            Slash => write!(f, "/"),
+            Percent => write!(f, "%"),
+            Caret => write!(f, "^"),
+            And => write!(f, "&"),
+            Or => write!(f, "|"),
+            Shl => write!(f, "<<"),
+            Shr => write!(f, ">>"),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -121,6 +191,10 @@ pub struct Lit {
 }
 
 impl Lit {
+    pub fn to_ty_str(&self) -> &'static str {
+        self.kind.to_ty_str()
+    }
+
     pub fn to_rust_lit_str(&self) -> String {
         match self.kind {
             LitKind::Bool => self.symbol.as_str().to_string(),
@@ -154,6 +228,19 @@ pub enum LitKind {
     RawStr(u8), // raw string delimited by `n` hash symbols
 
     Err,
+}
+
+impl LitKind {
+    pub fn to_ty_str(&self) -> &'static str {
+        match self {
+            LitKind::Bool => "bool",
+            LitKind::Char => "char",
+            LitKind::Int => "int",
+            LitKind::Float => "float",
+            LitKind::Str | LitKind::RawStr(_) => "str",
+            LitKind::Err => unreachable!(),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -280,6 +367,30 @@ impl Token {
             Literal(..)                       | // literal
             Not                               | // operator not
             BinOp(Minus)                      => true, // unary minus
+            _ => false,
+        }
+    }
+
+    pub fn can_begin_stmt(&self) -> bool {
+        if self.can_begin_expr() {
+            return true;
+        }
+
+        if self.is_keyword(Keyword::Set)
+            || self.is_keyword(Keyword::When)
+            || self.is_keyword(Keyword::During)
+            || self.is_keyword(Keyword::For)
+            || self.is_keyword(Keyword::Yeet)
+            || self.is_keyword(Keyword::Fun)
+            || self.is_keyword(Keyword::Add)
+            || self.is_keyword(Keyword::Br)
+            || self.is_keyword(Keyword::Skip)
+        {
+            return true;
+        }
+
+        match self.kind {
+            TokenKind::OpenDelim(Delimiter::Brace) | TokenKind::Semicolon => true,
             _ => false,
         }
     }

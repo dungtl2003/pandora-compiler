@@ -4,6 +4,8 @@ mod expr;
 mod stmt;
 mod ty;
 
+use std::process::exit;
+
 use environment::Environment;
 use eval::*;
 use expr::*;
@@ -12,12 +14,15 @@ use ty::*;
 
 use crate::{ast::Ast, session::Session};
 
-pub fn interpret(ast: &Ast, session: &Session) -> IResult {
+pub fn interpret(ast: &Ast, session: &Session) {
     let mut env = Environment::new();
     for stmt in &ast.stmts {
-        interpret_stmt(&mut env, stmt, false)?;
+        if interpret_stmt(&mut env, stmt, false).is_err() {
+            exit(1);
+        }
     }
-    Ok(EvalResult::StmtResult(None))
+
+    exit(0);
 }
 
 pub type IError = String;

@@ -240,7 +240,8 @@ impl Parser<'_> {
                 self.parse_expr_grouped(Delimiter::Parenthesis)
             }
             TokenKind::OpenDelim(Delimiter::Bracket) => self.parse_expr_array(),
-            _ => Err(format!("Unexpected token: {:?}", self.token).into()),
+            _ => Err(self.build_dummy_error()),
+            //_ => Err(format!("Unexpected token: {:?}", self.token).into()),
         }
     }
 
@@ -261,7 +262,8 @@ impl Parser<'_> {
             // Check for array repeat syntax `[expr; len]`
             if self.token.is_kind(TokenKind::Semicolon) {
                 if elements.len() != 1 {
-                    return Err("Expected only 1 element before semicolon".into());
+                    return Err(self.build_dummy_error());
+                    //return Err("Expected only 1 element before semicolon".into());
                 }
                 self.advance(); // eat semicolon
                 let len = self.parse_expr()?;
@@ -329,10 +331,11 @@ impl Parser<'_> {
                     self.advance();
                     Ok(Lit { kind, symbol })
                 } else {
-                    Err("Expected literal".into())
+                    Err(self.build_dummy_error())
+                    //Err("Expected literal".into())
                 }
             }
-            _ => Err("Expected literal".into()),
+            _ => Err(self.build_dummy_error()), //_ => Err("Expected literal".into()),
         }
     }
 

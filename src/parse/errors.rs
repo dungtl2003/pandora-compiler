@@ -1,16 +1,168 @@
-use crate::{span_encoding::Span, ErrorHandler};
-use miette::{Diagnostic, Report};
+use crate::{
+    ast::{Delimiter, LitKind, Token, TokenKind},
+    span_encoding::Span,
+    ErrorHandler,
+};
+use miette::{Diagnostic, Report, SourceSpan};
 use thiserror::Error;
 
+use super::parser::TokenType;
+
 #[derive(Error, Debug, Diagnostic)]
-#[error("expected symbol {symbol}")]
-pub struct ExpectedSymbol {
-    pub span: Span,
-    pub symbol: String,
+pub enum PError {
+    #[error("{}", message)]
+    #[diagnostic(code(parser::expected_token))]
+    ExpectedToken {
+        message: String,
+        #[label("{}", message)]
+        span: SourceSpan,
+    },
+
+    #[error("{}", message)]
+    ExpectedIdentifier {
+        message: String,
+        bad_token_span: SourceSpan,
+        #[help]
+        help_msg: Option<String>,
+
+        #[label]
+        help_span: Option<SourceSpan>,
+    },
+
+    #[error("mismatched closing delimiter: `{delimiter}`")]
+    MismatchedClosingDelimiter {
+        delimiter: String,
+        #[label("mismatched closing delimiter")]
+        unmatched: SourceSpan,
+        #[label("unclosed delimiter")]
+        unclosed: SourceSpan,
+    },
+
+    #[error("this file contains an unclosed delimiter")]
+    UnclosedDelimiter {
+        #[label(collection, "unclosed delimiter")]
+        unclosed_delimiter_spans: Vec<SourceSpan>,
+        #[label("you may want to close here")]
+        suggest_close_pos_span: Option<SourceSpan>,
+    },
+
+    #[error("unexpected closing delimiter: `{delimiter}`")]
+    UnexpectedClosingDelimiter {
+        delimiter: String,
+        #[label("unexpected closing delimiter")]
+        span: SourceSpan,
+    },
+
+    #[error("")]
+    DUMMY,
 }
 
 impl ErrorHandler {
-    pub fn create_expected_symbol_err(&self, span: Span, symbol: String) -> Report {
-        self.create_err(ExpectedSymbol { span, symbol })
+    //pub fn build_expected_identifier_error(&self, found: &Token, span: Span) -> PError {
+    //    let span = span.to_source_span();
+    //
+    //    let help_msg = match found {
+    //        TokenType::Ident => {
+    //            match found.kind {
+    //                TokenKind::Literal(lit) {
+    //                    match lit.kind {
+    //                        LitKind::Int
+    //                    }
+    //                }
+    //            }
+    //        }
+    //        TokenType::Keyword(kw) => Some(format!(
+    //            "escape `{0}` to use it as an identifier (e.g., `r#{0}`)",
+    //            kw.as_str()
+    //        )),
+    //        TokenType::Operator => None,
+    //        TokenType::Token(_) | TokenType::Type | TokenType::Const => {
+    //            unreachable!("build_expected_identifier_error should not be called with Token, Type, or Const")
+    //        }
+    //    };
+    //
+    //    PError::ExpectedIdentifier {
+    //        message: format!("expected identifier, found '{}'", found),
+    //        bad_token_span: span,
+    //    }
+    //}
+    //
+
+    // Only for temporary use
+    pub fn build_dummy_error(&self) -> PError {
+        PError::DUMMY
+    }
+
+    pub fn build_unexpected_closing_delimiter(&self, delimiter: Delimiter, span: Span) -> PError {
+        let delimiter = match delimiter {
+            Delimiter::Brace => "}".to_string(),
+            Delimiter::Bracket => "]".to_string(),
+            Delimiter::Parenthesis => ")".to_string(),
+        };
+
+        PError::UnexpectedClosingDelimiter {
+            delimiter,
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_unclosed_delimiter(
+        &self,
+        unclosed_delimiter_spans: Vec<Span>,
+        suggest_close_pos_span: Option<Span>,
+    ) -> PError {
+        PError::UnclosedDelimiter {
+            unclosed_delimiter_spans: unclosed_delimiter_spans
+                .iter()
+                .map(|s| s.to_source_span())
+                .collect(),
+            suggest_close_pos_span: suggest_close_pos_span.map(|s| s.to_source_span()),
+        }
+    }
+
+    pub fn build_mismatched_closing_delimiter(
+        &self,
+        delimiter: Delimiter,
+        unmatched: Span,
+        unclosed: Span,
+    ) -> PError {
+        let delimiter = match delimiter {
+            Delimiter::Brace => "}".to_string(),
+            Delimiter::Bracket => "]".to_string(),
+            Delimiter::Parenthesis => ")".to_string(),
+        };
+        PError::MismatchedClosingDelimiter {
+            delimiter,
+            unmatched: unmatched.to_source_span(),
+            unclosed: unclosed.to_source_span(),
+        }
+    }
+
+    pub fn build_expected_token_error(
+        &self,
+        expected: Vec<TokenType>,
+        found: TokenType,
+        span: Span,
+    ) -> PError {
+        let span = span.to_source_span();
+
+        let expected_str = expected
+            .iter()
+            .map(|t| format!("{}", t))
+            .collect::<Vec<String>>()
+            .join(", ");
+        let found_str = format!("{}", found);
+
+        if expected.len() == 1 {
+            PError::ExpectedToken {
+                message: format!("expected {}, found {}", expected_str, found_str),
+                span,
+            }
+        } else {
+            PError::ExpectedToken {
+                message: format!("expected one of {}, found {}", expected_str, found_str),
+                span,
+            }
+        }
     }
 }

@@ -13,7 +13,7 @@ use variable::Variable;
 use crate::{
     ast::{self, Stmt},
     libs::{math::MathLib, std::StdLib, Library},
-    parse::{lexer, parser},
+    parse::parser,
     session::Session,
 };
 
@@ -211,18 +211,17 @@ impl Environment {
         let file = Arc::new(NamedSource::new(name, Arc::clone(&contents)));
         let session = Session::new(file);
 
-        let tokens = lexer::lex_token_tree(&contents, &session)
-            .map_err(|e| format!("Failed to lex library file '{}': {}", lib_path.display(), e))?;
-        let ast = parser::parse(tokens, &session).map_err(|e| {
-            format!(
-                "Failed to parse library file '{}': {}",
+        let ast = parser::parse(&contents, &session);
+        if ast.is_none() {
+            return Err(format!(
+                "Failed to parse library file '{}'",
                 lib_path.display(),
-                e
-            )
-        })?;
+            ));
+        }
 
         let mut lib = Box::new(ExternalLibrary::new());
 
+        let ast = ast.unwrap();
         for stmt in ast.stmts {
             match stmt.kind {
                 ast::StmtKind::FuncDecl(fun) => {

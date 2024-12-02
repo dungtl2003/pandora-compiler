@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "unbox"      # The custom command name
+name = "unbox"        # The custom command name
 path = "src/main.rs"  # Path to the binary source file
 
 [dependencies]
@@ -15,5 +15,3 @@ strum_macros = "0.26"
 symbol = "0.1.9"
 thiserror = "1.0.67"
 unicode-xid = "0.2.6"
-# llvm-sys = { package = "llvm-sys", version = "180", features = ["prefer-static"] }
-# inkwell = { version = "0.5.0", features = ["llvm18-0"] }

@@ -9,7 +9,7 @@ use crate::session::{BytePos, Session};
 use crate::span_encoding::Span;
 use crate::symbol::Symbol;
 
-use super::parser::PResult;
+use super::PResult;
 
 pub fn lex_token_tree<'sess, 'src>(
     src: &'src str,
@@ -18,6 +18,7 @@ pub fn lex_token_tree<'sess, 'src>(
     let string_reader = StringReader::new(src, session);
 
     let (tokenstream, res) = tokentrees::TokenTreesReader::lex_all_token_trees(string_reader);
+
     if res.is_err() {
         return Err(res.unwrap_err());
     }
@@ -25,7 +26,7 @@ pub fn lex_token_tree<'sess, 'src>(
     Ok(tokenstream)
 }
 
-pub fn tokenize<'sess, 'src>(src: &'src str, session: &'sess Session) -> Vec<Token> {
+fn tokenize<'sess, 'src>(src: &'src str, session: &'sess Session) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
     let mut string_reader = StringReader::new(src, session);
 
@@ -68,8 +69,6 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
             // This also turn strings into interned symbols.
             let kind = match token.kind {
                 lexer::TokenKind::LineComment { doc_style } => {
-                    // We will skip doc comments for now.
-                    continue;
                     // Skip normal comment
                     let Some(doc_style) = doc_style else {
                         continue;
@@ -87,8 +86,6 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
                     if !terminated {
                         self.report_unterminated_block_comment(start_pos, doc_style);
                     }
-                    // We will skip doc comments for now.
-                    continue;
 
                     // Skip normal comment
                     let Some(doc_style) = doc_style else {

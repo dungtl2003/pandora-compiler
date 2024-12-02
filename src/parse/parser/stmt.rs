@@ -6,6 +6,7 @@ use crate::{
 };
 
 impl Parser<'_> {
+    // Remember to update ast::token::can_begin_expr as well when adding new statements.
     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
         if self.token.is_keyword(Keyword::Set) {
             self.parse_stmt_var_decl()
@@ -32,13 +33,15 @@ impl Parser<'_> {
         } else if self.token.can_begin_expr() {
             self.parse_stmt_expr()
         } else {
-            return Err(format!("Expected statement, found {}", self.token));
+            return Err(self.build_dummy_error());
+            //return Err(format!("Expected statement, found {}", self.token));
         }
     }
 
     pub fn parse_stmt_continue(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::Skip) {
-            return Err("Expected 'skip'".into());
+            return Err(self.build_dummy_error());
+            //return Err("Expected 'skip'".into());
         }
 
         let span = self.token.span;
@@ -56,7 +59,8 @@ impl Parser<'_> {
 
     pub fn parse_stmt_break(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::Br) {
-            return Err("Expected 'exit'".into());
+            return Err(self.build_dummy_error());
+            //return Err("Expected 'exit'".into());
         }
 
         let span = self.token.span;
@@ -74,7 +78,8 @@ impl Parser<'_> {
 
     pub fn parse_stmt_import(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::Add) {
-            return Err(format!("Expected '{}'", Keyword::Add.as_ref()).into());
+            return Err(self.build_dummy_error());
+            //return Err(format!("Expected '{}'", Keyword::Add.as_ref()).into());
         }
 
         let start_span = self.token.span;
@@ -93,7 +98,8 @@ impl Parser<'_> {
 
     pub fn parse_stmt_func_decl(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::Fun) {
-            return Err("Expected function declaration".into());
+            return Err(self.build_dummy_error());
+            //return Err("Expected function declaration".into());
         }
 
         let start_span = self.token.span;
@@ -122,7 +128,8 @@ impl Parser<'_> {
             self.advance(); // Eat token after ';'
             StmtKind::Return(None)
         } else {
-            return Err("Expected an expr or ';'".into());
+            return Err(self.build_dummy_error());
+            //return Err("Expected an expr or ';'".into());
         };
         Ok(Box::new(Stmt {
             kind,
@@ -133,7 +140,8 @@ impl Parser<'_> {
     /// predicate_loop_statement = 'while' expression block_statement
     pub fn parse_stmt_while(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::During) {
-            return Err("Expected 'while'".into());
+            return Err(self.build_dummy_error());
+            //return Err("Expected 'while'".into());
         }
 
         let start_span = self.token.span;
@@ -152,20 +160,23 @@ impl Parser<'_> {
     /// iterator_loop_statement = 'for' identifier 'in' expression block_statement
     pub fn parse_stmt_for(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::For) {
-            return Err("Expected 'for'".into());
+            return Err(self.build_dummy_error());
+            //return Err("Expected 'for'".into());
         }
 
         let start_span = self.token.span;
 
         self.advance();
         if !self.token.is_ident() {
-            return Err("Expected identifier".into());
+            return Err(self.build_dummy_error());
+            //return Err("Expected identifier".into());
         }
         let ident = self.token.ident().unwrap().0;
 
         self.advance();
         if !self.token.is_keyword(Keyword::In) {
-            return Err("Expected 'in'".into());
+            return Err(self.build_dummy_error());
+            //return Err("Expected 'in'".into());
         }
 
         self.advance();
@@ -182,7 +193,8 @@ impl Parser<'_> {
     /// if_statement = 'if' expression block_statement ('else' (block_statement | if_statement))?
     pub fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::When) {
-            return Err(format!("Expected 'if', found {:?}", self.token).into());
+            return Err(self.build_dummy_error());
+            //return Err(format!("Expected 'if', found {:?}", self.token).into());
         }
 
         let start_span = self.token.span;
@@ -203,7 +215,8 @@ impl Parser<'_> {
                 let else_block = self.parse_stmt_block()?;
                 Some(else_block)
             } else {
-                return Err("Expected 'if' or '{'".into());
+                return Err(self.build_dummy_error());
+                //return Err("Expected 'if' or '{'".into());
             }
         } else {
             None
@@ -258,7 +271,8 @@ impl Parser<'_> {
     /// variable_declaration = 'var' 'mut'? identifier: type_specifier ('=' expression)? ';'
     pub fn parse_stmt_var_decl(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::Set) {
-            return Err("Expected 'var'".into());
+            return Err(self.build_dummy_error());
+            //return Err("Expected 'var'".into());
         }
 
         let start = self.token.span;
@@ -323,7 +337,8 @@ impl Parser<'_> {
         let name = self.parse_ident()?;
 
         if !self.token.is_open_delim(Delimiter::Parenthesis) {
-            return Err("Expected '('. Function signature must have a parameter list.".into());
+            return Err(self.build_dummy_error());
+            //return Err("Expected '('. Function signature must have a parameter list.".into());
         }
         self.advance(); // Eat '('
 
@@ -363,7 +378,8 @@ impl Parser<'_> {
         }
 
         if !self.token.is_close_delim(Delimiter::Parenthesis) {
-            return Err("Expected ')'. Function signature must have a closing parenthesis.".into());
+            return Err(self.build_dummy_error());
+            //return Err("Expected ')'. Function signature must have a closing parenthesis.".into());
         }
         self.advance(); // Eat ')'
 

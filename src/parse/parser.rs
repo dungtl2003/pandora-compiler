@@ -3,10 +3,11 @@ mod path;
 mod stmt;
 mod ty;
 
+use std::fmt::Display;
 use std::mem;
-use symbol::Symbol;
 
 use crate::span_encoding::Span;
+use crate::symbol::Symbol;
 use crate::{
     ast::{
         Ast, DelimSpan, Delimiter, Ident, IdentIsRaw, Spacing, Stmt, Token, TokenKind, TokenStream,
@@ -17,17 +18,40 @@ use crate::{
     span_encoding::DUMMY_SP,
 };
 
-pub fn parse(tokens: TokenStream, session: &Session) -> PResult<Ast> {
-    let mut stmts: Vec<Box<Stmt>> = Vec::new();
-    let mut parser = Parser::new(tokens, session);
+use super::errors::PError;
+use super::{lexer, PResult};
 
+pub fn parse(contents: &str, session: &Session) -> Option<Ast> {
+    let tokens = lexer::lex_token_tree(contents, session);
+    if tokens.is_err() {
+        session.error_handler.emit_err(tokens.err().unwrap());
+        return None;
+    }
+
+    let mut parser = Parser::new(tokens.unwrap(), session);
+
+    let mut errors = Vec::new();
+    let mut stmts: Vec<Box<Stmt>> = Vec::new();
     while parser.token.kind != TokenKind::Eof {
-        let stmt = parser.parse_stmt()?;
-        stmts.push(stmt);
+        let result = parser.parse_stmt();
+        match result {
+            Ok(stmt) => stmts.push(stmt),
+            Err(err) => {
+                errors.push(err);
+                parser.recover();
+            }
+        }
+    }
+
+    if !errors.is_empty() {
+        for err in errors {
+            session.error_handler.emit_err(err);
+        }
+        return None;
     }
 
     let ast = Ast::new(stmts);
-    Ok(ast)
+    Some(ast)
 }
 
 pub struct Parser<'sess> {
@@ -60,6 +84,24 @@ impl<'sess> Parser<'sess> {
         parser.advance();
 
         parser
+    }
+
+    pub fn recover(&mut self) {
+        loop {
+            if self.token.kind == TokenKind::Eof {
+                break;
+            }
+
+            if self.token.can_begin_stmt() {
+                break;
+            }
+
+            self.advance();
+        }
+    }
+
+    pub fn build_dummy_error(&self) -> PError {
+        self.session.error_handler.build_dummy_error()
     }
 
     /// Advance the parser by one token.
@@ -125,13 +167,14 @@ impl<'sess> Parser<'sess> {
 
     fn expect(&mut self, expected: TokenKind) -> PResult<()> {
         if self.token.kind == expected {
-            Ok(())
-        } else {
-            Err(format!(
-                "expected {:?}, found {:?}",
-                expected, self.token.kind
-            ))
+            return Ok(());
         }
+
+        Err(self.session.error_handler.build_expected_token_error(
+            self.expected_tokens.clone(),
+            TokenType::Token(expected),
+            self.token.span,
+        ))
     }
 
     /// Eats the expected token if it's present possibly breaking
@@ -172,29 +215,38 @@ impl<'sess> Parser<'sess> {
     /// Signals an error if `<` was not eaten.
     fn expect_lt(&mut self) -> PResult<()> {
         if self.eat_lt() {
-            Ok(())
-        } else {
-            Err(format!("expected '<', found {:?}", self.token.kind))
+            return Ok(());
         }
+
+        Err(self.session.error_handler.build_expected_token_error(
+            self.expected_tokens.clone(),
+            TokenType::Token(TokenKind::Lt),
+            self.token.span,
+        ))
     }
 
     /// Eats `>` possibly breaking tokens like `>>` in process.
     /// Signals an error if `>` was not eaten.
     fn expect_gt(&mut self) -> PResult<()> {
         if self.break_and_eat(TokenKind::Gt) {
-            Ok(())
-        } else {
-            Err(format!("expected '>', found {:?}", self.token.kind))
+            return Ok(());
         }
+
+        Err(self.session.error_handler.build_expected_token_error(
+            self.expected_tokens.clone(),
+            TokenType::Token(TokenKind::Gt),
+            self.token.span,
+        ))
     }
 
     fn parse_ident(&mut self) -> PResult<Ident> {
         let (ident, is_raw) = self.ident_or_err()?;
 
         if matches!(is_raw, IdentIsRaw::No) && kw::is_keyword(ident.name) {
-            return Err(format!(
-                "expected identifier, found keyword {:?}",
-                ident.name
+            return Err(self.session.error_handler.build_expected_token_error(
+                self.expected_tokens.clone(),
+                TokenType::Keyword(ident.name),
+                self.token.span,
             ));
         }
         self.advance();
@@ -204,7 +256,7 @@ impl<'sess> Parser<'sess> {
     fn ident_or_err(&mut self) -> PResult<(Ident, IdentIsRaw)> {
         match self.token.ident() {
             Some(ident) => Ok(ident),
-            None => Err(format!("expected identifier, found {:?}", self.token.kind)),
+            None => unimplemented!(),
         }
     }
 
@@ -222,13 +274,26 @@ impl<'sess> Parser<'sess> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-enum TokenType {
+pub enum TokenType {
     Token(TokenKind),
     Keyword(Symbol),
     Operator,
     Ident,
     Type,
     Const,
+}
+
+impl Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenType::Token(kind) => write!(f, "{}", kind),
+            TokenType::Keyword(kw) => write!(f, "{}", kw),
+            TokenType::Operator => write!(f, "operator"),
+            TokenType::Ident => write!(f, "identifier"),
+            TokenType::Type => write!(f, "type"),
+            TokenType::Const => write!(f, "constant"),
+        }
+    }
 }
 
 /// Iterator over a `TokenStream` that produces `Token`s. It's a bit odd that
@@ -287,7 +352,3 @@ impl TokenCursor {
         }
     }
 }
-
-// TODO: Update later.
-pub type PError = String;
-pub type PResult<T> = Result<T, PError>;
