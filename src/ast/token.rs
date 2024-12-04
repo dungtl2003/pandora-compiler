@@ -264,6 +264,29 @@ impl Token {
         self.kind == kind
     }
 
+    pub fn can_begin_operator(&self) -> bool {
+        match self.kind {
+            BinOp(_) | AndAnd | OrOr | Not | Tilde => true,
+            _ => false,
+        }
+    }
+
+    pub fn can_begin_keyword(&self) -> bool {
+        match self.kind {
+            Ident(name, IdentIsRaw::No) => kw::is_keyword(name),
+            _ => false,
+        }
+    }
+
+    /// Returns `true` if the token can appear at the start of a const param.
+    pub fn can_begin_const_arg(&self) -> bool {
+        match self.kind {
+            OpenDelim(Delimiter::Brace) | Literal(..) | BinOp(Minus) => true,
+            Ident(name, IdentIsRaw::No) if name.is_bool_lit() => true,
+            _ => false,
+        }
+    }
+
     pub fn is_open_delim(&self, delim: Delimiter) -> bool {
         match self.kind {
             OpenDelim(d) => d == delim,

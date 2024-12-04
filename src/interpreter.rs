@@ -18,6 +18,7 @@ pub fn interpret(ast: &Ast, session: &Session) {
     let mut env = Environment::new();
     for stmt in &ast.stmts {
         if interpret_stmt(&mut env, stmt, false).is_err() {
+            println!("Error: Failed to interpret statement");
             exit(1);
         }
     }

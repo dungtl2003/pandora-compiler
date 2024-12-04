@@ -1,9 +1,9 @@
 use crate::{
-    ast::{Delimiter, LitKind, Token, TokenKind},
+    ast::{Delimiter, LitKind, TokenKind},
     span_encoding::Span,
     ErrorHandler,
 };
-use miette::{Diagnostic, Report, SourceSpan};
+use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
 use super::parser::TokenType;
@@ -11,22 +11,29 @@ use super::parser::TokenType;
 #[derive(Error, Debug, Diagnostic)]
 pub enum PError {
     #[error("{}", message)]
-    #[diagnostic(code(parser::expected_token))]
     ExpectedToken {
         message: String,
-        #[label("{}", message)]
+        span_msg: String,
+        #[label("{}", span_msg)]
+        span: SourceSpan,
+    },
+
+    #[error("Expected statement, found {}", token)]
+    ExpectedStatement {
+        token: TokenType,
+        #[label("expected statement")]
         span: SourceSpan,
     },
 
     #[error("{}", message)]
     ExpectedIdentifier {
         message: String,
+
+        #[label("expected identifier")]
         bad_token_span: SourceSpan,
+
         #[help]
         help_msg: Option<String>,
-
-        #[label]
-        help_span: Option<SourceSpan>,
     },
 
     #[error("mismatched closing delimiter: `{delimiter}`")]
@@ -58,35 +65,46 @@ pub enum PError {
 }
 
 impl ErrorHandler {
-    //pub fn build_expected_identifier_error(&self, found: &Token, span: Span) -> PError {
-    //    let span = span.to_source_span();
-    //
-    //    let help_msg = match found {
-    //        TokenType::Ident => {
-    //            match found.kind {
-    //                TokenKind::Literal(lit) {
-    //                    match lit.kind {
-    //                        LitKind::Int
-    //                    }
-    //                }
-    //            }
-    //        }
-    //        TokenType::Keyword(kw) => Some(format!(
-    //            "escape `{0}` to use it as an identifier (e.g., `r#{0}`)",
-    //            kw.as_str()
-    //        )),
-    //        TokenType::Operator => None,
-    //        TokenType::Token(_) | TokenType::Type | TokenType::Const => {
-    //            unreachable!("build_expected_identifier_error should not be called with Token, Type, or Const")
-    //        }
-    //    };
-    //
-    //    PError::ExpectedIdentifier {
-    //        message: format!("expected identifier, found '{}'", found),
-    //        bad_token_span: span,
-    //    }
-    //}
-    //
+    pub fn build_expected_statement_error(&self, found: TokenType, span: Span) -> PError {
+        let span = span.to_source_span();
+
+        PError::ExpectedStatement { token: found, span }
+    }
+
+    pub fn build_expected_identifier_error(&self, found: &TokenType, span: Span) -> PError {
+        let span = span.to_source_span();
+
+        let help_msg = match found {
+            TokenType::Token(tok) => match tok {
+                TokenKind::Literal(lit) => match lit.kind {
+                    LitKind::Int | LitKind::Float => {
+                        Some("use a valid identifier instead of a number".to_string())
+                    }
+                    LitKind::Bool => None,
+                    LitKind::Str | LitKind::Char | LitKind::RawStr(_) | LitKind::Err => {
+                        unreachable!("build_expected_identifier_error should not be called with LitKind::Str, LitKind::Char, LitKind::RawStr or LitKind::Err")
+                    }
+                },
+                _ => None,
+            },
+            TokenType::Keyword(kw) => Some(format!(
+                "escape `{0}` to use it as an identifier (e.g., `r#{0}`)",
+                kw.as_str()
+            )),
+            TokenType::Operator => None,
+            TokenType::Type | TokenType::Const | TokenType::Ident => {
+                unreachable!(
+                    "build_expected_identifier_error should not be called with Type, Ident or Const"
+                )
+            }
+        };
+
+        PError::ExpectedIdentifier {
+            message: format!("expected identifier, found {}", found),
+            help_msg,
+            bad_token_span: span,
+        }
+    }
 
     // Only for temporary use
     pub fn build_dummy_error(&self) -> PError {
@@ -156,11 +174,13 @@ impl ErrorHandler {
         if expected.len() == 1 {
             PError::ExpectedToken {
                 message: format!("expected {}, found {}", expected_str, found_str),
+                span_msg: format!("expected {}", expected_str),
                 span,
             }
         } else {
             PError::ExpectedToken {
                 message: format!("expected one of {}, found {}", expected_str, found_str),
+                span_msg: format!("expected one of {} possible tokens", expected.len()),
                 span,
             }
         }

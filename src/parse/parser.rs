@@ -1,5 +1,4 @@
 mod expr;
-mod path;
 mod stmt;
 mod ty;
 
@@ -18,7 +17,6 @@ use crate::{
     span_encoding::DUMMY_SP,
 };
 
-use super::errors::PError;
 use super::{lexer, PResult};
 
 pub fn parse(contents: &str, session: &Session) -> Option<Ast> {
@@ -92,7 +90,7 @@ impl<'sess> Parser<'sess> {
                 break;
             }
 
-            if self.token.can_begin_stmt() {
+            if self.is_synchronized() {
                 break;
             }
 
@@ -100,8 +98,24 @@ impl<'sess> Parser<'sess> {
         }
     }
 
-    pub fn build_dummy_error(&self) -> PError {
-        self.session.error_handler.build_dummy_error()
+    fn is_synchronized(&self) -> bool {
+        if self.token.is_keyword(Keyword::Set)
+            || self.token.is_keyword(Keyword::When)
+            || self.token.is_keyword(Keyword::During)
+            || self.token.is_keyword(Keyword::For)
+            || self.token.is_keyword(Keyword::Yeet)
+            || self.token.is_keyword(Keyword::Fun)
+            || self.token.is_keyword(Keyword::Add)
+            || self.token.is_keyword(Keyword::Br)
+            || self.token.is_keyword(Keyword::Skip)
+        {
+            return true;
+        }
+
+        match self.token.kind {
+            TokenKind::Semicolon => true,
+            _ => false,
+        }
     }
 
     /// Advance the parser by one token.
@@ -171,8 +185,8 @@ impl<'sess> Parser<'sess> {
         }
 
         Err(self.session.error_handler.build_expected_token_error(
-            self.expected_tokens.clone(),
-            TokenType::Token(expected),
+            [TokenType::Token(expected)].to_vec(),
+            TokenType::Token(self.token.kind),
             self.token.span,
         ))
     }
@@ -243,12 +257,12 @@ impl<'sess> Parser<'sess> {
         let (ident, is_raw) = self.ident_or_err()?;
 
         if matches!(is_raw, IdentIsRaw::No) && kw::is_keyword(ident.name) {
-            return Err(self.session.error_handler.build_expected_token_error(
-                self.expected_tokens.clone(),
-                TokenType::Keyword(ident.name),
+            return Err(self.session.error_handler.build_expected_identifier_error(
+                &TokenType::Keyword(ident.name),
                 self.token.span,
             ));
         }
+
         self.advance();
         Ok(ident)
     }
@@ -256,7 +270,17 @@ impl<'sess> Parser<'sess> {
     fn ident_or_err(&mut self) -> PResult<(Ident, IdentIsRaw)> {
         match self.token.ident() {
             Some(ident) => Ok(ident),
-            None => unimplemented!(),
+            None => {
+                let tok_type = if self.token.can_begin_operator() {
+                    TokenType::Operator
+                } else {
+                    TokenType::Token(self.token.kind)
+                };
+                Err(self
+                    .session
+                    .error_handler
+                    .build_expected_identifier_error(&tok_type, self.token.span))
+            }
         }
     }
 
@@ -286,8 +310,8 @@ pub enum TokenType {
 impl Display for TokenType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TokenType::Token(kind) => write!(f, "{}", kind),
-            TokenType::Keyword(kw) => write!(f, "{}", kw),
+            TokenType::Token(kind) => write!(f, "`{}`", kind),
+            TokenType::Keyword(kw) => write!(f, "`{}`", kw),
             TokenType::Operator => write!(f, "operator"),
             TokenType::Ident => write!(f, "identifier"),
             TokenType::Type => write!(f, "type"),

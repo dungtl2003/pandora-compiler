@@ -24,6 +24,10 @@ pub enum Keyword {
     Yeet,
 }
 
+pub fn to_symbol(keyword: Keyword) -> Symbol {
+    Symbol::from(keyword.as_ref())
+}
+
 pub fn is_keyword(symbol: Symbol) -> bool {
     Keyword::from_str(symbol.as_str()).is_ok()
 }
