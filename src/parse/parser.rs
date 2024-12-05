@@ -188,6 +188,7 @@ impl<'sess> Parser<'sess> {
             [TokenType::Token(expected)].to_vec(),
             TokenType::Token(self.token.kind),
             self.token.span,
+            self.prev_token.span,
         ))
     }
 
@@ -236,6 +237,7 @@ impl<'sess> Parser<'sess> {
             self.expected_tokens.clone(),
             TokenType::Token(TokenKind::Lt),
             self.token.span,
+            self.prev_token.span,
         ))
     }
 
@@ -250,6 +252,7 @@ impl<'sess> Parser<'sess> {
             self.expected_tokens.clone(),
             TokenType::Token(TokenKind::Gt),
             self.token.span,
+            self.prev_token.span,
         ))
     }
 

@@ -161,8 +161,17 @@ impl ErrorHandler {
         expected: Vec<TokenType>,
         found: TokenType,
         span: Span,
+        prev_span: Span,
     ) -> PError {
-        let span = span.to_source_span();
+        // If the found token is an EOF token, we want to display the error at the end of the file
+        let span = match found {
+            TokenType::Token(tok) => match tok {
+                TokenKind::Eof => Span::new(prev_span.end() - 1, prev_span.end()),
+                _ => span,
+            },
+            _ => span,
+        }
+        .to_source_span();
 
         let expected_str = expected
             .iter()

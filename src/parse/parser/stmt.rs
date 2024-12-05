@@ -47,6 +47,7 @@ impl Parser<'_> {
                 vec![TokenType::Keyword(kw::to_symbol(Keyword::Skip))],
                 TokenType::Token(self.token.kind),
                 self.token.span,
+                self.prev_token.span,
             ));
         }
 
@@ -69,6 +70,7 @@ impl Parser<'_> {
                 vec![TokenType::Keyword(kw::to_symbol(Keyword::Br))],
                 TokenType::Token(self.token.kind),
                 self.token.span,
+                self.prev_token.span,
             ));
         }
 
@@ -91,6 +93,7 @@ impl Parser<'_> {
                 vec![TokenType::Keyword(kw::to_symbol(Keyword::Add))],
                 TokenType::Token(self.token.kind),
                 self.token.span,
+                self.prev_token.span,
             ));
         }
 
@@ -114,6 +117,7 @@ impl Parser<'_> {
                 vec![TokenType::Keyword(kw::to_symbol(Keyword::Fun))],
                 TokenType::Token(self.token.kind),
                 self.token.span,
+                self.prev_token.span,
             ));
         }
         let start_span = self.token.span;
@@ -136,6 +140,7 @@ impl Parser<'_> {
                 vec![TokenType::Keyword(kw::to_symbol(Keyword::Yeet))],
                 TokenType::Token(self.token.kind),
                 self.token.span,
+                self.prev_token.span,
             ));
         }
 
@@ -165,6 +170,7 @@ impl Parser<'_> {
                 vec![TokenType::Keyword(kw::to_symbol(Keyword::During))],
                 TokenType::Token(self.token.kind),
                 self.token.span,
+                self.prev_token.span,
             ));
         }
 
@@ -188,6 +194,7 @@ impl Parser<'_> {
                 vec![TokenType::Keyword(kw::to_symbol(Keyword::For))],
                 TokenType::Token(self.token.kind),
                 self.token.span,
+                self.prev_token.span,
             ));
         }
 
@@ -201,6 +208,7 @@ impl Parser<'_> {
                 vec![TokenType::Keyword(kw::to_symbol(Keyword::In))],
                 TokenType::Token(self.token.kind),
                 self.token.span,
+                self.prev_token.span,
             ));
         }
 
@@ -222,6 +230,7 @@ impl Parser<'_> {
                 vec![TokenType::Keyword(kw::to_symbol(Keyword::When))],
                 TokenType::Token(self.token.kind),
                 self.token.span,
+                self.prev_token.span,
             ));
         }
 
@@ -249,6 +258,7 @@ impl Parser<'_> {
                     ],
                     TokenType::Token(self.token.kind),
                     self.token.span,
+                    self.prev_token.span,
                 ));
             }
         } else {
@@ -308,6 +318,7 @@ impl Parser<'_> {
                 vec![TokenType::Keyword(kw::to_symbol(Keyword::Set))],
                 TokenType::Token(self.token.kind),
                 self.token.span,
+                self.prev_token.span,
             ));
         }
 

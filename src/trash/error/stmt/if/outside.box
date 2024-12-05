@@ -1,9 +1,22 @@
 when fdsa {
     print("");
 
-    br;
+    br
+    
+
+    
+
+
+
+
+
+
+
+
+
+    ;
 } alt when fs {
     yeet 0;
 } alt when 1 {
     skip;
-} 
+} alt 

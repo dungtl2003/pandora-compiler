@@ -249,6 +249,7 @@ impl Parser<'_> {
                 ],
                 TokenType::Token(self.token.kind.clone()),
                 self.token.span,
+                self.prev_token.span,
             )),
         }
     }
@@ -277,6 +278,7 @@ impl Parser<'_> {
                         ],
                         TokenType::Token(self.token.kind),
                         self.token.span,
+                        self.prev_token.span,
                     ));
                 }
                 self.advance(); // eat semicolon
@@ -349,6 +351,7 @@ impl Parser<'_> {
                         vec![TokenType::Const],
                         TokenType::Ident,
                         self.token.span,
+                        self.prev_token.span,
                     ))
                 }
             }
@@ -357,6 +360,7 @@ impl Parser<'_> {
                 vec![TokenType::Const],
                 TokenType::Token(self.token.kind.clone()),
                 self.token.span,
+                self.prev_token.span,
             )),
         }
     }
