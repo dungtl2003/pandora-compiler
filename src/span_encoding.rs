@@ -27,6 +27,13 @@ impl Span {
         }
     }
 
+    pub fn after(span: Span) -> Self {
+        Span {
+            offset: span.end(),
+            length: 1,
+        }
+    }
+
     pub fn to_source_span(&self) -> SourceSpan {
         (self.offset as usize, self.length).into()
     }

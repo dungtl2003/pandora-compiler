@@ -1,18 +1,18 @@
 use std::collections::HashMap;
 
-use crate::interpreter::eval::Value;
+use crate::interpreter::eval::{Value, ValueKind};
 
 use super::Library;
 
 pub struct MathLib {
-    pub functions: HashMap<String, Box<dyn Fn(Vec<(Value, bool)>) -> Result<Value, String>>>,
+    pub functions: HashMap<String, Box<dyn Fn(Vec<(Value, bool)>) -> Result<ValueKind, String>>>,
 }
 
 impl Library for MathLib {
     fn get_function(
         &self,
         name: &str,
-    ) -> Option<&Box<dyn Fn(Vec<(Value, bool)>) -> Result<Value, String>>> {
+    ) -> Option<&Box<dyn Fn(Vec<(Value, bool)>) -> Result<ValueKind, String>>> {
         self.functions.get(name)
     }
 }
@@ -53,8 +53,8 @@ impl MathLib {
                 if args.len() != 1 {
                     return Err("ln() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Float(f) => Ok(Value::Float(f.ln())),
+                match &args[0].0.kind {
+                    ValueKind::Float(f) => Ok(ValueKind::Float(f.ln())),
                     _ => Err("ln() takes a float".to_string()),
                 }
             }),
@@ -70,8 +70,10 @@ impl MathLib {
                     return Err("log() takes exactly 2 argument".to_string());
                 }
 
-                match (&args[0].0, &args[1].0) {
-                    (Value::Float(i), Value::Float(j)) => Ok(Value::Float(i.log(j.clone()))),
+                match (&args[0].0.kind, &args[1].0.kind) {
+                    (ValueKind::Float(i), ValueKind::Float(j)) => {
+                        Ok(ValueKind::Float(i.log(j.clone())))
+                    }
                     _ => Err("log() takes two floats".to_string()),
                 }
             }),
@@ -86,8 +88,8 @@ impl MathLib {
                 if args.len() != 1 {
                     return Err("tan() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Float(f) => Ok(Value::Float(f.to_radians().tan())),
+                match &args[0].0.kind {
+                    ValueKind::Float(f) => Ok(ValueKind::Float(f.to_radians().tan())),
                     _ => Err("tan() takes a float".to_string()),
                 }
             }),
@@ -102,8 +104,8 @@ impl MathLib {
                 if args.len() != 1 {
                     return Err("cos() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Float(f) => Ok(Value::Float(f.to_radians().cos())),
+                match &args[0].0.kind {
+                    ValueKind::Float(f) => Ok(ValueKind::Float(f.to_radians().cos())),
                     _ => Err("cos() takes a float".to_string()),
                 }
             }),
@@ -118,8 +120,8 @@ impl MathLib {
                 if args.len() != 1 {
                     return Err("sin() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Float(f) => Ok(Value::Float(f.to_radians().sin())),
+                match &args[0].0.kind {
+                    ValueKind::Float(f) => Ok(ValueKind::Float(f.to_radians().sin())),
                     _ => Err("sin() takes a float".to_string()),
                 }
             }),
@@ -134,8 +136,8 @@ impl MathLib {
                 if args.len() != 1 {
                     return Err("floor() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Float(f) => Ok(Value::Int(f.floor() as i64)),
+                match &args[0].0.kind {
+                    ValueKind::Float(f) => Ok(ValueKind::Int(f.floor() as i64)),
                     _ => Err("floor() takes a float".to_string()),
                 }
             }),
@@ -150,8 +152,8 @@ impl MathLib {
                 if args.len() != 1 {
                     return Err("ceil() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Float(f) => Ok(Value::Int(f.ceil() as i64)),
+                match &args[0].0.kind {
+                    ValueKind::Float(f) => Ok(ValueKind::Int(f.ceil() as i64)),
                     _ => Err("ceil() takes a float".to_string()),
                 }
             }),
@@ -178,8 +180,10 @@ impl MathLib {
                     a
                 }
 
-                match (&args[0].0, &args[1].0) {
-                    (Value::Int(i), Value::Int(j)) => Ok(Value::Int(calculate_gcd(*i, *j))),
+                match (&args[0].0.kind, &args[1].0.kind) {
+                    (ValueKind::Int(i), ValueKind::Int(j)) => {
+                        Ok(ValueKind::Int(calculate_gcd(*i, *j)))
+                    }
                     _ => Err("gcd() takes two integers".to_string()),
                 }
             }),
@@ -194,8 +198,8 @@ impl MathLib {
                 if args.len() != 1 {
                     return Err("abs() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Float(f) => Ok(Value::Float(f.abs())),
+                match &args[0].0.kind {
+                    ValueKind::Float(f) => Ok(ValueKind::Float(f.abs())),
                     _ => Err("abs() takes a float".to_string()),
                 }
             }),
@@ -210,8 +214,8 @@ impl MathLib {
                 if args.len() != 1 {
                     return Err("round() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Float(f) => Ok(Value::Int(f.round() as i64)),
+                match &args[0].0.kind {
+                    ValueKind::Float(f) => Ok(ValueKind::Int(f.round() as i64)),
                     _ => Err("round() takes a float".to_string()),
                 }
             }),
@@ -226,8 +230,8 @@ impl MathLib {
                 if args.len() != 1 {
                     return Err("sqrt() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Float(f) => Ok(Value::Float(f.sqrt())),
+                match &args[0].0.kind {
+                    ValueKind::Float(f) => Ok(ValueKind::Float(f.sqrt())),
                     _ => Err("sqrt() takes a float".to_string()),
                 }
             }),
@@ -242,8 +246,10 @@ impl MathLib {
                 if args.len() != 2 {
                     return Err("pow() takes exactly 2 arguments".to_string());
                 }
-                match (&args[0].0, &args[1].0) {
-                    (Value::Float(i), Value::Float(j)) => Ok(Value::Float((i.powf(*j)) as f64)),
+                match (&args[0].0.kind, &args[1].0.kind) {
+                    (ValueKind::Float(i), ValueKind::Float(j)) => {
+                        Ok(ValueKind::Float((i.powf(*j)) as f64))
+                    }
                     _ => Err("pow() takes two floats".to_string()),
                 }
             }),

@@ -1,19 +1,19 @@
 use std::collections::HashMap;
 
-use crate::interpreter::eval::Value;
+use crate::interpreter::eval::{Value, ValueKind};
 
 use super::Library;
 use ::std::io::{self, Write};
 
 pub struct StdLib {
-    pub functions: HashMap<String, Box<dyn Fn(Vec<(Value, bool)>) -> Result<Value, String>>>,
+    pub functions: HashMap<String, Box<dyn Fn(Vec<(Value, bool)>) -> Result<ValueKind, String>>>,
 }
 
 impl Library for StdLib {
     fn get_function(
         &self,
         name: &str,
-    ) -> Option<&Box<dyn Fn(Vec<(Value, bool)>) -> Result<Value, String>>> {
+    ) -> Option<&Box<dyn Fn(Vec<(Value, bool)>) -> Result<ValueKind, String>>> {
         self.functions.get(name)
     }
 }
@@ -50,15 +50,15 @@ impl StdLib {
                 if args.len() != 1 {
                     return Err("delay() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Int(ms) => {
+                match &args[0].0.kind {
+                    ValueKind::Int(ms) => {
                         std::thread::sleep(std::time::Duration::from_millis(*ms as u64));
                     }
                     _ => {
                         return Err("delay() takes an integer".to_string());
                     }
                 }
-                Ok(Value::Unit)
+                Ok(ValueKind::Unit)
             }),
         );
     }
@@ -71,8 +71,8 @@ impl StdLib {
                 if args.len() != 1 {
                     return Err("strlen() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Str(s) => Ok(Value::Int(s.len() as i64)),
+                match &args[0].0.kind {
+                    ValueKind::Str(s) => Ok(ValueKind::Int(s.len() as i64)),
                     _ => Err("strlen() takes a string".to_string()),
                 }
             }),
@@ -87,8 +87,8 @@ impl StdLib {
                 if args.len() != 1 {
                     return Err("arrlen() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Array(arr) => Ok(Value::Int(arr.len() as i64)),
+                match &args[0].0.kind {
+                    ValueKind::Array(arr) => Ok(ValueKind::Int(arr.len() as i64)),
                     _ => Err("arrlen() takes an array".to_string()),
                 }
             }),
@@ -103,8 +103,8 @@ impl StdLib {
                 if args.len() != 1 {
                     return Err("lower() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Str(s) => Ok(Value::Str(s.to_lowercase())),
+                match &args[0].0.kind {
+                    ValueKind::Str(s) => Ok(ValueKind::Str(s.to_lowercase())),
                     _ => Err("lower() takes a string".to_string()),
                 }
             }),
@@ -119,8 +119,8 @@ impl StdLib {
                 if args.len() != 1 {
                     return Err("upper() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Str(s) => Ok(Value::Str(s.to_uppercase())),
+                match &args[0].0.kind {
+                    ValueKind::Str(s) => Ok(ValueKind::Str(s.to_uppercase())),
                     _ => Err("upper() takes a string".to_string()),
                 }
             }),
@@ -139,7 +139,7 @@ impl StdLib {
                 std::io::stdin()
                     .read_line(&mut input)
                     .expect("Failed to read line");
-                Ok(Value::Str(input.trim().to_string()))
+                Ok(ValueKind::Str(input.trim().to_string()))
             }),
         );
     }
@@ -152,15 +152,15 @@ impl StdLib {
                 if args.len() != 1 {
                     return Err("println() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Str(s) => {
+                match &args[0].0.kind {
+                    ValueKind::Str(s) => {
                         println!("{}", s);
                     }
                     _ => {
                         return Err("println() takes a string".to_string());
                     }
                 }
-                Ok(Value::Unit)
+                Ok(ValueKind::Unit)
             }),
         );
     }
@@ -173,8 +173,8 @@ impl StdLib {
                 if args.len() != 1 {
                     return Err("print() takes exactly 1 argument".to_string());
                 }
-                match &args[0].0 {
-                    Value::Str(s) => {
+                match &args[0].0.kind {
+                    ValueKind::Str(s) => {
                         print!("{}", s);
                     }
                     _ => {
@@ -182,7 +182,7 @@ impl StdLib {
                     }
                 }
                 io::stdout().flush().map_err(|e| e.to_string())?;
-                Ok(Value::Unit)
+                Ok(ValueKind::Unit)
             }),
         );
     }

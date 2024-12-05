@@ -67,7 +67,7 @@ fn main() {
     let ast = ast.unwrap();
 
     // interpret
-    interpreter::interpret(&ast, &session);
+    interpreter::interpret(&ast, &session, is_verbose);
 }
 
 fn help() {

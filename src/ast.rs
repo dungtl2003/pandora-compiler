@@ -226,7 +226,7 @@ impl Display for UnOp {
 pub type BinOp = Spanned<BinOpKind>;
 
 impl BinOp {
-    pub fn to_rust_op_str(&self) -> String {
+    pub fn to_string(&self) -> String {
         (match self.node {
             BinOpKind::Add => "+",
             BinOpKind::Sub => "-",

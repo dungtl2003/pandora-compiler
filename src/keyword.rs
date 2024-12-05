@@ -59,3 +59,7 @@ pub fn is_import_keyword(symbol: Symbol) -> Option<Keyword> {
 pub fn from_str(s: &str) -> Result<Keyword, strum::ParseError> {
     Keyword::from_str(s)
 }
+
+pub fn to_string(keyword: Keyword) -> String {
+    keyword.as_ref().to_string()
+}
