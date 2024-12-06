@@ -393,49 +393,29 @@ pub fn interpret_stmt_if(
         }
     }
 
-    let mut errors: Vec<IError> = vec![];
-    let then_result = interpret_stmt(env, then_block, in_loop, is_verbose);
-    let else_result = if else_block.is_some() {
-        interpret_stmt(env, &else_block.clone().unwrap(), in_loop, is_verbose)
-    } else {
-        Ok(EvalResult::StmtResult(None))
-    };
-
     if cond_result.is_err() {
-        errors.append(&mut cond_result.clone().unwrap_err());
-    } else {
-        let cond = cond_result.clone().unwrap();
-        match cond.kind {
-            ValueKind::Bool(_) => {}
-            _ => errors.push(IError::MismatchedType {
+        return Err(cond_result.unwrap_err());
+    }
+
+    let cond = cond_result.clone().unwrap();
+    let is_true = match cond.kind {
+        ValueKind::Bool(bool) => bool,
+        _ => {
+            return Err(vec![IError::MismatchedType {
                 expected: TyKind::Bool.to_string(),
                 found: cond.to_ty_kind().to_string(),
                 span: cond.span,
-            }),
+            }])
         }
-    }
-
-    if then_result.is_err() {
-        errors.append(&mut then_result.clone().unwrap_err());
-    }
-
-    if else_result.is_err() {
-        errors.append(&mut else_result.clone().unwrap_err());
-    }
-
-    if !errors.is_empty() {
-        return Err(errors);
-    }
-
-    let cond = match cond_result.unwrap().kind {
-        ValueKind::Bool(cond) => cond,
-        _ => unreachable!("we just handled this case"),
     };
 
-    if cond {
-        Ok(then_result.unwrap())
+    if is_true {
+        interpret_stmt(env, then_block, in_loop, is_verbose)
     } else {
-        Ok(else_result.unwrap())
+        match else_block {
+            Some(else_block) => interpret_stmt(env, else_block, in_loop, is_verbose),
+            None => Ok(EvalResult::StmtResult(None)),
+        }
     }
 }
 

@@ -31,6 +31,6 @@ impl Session {
     }
 
     pub fn can_recover(&self) -> bool {
-        self.error_type == ErrorType::Recoverable
+        self.error_type == ErrorType::Recoverable || self.error_type == ErrorType::NoError
     }
 }
