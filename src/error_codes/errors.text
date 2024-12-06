@@ -1,0 +1,8 @@
+E0001 - E0099: Các lỗi về biểu thức không phù hợp, chẳng hạn như lỗi do sử dụng kiểu dữ liệu sai hoặc không đầy đủ.
+E0100 - E0199: Các lỗi liên quan đến quyền sở hữu (ownership) và mượn (borrowing).
+E0200 - E0299: Các lỗi liên quan đến cấu trúc dữ liệu, ví dụ như tính tương thích kiểu dữ liệu hoặc sử dụng sai các macro.
+E0300 - E0399: Các lỗi liên quan đến định nghĩa hàm hoặc hàm tổng quát.
+E0400 - E0499: Các lỗi tên không hợp lệ hoặc không xác định trong phạm vi chương trình.
+E0500 - E0599: Lỗi sử dụng sai phép mượn hoặc vi phạm các nguyên tắc an toàn bộ nhớ.
+E0600 - E0699: Các lỗi phân giải kiểu dữ liệu.
+E0700 trở đi: Thường liên quan đến các tính năng tiên tiến hoặc mở rộng của Rust.
