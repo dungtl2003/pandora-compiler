@@ -292,7 +292,12 @@ impl Parser {
 
             if let Err(mut err) = result {
                 errors.append(&mut err);
-                self.recover();
+
+                // recover may eat the closing brace, so we need to check again
+                if self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
+                    self.recover();
+                }
+
                 continue;
             }
 
