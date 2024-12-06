@@ -1,0 +1,8 @@
+{
+    add "std";
+    add true;
+    add 
+    const;
+
+    add r#true;
+}

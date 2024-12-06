@@ -1,4 +1,9 @@
-use crate::{session::SourceFile, span_encoding::Span};
+use crate::{
+    ast::{Delimiter, TokenKind},
+    parse::parser::TokenType,
+    session::SourceFile,
+    span_encoding::Span,
+};
 use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
 use std::sync::Arc;
 use thiserror::Error;
@@ -587,16 +592,136 @@ impl ErrorHandler {
         }
     }
 
-    pub fn new(file: Arc<SourceFile>) -> Self {
-        Self { file }
+    pub fn build_expected_statement_error(
+        &self,
+        found: TokenType,
+        span: Span,
+    ) -> ExpectedStatement {
+        let span = span.to_source_span();
+
+        ExpectedStatement {
+            token: found.to_string(),
+            span,
+        }
     }
 
-    pub fn create_err<T>(&self, err: T) -> Report
-    where
-        T: Diagnostic + Send + Sync + 'static,
-    {
-        let report: Report = err.into();
-        report.with_source_code(Arc::clone(&self.file))
+    pub fn build_expected_identifier_error(
+        &self,
+        found: TokenType,
+        span: Span,
+    ) -> ExpectedIdentifier {
+        let span = span.to_source_span();
+
+        let help_msg = match found {
+            TokenType::Token(_) | TokenType::Operator => None,
+            TokenType::Keyword(kw) => Some(format!(
+                "escape `{0}` to use it as an identifier (e.g., `r#{0}`)",
+                kw.as_str()
+            )),
+            TokenType::Type | TokenType::Const | TokenType::Ident => {
+                unreachable!(
+                    "build_expected_identifier_error should not be called with Type, Ident or Const"
+                )
+            }
+        };
+
+        ExpectedIdentifier {
+            message: format!("expected identifier, found {}", found),
+            help_msg,
+            bad_token_span: span,
+        }
+    }
+
+    pub fn build_unexpected_closing_delimiter_error(
+        &self,
+        delimiter: Delimiter,
+        span: Span,
+    ) -> UnexpectedClosingDelimiter {
+        let delimiter = match delimiter {
+            Delimiter::Brace => "}".to_string(),
+            Delimiter::Bracket => "]".to_string(),
+            Delimiter::Parenthesis => ")".to_string(),
+        };
+
+        UnexpectedClosingDelimiter {
+            delimiter,
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_unclosed_delimiter_error(
+        &self,
+        unclosed_delimiter_spans: Vec<Span>,
+        suggest_close_pos_span: Option<Span>,
+    ) -> UnclosedDelimiter {
+        UnclosedDelimiter {
+            unclosed_delimiter_spans: unclosed_delimiter_spans
+                .iter()
+                .map(|s| s.to_source_span())
+                .collect(),
+            suggest_close_pos_span: suggest_close_pos_span.map(|s| s.to_source_span()),
+        }
+    }
+
+    pub fn build_mismatched_closing_delimiter_error(
+        &self,
+        delimiter: Delimiter,
+        unmatched_span: Span,
+        unclosed_span: Span,
+    ) -> MismatchedClosingDelimiter {
+        let delimiter = match delimiter {
+            Delimiter::Brace => "}".to_string(),
+            Delimiter::Bracket => "]".to_string(),
+            Delimiter::Parenthesis => ")".to_string(),
+        };
+        MismatchedClosingDelimiter {
+            delimiter,
+            unmatched_span: unmatched_span.to_source_span(),
+            unclosed_span: unclosed_span.to_source_span(),
+        }
+    }
+
+    pub fn build_expected_token_error(
+        &self,
+        expected: Vec<TokenType>,
+        found: TokenType,
+        span: Span,
+        prev_span: Span,
+    ) -> ExpectedToken {
+        // If the found token is an EOF token, we want to display the error at the end of the file
+        let span = match found {
+            TokenType::Token(tok) => match tok {
+                TokenKind::Eof => Span::new(prev_span.end() - 1, prev_span.end()),
+                _ => span,
+            },
+            _ => span,
+        }
+        .to_source_span();
+
+        let expected_str = expected
+            .iter()
+            .map(|t| format!("{}", t))
+            .collect::<Vec<String>>()
+            .join(", ");
+        let found_str = format!("{}", found);
+
+        if expected.len() == 1 {
+            ExpectedToken {
+                message: format!("expected {}, found {}", expected_str, found_str),
+                span_msg: format!("expected {}", expected_str),
+                span,
+            }
+        } else {
+            ExpectedToken {
+                message: format!("expected one of {}, found {}", expected_str, found_str),
+                span_msg: format!("expected one of {} possible tokens", expected.len()),
+                span,
+            }
+        }
+    }
+
+    pub fn new(file: Arc<SourceFile>) -> Self {
+        Self { file }
     }
 
     pub fn emit_err<T>(&self, err: T)
@@ -610,6 +735,63 @@ impl ErrorHandler {
     pub fn report_err(&self, report: Report) {
         println!("{:?}", report.with_source_code(Arc::clone(&self.file)));
     }
+}
+
+// ========================== PARSER ==========================
+#[derive(Error, Debug, Diagnostic)]
+#[error("{}", message)]
+pub struct ExpectedToken {
+    message: String,
+    span_msg: String,
+    #[label("{}", span_msg)]
+    span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("expected statement, found `{}`", token)]
+pub struct ExpectedStatement {
+    token: String,
+    #[label("expected statement")]
+    span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("{}", message)]
+pub struct ExpectedIdentifier {
+    message: String,
+
+    #[label("expected identifier")]
+    bad_token_span: SourceSpan,
+
+    #[help]
+    help_msg: Option<String>,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("mismatched closing delimiter: `{delimiter}`")]
+pub struct MismatchedClosingDelimiter {
+    delimiter: String,
+    #[label("mismatched closing delimiter")]
+    unmatched_span: SourceSpan,
+    #[label("unclosed delimiter")]
+    unclosed_span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("this file contains an unclosed delimiter")]
+pub struct UnclosedDelimiter {
+    #[label(collection, "unclosed delimiter")]
+    unclosed_delimiter_spans: Vec<SourceSpan>,
+    #[label("you may want to close here")]
+    suggest_close_pos_span: Option<SourceSpan>,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("unexpected closing delimiter: `{delimiter}`")]
+pub struct UnexpectedClosingDelimiter {
+    delimiter: String,
+    #[label("unexpected closing delimiter")]
+    span: SourceSpan,
 }
 
 // ========================== INTERPRET ==========================

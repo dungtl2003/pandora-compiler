@@ -1,6 +1,7 @@
 use super::{PResult, Parser, TokenType};
 use crate::ast::{Delimiter, Fun, FunParam, FunSig};
 use crate::kw;
+use crate::parse::errors::PError;
 use crate::{
     ast::{Local, LocalKind, Stmt, StmtKind, TokenKind},
     kw::Keyword,
@@ -34,21 +35,25 @@ impl Parser<'_> {
         } else if self.token.can_begin_expr() {
             self.parse_stmt_expr()
         } else {
-            return Err(self.session.error_handler.build_expected_statement_error(
-                TokenType::Token(self.token.kind),
-                self.token.span,
-            ));
+            let err = PError::ExpectedStatement {
+                token: TokenType::Token(self.token.kind),
+                span: self.token.span,
+            };
+
+            return Err(vec![err]);
         }
     }
 
-    pub fn parse_stmt_continue(&mut self) -> PResult<Box<Stmt>> {
+    fn parse_stmt_continue(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::Skip) {
-            return Err(self.session.error_handler.build_expected_token_error(
-                vec![TokenType::Keyword(kw::to_symbol(Keyword::Skip))],
-                TokenType::Token(self.token.kind),
-                self.token.span,
-                self.prev_token.span,
-            ));
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Skip))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let span = self.token.span;
@@ -64,14 +69,16 @@ impl Parser<'_> {
         }))
     }
 
-    pub fn parse_stmt_break(&mut self) -> PResult<Box<Stmt>> {
+    fn parse_stmt_break(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::Br) {
-            return Err(self.session.error_handler.build_expected_token_error(
-                vec![TokenType::Keyword(kw::to_symbol(Keyword::Br))],
-                TokenType::Token(self.token.kind),
-                self.token.span,
-                self.prev_token.span,
-            ));
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Br))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let span = self.token.span;
@@ -87,14 +94,16 @@ impl Parser<'_> {
         }))
     }
 
-    pub fn parse_stmt_import(&mut self) -> PResult<Box<Stmt>> {
+    fn parse_stmt_import(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::Add) {
-            return Err(self.session.error_handler.build_expected_token_error(
-                vec![TokenType::Keyword(kw::to_symbol(Keyword::Add))],
-                TokenType::Token(self.token.kind),
-                self.token.span,
-                self.prev_token.span,
-            ));
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Add))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let start_span = self.token.span;
@@ -111,20 +120,22 @@ impl Parser<'_> {
         Ok(stmt)
     }
 
-    pub fn parse_stmt_func_decl(&mut self) -> PResult<Box<Stmt>> {
+    fn parse_stmt_func_decl(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::Fun) {
-            return Err(self.session.error_handler.build_expected_token_error(
-                vec![TokenType::Keyword(kw::to_symbol(Keyword::Fun))],
-                TokenType::Token(self.token.kind),
-                self.token.span,
-                self.prev_token.span,
-            ));
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Fun))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
         let start_span = self.token.span;
         self.advance(); // Eat "fn"
 
         let sig = self.parse_stmt_func_sig()?;
-        let body = self.parse_stmt_block()?;
+        let body = self.parse_stmt()?;
 
         let end_span = self.prev_token.span;
         let span = start_span.to(end_span);
@@ -134,14 +145,16 @@ impl Parser<'_> {
         Ok(stmt)
     }
 
-    pub fn parse_stmt_return(&mut self) -> PResult<Box<Stmt>> {
+    fn parse_stmt_return(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::Yeet) {
-            return Err(self.session.error_handler.build_expected_token_error(
-                vec![TokenType::Keyword(kw::to_symbol(Keyword::Yeet))],
-                TokenType::Token(self.token.kind),
-                self.token.span,
-                self.prev_token.span,
-            ));
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Yeet))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let start_span = self.token.span;
@@ -164,21 +177,23 @@ impl Parser<'_> {
     }
 
     /// predicate_loop_statement = 'while' expression block_statement
-    pub fn parse_stmt_while(&mut self) -> PResult<Box<Stmt>> {
+    fn parse_stmt_while(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::During) {
-            return Err(self.session.error_handler.build_expected_token_error(
-                vec![TokenType::Keyword(kw::to_symbol(Keyword::During))],
-                TokenType::Token(self.token.kind),
-                self.token.span,
-                self.prev_token.span,
-            ));
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::During))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let start_span = self.token.span;
         self.advance();
 
         let condition = self.parse_expr()?;
-        let block = self.parse_stmt_block()?;
+        let block = self.parse_stmt()?;
         let end_span = self.prev_token.span;
         let span = start_span.to(end_span);
         let kind = StmtKind::While(condition, block);
@@ -188,14 +203,16 @@ impl Parser<'_> {
     }
 
     /// iterator_loop_statement = 'for' identifier 'in' expression block_statement
-    pub fn parse_stmt_for(&mut self) -> PResult<Box<Stmt>> {
+    fn parse_stmt_for(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::For) {
-            return Err(self.session.error_handler.build_expected_token_error(
-                vec![TokenType::Keyword(kw::to_symbol(Keyword::For))],
-                TokenType::Token(self.token.kind),
-                self.token.span,
-                self.prev_token.span,
-            ));
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::For))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let start_span = self.token.span;
@@ -204,17 +221,19 @@ impl Parser<'_> {
         let ident = self.parse_ident()?;
 
         if !self.token.is_keyword(Keyword::In) {
-            return Err(self.session.error_handler.build_expected_token_error(
-                vec![TokenType::Keyword(kw::to_symbol(Keyword::In))],
-                TokenType::Token(self.token.kind),
-                self.token.span,
-                self.prev_token.span,
-            ));
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::In))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         self.advance();
         let expr = self.parse_expr()?;
-        let block = self.parse_stmt_block()?;
+        let block = self.parse_stmt()?;
         let end_span = self.prev_token.span;
         let span = start_span.to(end_span);
         let kind = StmtKind::For(ident, expr, block);
@@ -226,12 +245,14 @@ impl Parser<'_> {
     /// if_statement = 'if' expression block_statement ('else' (block_statement | if_statement))?
     fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::When) {
-            return Err(self.session.error_handler.build_expected_token_error(
-                vec![TokenType::Keyword(kw::to_symbol(Keyword::When))],
-                TokenType::Token(self.token.kind),
-                self.token.span,
-                self.prev_token.span,
-            ));
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::When))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let start_span = self.token.span;
@@ -265,8 +286,17 @@ impl Parser<'_> {
         self.advance();
 
         let mut stmts = Vec::new();
+        let mut errors: Vec<PError> = Vec::new();
         while self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
-            let stmt = self.parse_stmt()?;
+            let result = self.parse_stmt();
+
+            if let Err(mut err) = result {
+                errors.append(&mut err);
+                self.recover();
+                continue;
+            }
+
+            let stmt = result.unwrap();
             stmts.push(stmt);
         }
 
@@ -278,7 +308,11 @@ impl Parser<'_> {
         self.expect(TokenKind::CloseDelim(Delimiter::Brace))?;
         self.advance();
 
-        Ok(stmt)
+        if errors.is_empty() {
+            Ok(stmt)
+        } else {
+            Err(errors)
+        }
     }
 
     /// expression_statement = expression ';'
@@ -297,14 +331,16 @@ impl Parser<'_> {
     }
 
     /// variable_declaration = 'var' 'mut'? identifier: type_specifier ('=' expression)? ';'
-    pub fn parse_stmt_var_decl(&mut self) -> PResult<Box<Stmt>> {
+    fn parse_stmt_var_decl(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::Set) {
-            return Err(self.session.error_handler.build_expected_token_error(
-                vec![TokenType::Keyword(kw::to_symbol(Keyword::Set))],
-                TokenType::Token(self.token.kind),
-                self.token.span,
-                self.prev_token.span,
-            ));
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Set))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let start = self.token.span;

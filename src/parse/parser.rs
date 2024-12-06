@@ -17,34 +17,39 @@ use crate::{
     span_encoding::DUMMY_SP,
 };
 
+use super::errors::PError;
 use super::{lexer, PResult};
 
 pub fn parse(contents: &str, session: &Session) -> Option<Ast> {
     let tokens = lexer::lex_token_tree(contents, session);
     if tokens.is_err() {
-        session.error_handler.emit_err(tokens.err().unwrap());
+        tokens.err().unwrap().iter().for_each(|err| {
+            let report = err.clone().to_report(&session.error_handler);
+            session.error_handler.report_err(report)
+        });
         return None;
     }
 
     let mut parser = Parser::new(tokens.unwrap(), session);
 
-    let mut errors = Vec::new();
+    let mut errors: Vec<PError> = Vec::new();
     let mut stmts: Vec<Box<Stmt>> = Vec::new();
     while parser.token.kind != TokenKind::Eof {
         let result = parser.parse_stmt();
         match result {
             Ok(stmt) => stmts.push(stmt),
-            Err(err) => {
-                errors.push(err);
+            Err(mut err) => {
+                errors.append(&mut err);
                 parser.recover();
             }
         }
     }
 
     if !errors.is_empty() {
-        for err in errors {
-            session.error_handler.emit_err(err);
-        }
+        errors.iter().for_each(|err| {
+            let report = err.clone().to_report(&session.error_handler);
+            session.error_handler.report_err(report)
+        });
         return None;
     }
 
@@ -184,12 +189,14 @@ impl<'sess> Parser<'sess> {
             return Ok(());
         }
 
-        Err(self.session.error_handler.build_expected_token_error(
-            [TokenType::Token(expected)].to_vec(),
-            TokenType::Token(self.token.kind),
-            self.token.span,
-            self.prev_token.span,
-        ))
+        let err = PError::ExpectedToken {
+            expected: [TokenType::Token(expected)].to_vec(),
+            found: TokenType::Token(self.token.kind),
+            span: self.token.span,
+            prev_span: self.prev_token.span,
+        };
+
+        Err(vec![err])
     }
 
     /// Eats the expected token if it's present possibly breaking
@@ -233,12 +240,14 @@ impl<'sess> Parser<'sess> {
             return Ok(());
         }
 
-        Err(self.session.error_handler.build_expected_token_error(
-            self.expected_tokens.clone(),
-            TokenType::Token(TokenKind::Lt),
-            self.token.span,
-            self.prev_token.span,
-        ))
+        let err = PError::ExpectedToken {
+            expected: [TokenType::Token(TokenKind::Lt)].to_vec(),
+            found: TokenType::Token(self.token.kind),
+            span: self.token.span,
+            prev_span: self.prev_token.span,
+        };
+
+        Err(vec![err])
     }
 
     /// Eats `>` possibly breaking tokens like `>>` in process.
@@ -248,22 +257,25 @@ impl<'sess> Parser<'sess> {
             return Ok(());
         }
 
-        Err(self.session.error_handler.build_expected_token_error(
-            self.expected_tokens.clone(),
-            TokenType::Token(TokenKind::Gt),
-            self.token.span,
-            self.prev_token.span,
-        ))
+        let err = PError::ExpectedToken {
+            expected: [TokenType::Token(TokenKind::Gt)].to_vec(),
+            found: TokenType::Token(self.token.kind),
+            span: self.token.span,
+            prev_span: self.prev_token.span,
+        };
+
+        Err(vec![err])
     }
 
     fn parse_ident(&mut self) -> PResult<Ident> {
         let (ident, is_raw) = self.ident_or_err()?;
 
         if matches!(is_raw, IdentIsRaw::No) && kw::is_keyword(ident.name) {
-            return Err(self.session.error_handler.build_expected_identifier_error(
-                &TokenType::Keyword(ident.name),
-                self.token.span,
-            ));
+            let err = PError::ExpectedIdentifier {
+                found: TokenType::Keyword(ident.name),
+                span: self.token.span,
+            };
+            return Err(vec![err]);
         }
 
         self.advance();
@@ -279,10 +291,13 @@ impl<'sess> Parser<'sess> {
                 } else {
                     TokenType::Token(self.token.kind)
                 };
-                Err(self
-                    .session
-                    .error_handler
-                    .build_expected_identifier_error(&tok_type, self.token.span))
+
+                let err = PError::ExpectedIdentifier {
+                    found: tok_type,
+                    span: self.token.span,
+                };
+
+                Err(vec![err])
             }
         }
     }

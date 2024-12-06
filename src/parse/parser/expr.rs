@@ -2,7 +2,10 @@ use crate::{
     ast::{
         BinOp, BinOpKind, BinOpToken, Delimiter, Expr, ExprKind, Lit, LitKind, TokenKind, Ty, UnOp,
     },
-    parse::util::parser::{AssocOp, Fixity},
+    parse::{
+        errors::PError,
+        util::parser::{AssocOp, Fixity},
+    },
     span_encoding::Span,
 };
 
@@ -240,17 +243,21 @@ impl Parser<'_> {
                 self.parse_expr_grouped(Delimiter::Parenthesis)
             }
             TokenKind::OpenDelim(Delimiter::Bracket) => self.parse_expr_array(),
-            _ => Err(self.session.error_handler.build_expected_token_error(
-                vec![
-                    TokenType::Const,
-                    TokenType::Ident,
-                    TokenType::Token(TokenKind::OpenDelim(Delimiter::Parenthesis)),
-                    TokenType::Token(TokenKind::OpenDelim(Delimiter::Bracket)),
-                ],
-                TokenType::Token(self.token.kind.clone()),
-                self.token.span,
-                self.prev_token.span,
-            )),
+            _ => {
+                let err = PError::ExpectedToken {
+                    expected: vec![
+                        TokenType::Const,
+                        TokenType::Ident,
+                        TokenType::Token(TokenKind::OpenDelim(Delimiter::Parenthesis)),
+                        TokenType::Token(TokenKind::OpenDelim(Delimiter::Bracket)),
+                    ],
+                    found: TokenType::Token(self.token.kind.clone()),
+                    span: self.token.span,
+                    prev_span: self.prev_token.span,
+                };
+
+                return Err(vec![err]);
+            }
         }
     }
 
@@ -271,15 +278,17 @@ impl Parser<'_> {
             // Check for array repeat syntax `[expr; len]`
             if self.token.is_kind(TokenKind::Semicolon) {
                 if elements.len() != 1 {
-                    return Err(self.session.error_handler.build_expected_token_error(
-                        vec![
+                    let err = PError::ExpectedToken {
+                        expected: vec![
                             TokenType::Token(TokenKind::CloseDelim(Delimiter::Bracket)),
                             TokenType::Operator,
                         ],
-                        TokenType::Token(self.token.kind),
-                        self.token.span,
-                        self.prev_token.span,
-                    ));
+                        found: TokenType::Token(TokenKind::Semicolon),
+                        span: self.token.span,
+                        prev_span: self.prev_token.span,
+                    };
+
+                    return Err(vec![err]);
                 }
                 self.advance(); // eat semicolon
                 let len = self.parse_expr()?;
@@ -347,21 +356,27 @@ impl Parser<'_> {
                     self.advance();
                     Ok(Lit { kind, symbol })
                 } else {
-                    Err(self.session.error_handler.build_expected_token_error(
-                        vec![TokenType::Const],
-                        TokenType::Ident,
-                        self.token.span,
-                        self.prev_token.span,
-                    ))
+                    let err = PError::ExpectedToken {
+                        expected: vec![TokenType::Const],
+                        found: TokenType::Ident,
+                        span: self.token.span,
+                        prev_span: self.prev_token.span,
+                    };
+
+                    Err(vec![err])
                 }
             }
 
-            _ => Err(self.session.error_handler.build_expected_token_error(
-                vec![TokenType::Const],
-                TokenType::Token(self.token.kind.clone()),
-                self.token.span,
-                self.prev_token.span,
-            )),
+            _ => {
+                let err = PError::ExpectedToken {
+                    expected: vec![TokenType::Const],
+                    found: TokenType::Token(self.token.kind.clone()),
+                    span: self.token.span,
+                    prev_span: self.prev_token.span,
+                };
+
+                Err(vec![err])
+            }
         }
     }
 

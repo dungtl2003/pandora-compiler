@@ -5,4 +5,4 @@ pub mod lexer;
 pub mod parser;
 pub mod util;
 
-pub type PResult<T> = Result<T, PError>;
+pub type PResult<T> = Result<T, Vec<PError>>;

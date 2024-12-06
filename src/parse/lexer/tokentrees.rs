@@ -1,6 +1,6 @@
 use crate::{
     ast::{DelimSpan, Delimiter, Spacing, Token, TokenKind, TokenStream, TokenTree},
-    parse::PResult,
+    parse::{errors::PError, PResult},
     span_encoding::Span,
 };
 
@@ -44,13 +44,11 @@ impl<'sess, 'src> TokenTreesReader<'sess, 'src> {
                 },
                 TokenKind::CloseDelim(delim) => {
                     if !is_delimited {
-                        let err = self
-                            .string_reader
-                            .session
-                            .error_handler
-                            .build_unexpected_closing_delimiter(delim, self.token.span);
-
-                        return (TokenStream::new(buf), Err(err));
+                        let err = PError::UnexpectedClosingDelimiter {
+                            delimiter: delim,
+                            span: self.token.span,
+                        };
+                        return (TokenStream::new(buf), Err(vec![err]));
                     }
                     return (TokenStream::new(buf), Ok(()));
                 }
@@ -58,15 +56,16 @@ impl<'sess, 'src> TokenTreesReader<'sess, 'src> {
                     if is_delimited {
                         // This is weird but for display.
                         let span = Span::new(self.token.span.offset - 1, self.token.span.offset);
-                        let err = self
-                            .string_reader
-                            .session
-                            .error_handler
-                            .build_unclosed_delimiter(
-                                self.open_delims.iter().map(|&(_, span)| span).collect(),
-                                Some(span),
-                            );
-                        return (TokenStream::new(buf), Err(err));
+                        let err = PError::UnclosedDelimiter {
+                            unclosed_delimiter_spans: self
+                                .open_delims
+                                .iter()
+                                .map(|&(_, span)| span)
+                                .collect(),
+                            suggest_close_pos_span: Some(span),
+                        };
+
+                        return (TokenStream::new(buf), Err(vec![err]));
                     }
                     return (TokenStream::new(buf), Ok(()));
                 }
@@ -115,13 +114,13 @@ impl<'sess, 'src> TokenTreesReader<'sess, 'src> {
 
             // Incorrect delimiter.
             TokenKind::CloseDelim(close_delim) => {
-                let err = self
-                    .string_reader
-                    .session
-                    .error_handler
-                    .build_mismatched_closing_delimiter(close_delim, self.token.span, pre_span);
+                let err = PError::MismatchedClosingDelimiter {
+                    delimiter: close_delim,
+                    unmatched_span: self.token.span,
+                    unclosed_span: pre_span,
+                };
 
-                return Err(err);
+                return Err(vec![err]);
             }
             TokenKind::Eof => {
                 // Silently recover, the EOF token will be seen again
