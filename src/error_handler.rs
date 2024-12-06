@@ -18,7 +18,6 @@ pub struct ErrorHandler {
 }
 
 impl ErrorHandler {
-    // ========================== INTERPRET ==========================
     pub fn build_function_in_library_not_found_error(
         &self,
         func_name: String,
@@ -1458,6 +1457,9 @@ pub struct FunctionInLibraryNotFound {
     span: SourceSpan,
 }
 
-#[derive(Error, Debug, Diagnostic)]
-#[error("")]
-pub struct DUMMY();
+#[derive(Debug, PartialEq, Clone)]
+pub enum ErrorType {
+    Recoverable,
+    Unrecoverable,
+    NoError,
+}

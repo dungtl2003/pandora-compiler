@@ -21,6 +21,11 @@ use super::{lexer, PResult};
 
 pub fn parse(contents: &str, session: &mut Session) -> Option<Ast> {
     let tokens = lexer::lex_token_tree(contents, session);
+
+    if !session.can_recover() {
+        return None;
+    }
+
     if tokens.is_err() {
         tokens.err().unwrap().iter().for_each(|err| {
             let report = err.clone().to_report(&session.error_handler);
@@ -52,7 +57,7 @@ pub fn parse(contents: &str, session: &mut Session) -> Option<Ast> {
         return None;
     }
 
-    if session.has_errors {
+    if session.has_error() {
         return None;
     }
 

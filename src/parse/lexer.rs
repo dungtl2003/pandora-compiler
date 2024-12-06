@@ -8,6 +8,7 @@ use crate::lexer::{self, Base, Cursor, EscapeError, RawStrError};
 use crate::session::{BytePos, Session};
 use crate::span_encoding::Span;
 use crate::symbol::Symbol;
+use crate::ErrorType;
 
 use super::PResult;
 
@@ -363,7 +364,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn report_unterminated_str_literal(&mut self, start_quote_pos: BytePos, end: BytePos) {
-        self.session.set_has_errors();
+        self.session.set_error(ErrorType::Unrecoverable);
         let report = self
             .session
             .error_handler
@@ -377,7 +378,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn report_no_digits_literal(&mut self, start: BytePos, end: BytePos) {
-        self.session.set_has_errors();
+        self.session.set_error(ErrorType::Recoverable);
         let span = Span {
             offset: start,
             length: (end - start) as usize,
@@ -391,7 +392,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn report_float_literal_unsupported_base(&mut self, base: String, pos: BytePos, len: usize) {
-        self.session.set_has_errors();
+        self.session.set_error(ErrorType::Recoverable);
         let span = Span {
             offset: pos,
             length: len,
@@ -405,7 +406,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn report_invalid_digits_literal(&mut self, base: u32, pos: BytePos) {
-        self.session.set_has_errors();
+        self.session.set_error(ErrorType::Recoverable);
         let span = Span {
             offset: pos,
             length: 1,
@@ -420,7 +421,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn report_empty_exponent_float(&mut self, pos: BytePos, len: usize) {
-        self.session.set_has_errors();
+        self.session.set_error(ErrorType::Recoverable);
         let span = Span {
             offset: pos,
             length: len,
@@ -439,7 +440,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         start: BytePos,
         doc_style: Option<lexer::DocStyle>,
     ) {
-        self.session.set_has_errors();
+        self.session.set_error(ErrorType::Unrecoverable);
         let msg = match doc_style {
             Some(_) => "unterminated block doc-comment",
             None => "unterminated block comment",
@@ -487,7 +488,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn report_unterminated_character_literal(&mut self, start_quote_pos: BytePos) {
-        self.session.set_has_errors();
+        self.session.set_error(ErrorType::Unrecoverable);
         let report = self
             .session
             .error_handler
@@ -506,7 +507,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         start: BytePos,
         end: BytePos,
     ) {
-        self.session.set_has_errors();
+        self.session.set_error(ErrorType::Recoverable);
         let report = match err {
             EscapeError::ZeroChars => self
                 .session
@@ -553,7 +554,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn report_unknown_symbol(&mut self, start: BytePos, end: BytePos) {
-        self.session.set_has_errors();
+        self.session.set_error(ErrorType::Recoverable);
         let report = self
             .session
             .error_handler
@@ -570,25 +571,26 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn report_raw_string_error(&mut self, start: BytePos) {
-        self.session.set_has_errors();
-
         let report = match lexer::validate_raw_string(self.str_from(start)) {
-            Err(RawStrError::InvalidStarter { bad_char }) => self
-                .session
-                .error_handler
-                .build_raw_str_invalid_starter_error(
-                    bad_char,
-                    Span {
-                        offset: start,
-                        length: self.pos as usize,
-                    },
-                )
-                .into(),
+            Err(RawStrError::InvalidStarter { bad_char }) => {
+                self.session.set_error(ErrorType::Recoverable);
+                self.session
+                    .error_handler
+                    .build_raw_str_invalid_starter_error(
+                        bad_char,
+                        Span {
+                            offset: start,
+                            length: self.pos as usize,
+                        },
+                    )
+                    .into()
+            }
             Err(RawStrError::NoTerminator {
                 expected,
                 found,
                 possible_terminator_offset,
             }) => {
+                self.session.set_error(ErrorType::Recoverable);
                 let start_span = Span {
                     offset: start,
                     length: (start + expected) as usize,
@@ -611,17 +613,19 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
                     )
                     .into()
             }
-            Err(RawStrError::TooManyHashes { found }) => self
-                .session
-                .error_handler
-                .build_raw_str_too_many_hashes_error(
-                    found,
-                    Span {
-                        offset: start,
-                        length: (self.pos - start) as usize,
-                    },
-                )
-                .into(),
+            Err(RawStrError::TooManyHashes { found }) => {
+                self.session.set_error(ErrorType::Unrecoverable);
+                self.session
+                    .error_handler
+                    .build_raw_str_too_many_hashes_error(
+                        found,
+                        Span {
+                            offset: start,
+                            length: (self.pos - start) as usize,
+                        },
+                    )
+                    .into()
+            }
             Ok(()) => panic!("no error found for supposedly invalid raw string literal"),
         };
 
