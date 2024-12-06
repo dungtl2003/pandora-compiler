@@ -224,7 +224,7 @@ impl Parser<'_> {
     }
 
     /// if_statement = 'if' expression block_statement ('else' (block_statement | if_statement))?
-    pub fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
+    fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::When) {
             return Err(self.session.error_handler.build_expected_token_error(
                 vec![TokenType::Keyword(kw::to_symbol(Keyword::When))],
@@ -239,28 +239,13 @@ impl Parser<'_> {
                         // Parse the condition expression.
         let condition = self.parse_expr()?;
         // Parse the block for the `if` statement.
-        let if_block = self.parse_stmt_block()?;
+        let if_block = self.parse_stmt()?;
 
         // Optionally parse an `else` block.
         let else_block = if self.token.is_keyword(Keyword::Alt) {
             self.advance(); // Eat token after `else`
-            if self.token.is_keyword(Keyword::When) {
-                let else_block = self.parse_stmt_if()?;
-                Some(else_block)
-            } else if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
-                let else_block = self.parse_stmt_block()?;
-                Some(else_block)
-            } else {
-                return Err(self.session.error_handler.build_expected_token_error(
-                    vec![
-                        TokenType::Keyword(kw::to_symbol(Keyword::Alt)),
-                        TokenType::Token(TokenKind::OpenDelim(Delimiter::Brace)),
-                    ],
-                    TokenType::Token(self.token.kind),
-                    self.token.span,
-                    self.prev_token.span,
-                ));
-            }
+            let else_block = self.parse_stmt()?;
+            Some(else_block)
         } else {
             None
         };

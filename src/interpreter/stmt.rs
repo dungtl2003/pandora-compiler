@@ -381,7 +381,7 @@ pub fn interpret_stmt_if(
             StmtKind::If(_, _, _) => {}
             _ => {
                 return Err(vec![IError::ExpectedBlock {
-                    stmt_span: then_block.span,
+                    stmt_span: else_block.span,
                 }])
             }
         }

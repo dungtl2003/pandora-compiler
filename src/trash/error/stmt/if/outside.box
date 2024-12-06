@@ -16,7 +16,11 @@ when fdsa {
 
     ;
 } alt when fs {
-    yeet 0;
+    yeet 
+     x
+     ;
 } alt when 1 {
     skip;
 } alt 
+
+println("fdasf");
