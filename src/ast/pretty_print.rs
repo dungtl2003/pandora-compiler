@@ -1,4 +1,4 @@
-use super::{Expr, ExprKind, Fun, FunSig, Ident, Local, LocalKind, Path, PathSegment, Stmt, Ty};
+use super::{Expr, ExprKind, Fun, FunSig, Ident, Local, LocalKind, Stmt, Ty};
 use crate::visitor::Visitor;
 
 pub struct Printer {
@@ -389,27 +389,6 @@ impl<'ast> Visitor<'ast> for Printer {
             }
         }
         self.indent -= self.indent_spaces;
-    }
-
-    fn visit_path(&mut self, path: &'ast Path) {
-        self.output
-            .push_str(&format!("{}Path {}\n", space(self.indent), path.span));
-
-        self.indent += self.indent_spaces;
-        for segment in &path.segments {
-            self.visit_path_segment(segment);
-        }
-        self.indent -= self.indent_spaces;
-    }
-
-    fn visit_path_segment(&mut self, segment: &'ast PathSegment) {
-        let PathSegment { ident } = segment;
-        self.output.push_str(&format!(
-            "{}Segment: {} {}\n",
-            space(self.indent),
-            ident.name,
-            ident.span
-        ));
     }
 
     fn visit_ty(&mut self, ty: &'ast Ty) {

@@ -113,7 +113,6 @@ pub fn interpret_stmt_for(
                     }
                 },
                 EvalResult::StmtResult(None) => {}
-                EvalResult::Value(_) => unreachable!("statement should not return value"),
             }
         }
 
@@ -289,7 +288,6 @@ pub fn interpret_stmt_while(
                 }
                 return Ok(EvalResult::StmtResult(Some(ControlFlow::Return(value))));
             }
-            EvalResult::Value(_) => unreachable!("statement should not return value"),
         }
     }
     Ok(EvalResult::StmtResult(None))
@@ -348,7 +346,6 @@ pub fn interpret_stmt_block(
                 }
             },
             EvalResult::StmtResult(None) => {}
-            EvalResult::Value(_) => unreachable!("statement should not return value"),
         }
     }
     env.pop_scope();

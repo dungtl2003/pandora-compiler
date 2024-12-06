@@ -94,31 +94,6 @@ impl AssocOp {
         }
     }
 
-    /// Creates a new AssocOp from ast::BinOpKind.
-    pub fn from_ast_binop(op: BinOpKind) -> Self {
-        use AssocOp::*;
-        match op {
-            BinOpKind::Lt => Less,
-            BinOpKind::Gt => Greater,
-            BinOpKind::Le => LessEqual,
-            BinOpKind::Ge => GreaterEqual,
-            BinOpKind::Eq => Equal,
-            BinOpKind::Ne => NotEqual,
-            BinOpKind::Mul => Multiply,
-            BinOpKind::Div => Divide,
-            BinOpKind::Mod => Modulus,
-            BinOpKind::Add => Add,
-            BinOpKind::Sub => Subtract,
-            BinOpKind::Shl => ShiftLeft,
-            BinOpKind::Shr => ShiftRight,
-            BinOpKind::BitAnd => BitAnd,
-            BinOpKind::BitXor => BitXor,
-            BinOpKind::BitOr => BitOr,
-            BinOpKind::And => LAnd,
-            BinOpKind::Or => LOr,
-        }
-    }
-
     /// Gets the precedence of this operator
     pub fn precedence(&self) -> usize {
         use AssocOp::*;
@@ -146,15 +121,6 @@ impl AssocOp {
             Multiply | Divide | Modulus | Add | Subtract | ShiftLeft | ShiftRight | BitAnd
             | BitXor | BitOr | Less | Greater | LessEqual | GreaterEqual | Equal | NotEqual
             | LAnd | LOr | As => Fixity::Left,
-        }
-    }
-
-    pub fn is_comparison(&self) -> bool {
-        use AssocOp::*;
-        match *self {
-            Less | Greater | LessEqual | GreaterEqual | Equal | NotEqual => true,
-            Assign | AssignOp(_) | Multiply | Divide | Modulus | Add | Subtract | ShiftLeft
-            | ShiftRight | BitAnd | BitXor | BitOr | LAnd | LOr | As => false,
         }
     }
 

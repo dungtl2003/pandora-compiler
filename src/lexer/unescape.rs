@@ -3,7 +3,7 @@ use std::str::Chars;
 /// Errors and warnings that can occur during string unescaping. They mostly
 /// relate to malformed escape sequences, but there are a few that are about
 /// other problems.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum EscapeError {
     /// Expected 1 char, but 0 were found.
     ZeroChars,
@@ -35,13 +35,14 @@ pub fn unescape_char(src: &str) -> Result<char, EscapeError> {
     Ok(res)
 }
 
-pub fn unescape_str(src: &str) -> Result<String, EscapeError> {
+pub fn unescape_str(src: &str) -> Result<String, Vec<EscapeError>> {
     let mut chars = src.chars();
     let mut content = String::new();
 
+    let mut errors = Vec::new();
     while let Some(c) = chars.next() {
         match c {
-            '"' => return Err(EscapeError::EscapeOnlyChar),
+            '"' => errors.push(EscapeError::EscapeOnlyChar),
             '\\' => match chars.clone().next() {
                 Some('\n') => {
                     skip_whitespace(&mut chars);
@@ -49,7 +50,9 @@ pub fn unescape_str(src: &str) -> Result<String, EscapeError> {
                 _ => {
                     let res = scan_escape(&mut chars);
                     match res {
-                        Err(e) => return Err(e),
+                        Err(e) => {
+                            errors.push(e);
+                        }
                         Ok(ch) => content.push(ch),
                     }
                 }
@@ -58,7 +61,11 @@ pub fn unescape_str(src: &str) -> Result<String, EscapeError> {
         };
     }
 
-    Ok(content)
+    if errors.is_empty() {
+        Ok(content)
+    } else {
+        Err(errors)
+    }
 }
 
 fn skip_whitespace(chars: &mut Chars<'_>) {

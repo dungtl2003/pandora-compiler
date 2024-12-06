@@ -75,10 +75,6 @@ impl Ty {
     pub fn to_string(&self) -> String {
         self.kind.to_string()
     }
-
-    pub fn can_be_ident_type(&self) -> bool {
-        self.kind.can_be_ident_type()
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -142,75 +138,6 @@ impl Display for TyKind {
 }
 
 impl TyKind {
-    pub fn is_iterable(&self) -> bool {
-        match self {
-            TyKind::Int => false,
-            TyKind::Float => false,
-            TyKind::Str => true,
-            TyKind::Bool => false,
-            TyKind::Function => false,
-            TyKind::Unit => false,
-            TyKind::Char => false,
-            TyKind::Array(_, _) => true,
-        }
-    }
-    pub fn is_clonable(&self) -> bool {
-        match self {
-            TyKind::Int => true,
-            TyKind::Float => true,
-            TyKind::Str => true,
-            TyKind::Bool => true,
-            TyKind::Function => false,
-            TyKind::Unit => false,
-            TyKind::Char => true,
-            TyKind::Array(ty, _) => ty.is_clonable(),
-        }
-    }
-
-    pub fn castable_to(&self, other: &TyKind) -> bool {
-        match self {
-            TyKind::Int => match other {
-                TyKind::Int => true,
-                TyKind::Float => true,
-                _ => false,
-            },
-            TyKind::Float => match other {
-                TyKind::Int => true,
-                TyKind::Float => true,
-                _ => false,
-            },
-            TyKind::Str => match other {
-                TyKind::Str => true,
-                _ => false,
-            },
-            TyKind::Bool => match other {
-                TyKind::Bool => true,
-                _ => false,
-            },
-            TyKind::Function => false,
-            TyKind::Unit => false,
-            TyKind::Char => match other {
-                TyKind::Int => true,
-                TyKind::Char => true,
-                _ => false,
-            },
-            TyKind::Array(..) => false,
-        }
-    }
-
-    pub fn can_be_ident_type(&self) -> bool {
-        match self {
-            TyKind::Int => true,
-            TyKind::Float => true,
-            TyKind::Str => true,
-            TyKind::Bool => true,
-            TyKind::Function => false,
-            TyKind::Unit => false,
-            TyKind::Char => true,
-            TyKind::Array(ty, _) => ty.can_be_ident_type(),
-        }
-    }
-
     pub fn to_string(&self) -> String {
         match self {
             TyKind::Int => "int".to_string(),

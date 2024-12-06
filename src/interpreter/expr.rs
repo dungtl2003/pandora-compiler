@@ -3,13 +3,7 @@ use crate::{
     span_encoding::Span,
 };
 
-use super::{
-    environment::{variable::Variable, Environment, Wrapper},
-    eval::ValueKind,
-    interpret_ty,
-    ty::TyKind,
-    IError, Value,
-};
+use super::{environment::Environment, eval::ValueKind, interpret_ty, ty::TyKind, IError, Value};
 
 pub fn interpret_expr(
     env: &mut Environment,
@@ -676,27 +670,6 @@ fn interpret_expr_literal(value: &Lit) -> Result<ValueKind, Vec<IError>> {
     }
 }
 
-fn find_array_variable(
-    env: &mut Environment,
-    expr: &Box<Expr>,
-) -> Result<Wrapper<Variable>, Vec<IError>> {
-    match &expr.kind {
-        ExprKind::Identifier(ident) => {
-            let var = env.lookup_variable(ident.name.as_str());
-            if var.is_none() {
-                return Err(vec![IError::CannotFindVariableInScope {
-                    var_name: ident.name.to_string(),
-                    span: ident.span,
-                }]);
-            }
-
-            Ok(var.unwrap())
-        }
-        ExprKind::Index(array, _, _) => find_array_variable(env, array),
-        _ => unreachable!(),
-    }
-}
-
 fn update_array_index(
     env: &mut Environment,
     arr: &Box<Expr>,
@@ -765,7 +738,7 @@ fn interpret_expr_assign_ident_with_known_value(
     rhs: ValueKind,
     rhs_span: Span,
     expr_span: Span,
-    is_verbose: bool,
+    _is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
     let var = env.lookup_variable(ident.name.as_str());
     if var.is_none() {

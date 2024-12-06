@@ -245,18 +245,7 @@ impl ErrorHandler {
             span: span.to_source_span(),
         }
     }
-    pub fn build_library_function_not_found_error(
-        &self,
-        library: String,
-        function: String,
-        span: Span,
-    ) -> LibraryFunctionNotFound {
-        LibraryFunctionNotFound {
-            library,
-            function,
-            span: span.to_source_span(),
-        }
-    }
+
     pub fn build_library_not_found_error(&self, library: String, span: Span) -> LibraryNotFound {
         LibraryNotFound {
             library,
@@ -618,9 +607,9 @@ impl ErrorHandler {
                 "escape `{0}` to use it as an identifier (e.g., `r#{0}`)",
                 kw.as_str()
             )),
-            TokenType::Type | TokenType::Const | TokenType::Ident => {
+            TokenType::Const | TokenType::Ident => {
                 unreachable!(
-                    "build_expected_identifier_error should not be called with Type, Ident or Const"
+                    "build_expected_identifier_error should not be called with Ident or Const"
                 )
             }
         };
@@ -720,21 +709,287 @@ impl ErrorHandler {
         }
     }
 
+    pub fn build_unknown_symbol_error(&self, sym: String, span: Span) -> UnknownSymbol {
+        UnknownSymbol {
+            span: span.to_source_span(),
+            sym,
+        }
+    }
+
+    pub fn build_unterminated_block_comment_error(
+        &self,
+        msg: String,
+        last_start_span: Span,
+        last_terminated_span: Span,
+    ) -> UnterminatedBlockComment {
+        UnterminatedBlockComment {
+            msg,
+            last_terminated_span: last_terminated_span.to_source_span(),
+            last_start_span: last_start_span.to_source_span(),
+        }
+    }
+
+    pub fn build_empty_char_literal_error(&self, expected_char_span: Span) -> EmptyCharLiteral {
+        EmptyCharLiteral {
+            expected_char_span: expected_char_span.to_source_span(),
+        }
+    }
+
+    pub fn build_more_than_one_char_literal_error(&self, span: Span) -> MoreThanOneCharLiteral {
+        MoreThanOneCharLiteral {
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_unknown_char_escape_error(
+        &self,
+        bad_char: char,
+        bad_char_span: Span,
+    ) -> UnknownCharEscape {
+        UnknownCharEscape {
+            bad_char,
+            bad_char_span: bad_char_span.to_source_span(),
+        }
+    }
+
+    pub fn build_escape_only_char_error(
+        &self,
+        escape_char: char,
+        escape_char_span: Span,
+    ) -> EscapeOnlyChar {
+        EscapeOnlyChar {
+            escape_char,
+            escape_char_span: escape_char_span.to_source_span(),
+        }
+    }
+
+    pub fn build_raw_str_unterminated_error(
+        &self,
+        start_span: Span,
+        expected: u32,
+        possible_terminator_span: Option<Span>,
+    ) -> RawStrUnterminated {
+        let suggest_span = if let Some(terminator_span) = possible_terminator_span {
+            Some(terminator_span.to_source_span())
+        } else {
+            None
+        };
+
+        RawStrUnterminated {
+            start_span: start_span.to_source_span(),
+            suggest_span,
+            expected,
+        }
+    }
+
+    pub fn build_raw_str_invalid_starter_error(
+        &self,
+        bad_char: char,
+        span: Span,
+    ) -> RawStrInvalidStarter {
+        RawStrInvalidStarter {
+            bad_char,
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_raw_str_too_many_hashes_error(
+        &self,
+        found: u32,
+        span: Span,
+    ) -> RawStrTooManyHashes {
+        RawStrTooManyHashes {
+            found,
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_no_digits_literal_error(&self, span: Span) -> NoDigitsLiteral {
+        NoDigitsLiteral {
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_invalid_digit_literal_error(&self, base: u32, span: Span) -> InvalidDigitLiteral {
+        InvalidDigitLiteral {
+            base,
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_empty_exponent_float_error(&self, span: Span) -> EmptyExponentFloat {
+        EmptyExponentFloat {
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_float_literal_unsupported_base_error(
+        &self,
+        base: String,
+        span: Span,
+    ) -> FloatLiteralUnsupportedBase {
+        FloatLiteralUnsupportedBase {
+            base,
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_unterminated_character_literal_error(
+        &self,
+        span: Span,
+    ) -> UnterminatedCharLiteral {
+        UnterminatedCharLiteral {
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_unterminated_string_literal_error(
+        &self,
+        span: Span,
+    ) -> UnterminatedDoubleQuoteString {
+        UnterminatedDoubleQuoteString {
+            span: span.to_source_span(),
+        }
+    }
+
     pub fn new(file: Arc<SourceFile>) -> Self {
         Self { file }
     }
 
-    pub fn emit_err<T>(&self, err: T)
-    where
-        T: Diagnostic + Send + Sync + 'static,
-    {
-        let report: Report = err.into();
-        println!("{:?}", report.with_source_code(Arc::clone(&self.file)));
+    pub fn report_err(&self, build: Report) {
+        println!("{:?}", build.with_source_code(Arc::clone(&self.file)));
     }
+}
 
-    pub fn report_err(&self, report: Report) {
-        println!("{:?}", report.with_source_code(Arc::clone(&self.file)));
-    }
+// ========================== LEXER ==========================
+#[derive(Error, Debug, Diagnostic)]
+#[error("unterminated double quote string")]
+pub struct UnterminatedDoubleQuoteString {
+    #[label(primary)]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("invalid digit for a base {base} literal")]
+pub struct InvalidDigitLiteral {
+    pub base: u32,
+    #[label]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("missing digits after exponent symbol")]
+pub struct EmptyExponentFloat {
+    #[label]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("{base} float literal is not supported")]
+pub struct FloatLiteralUnsupportedBase {
+    pub base: String,
+    #[label]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("unterminated character literal")]
+#[diagnostic(
+    code(E0762),
+    url("{}#{}", ERROR_CODE_URL, self.code().unwrap())
+)]
+pub struct UnterminatedCharLiteral {
+    #[label]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("no valid digits found for number")]
+pub struct NoDigitsLiteral {
+    #[label]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("too many `#` symbols: raw strings may be delimited by up to 255 `#` symbols, but found {found}")]
+pub struct RawStrTooManyHashes {
+    pub found: u32,
+    #[label]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("found invalid character; only `#` is allowed in raw string delimitation: {bad_char}")]
+pub struct RawStrInvalidStarter {
+    pub bad_char: char,
+    #[label]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("unterminated raw string")]
+#[diagnostic(
+    code(E0748),
+    url("{}#{}", ERROR_CODE_URL, self.code().unwrap()),
+    help("this raw string should be terminated with `\"{}`", "#".repeat(*expected as usize)),
+)]
+pub struct RawStrUnterminated {
+    pub start_span: SourceSpan,
+    #[label("help: consider terminating the string here: `{}", "#".repeat(*expected as usize))]
+    pub suggest_span: Option<SourceSpan>,
+    pub expected: u32,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("{msg}")]
+pub struct UnterminatedBlockComment {
+    pub msg: String,
+    #[label("...as last nested comment started here, maybe you want to close this instead?")]
+    pub last_start_span: SourceSpan,
+    #[label("...and last nested comment terminates here.")]
+    pub last_terminated_span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("unknown symbol '{sym}'")]
+pub struct UnknownSymbol {
+    pub sym: String,
+    #[label]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("unknown character escape: `{bad_char}`")]
+#[diagnostic(
+    help("if you meant to write a literal backslash (perhaps escaping in a regular expression), consider a raw string literal"),
+)]
+pub struct UnknownCharEscape {
+    #[label("unknown character escape")]
+    pub bad_char_span: SourceSpan,
+
+    pub bad_char: char,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("character constant must be escaped: `{escape_char}`")]
+pub struct EscapeOnlyChar {
+    pub escape_char: char,
+    pub escape_char_span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("character literal may only contain one codepoint")]
+#[diagnostic(help("if you meant to write a string literal, use double quotes"))]
+pub struct MoreThanOneCharLiteral {
+    #[label]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("empty character literal")]
+pub struct EmptyCharLiteral {
+    #[label("empty character literal")]
+    pub expected_char_span: SourceSpan,
 }
 
 // ========================== PARSER ==========================

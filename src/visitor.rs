@@ -1,18 +1,8 @@
-use crate::ast::{
-    Expr, ExprKind, Fun, FunSig, Ident, Local, LocalKind, Path, PathSegment, Stmt, StmtKind, Ty,
-};
+use crate::ast::{Expr, ExprKind, Fun, FunSig, Ident, Local, LocalKind, Stmt, StmtKind, Ty};
 
 pub trait Visitor<'ast>: Sized {
     fn visit_expr(&mut self, expr: &'ast Expr) {
         walk_expr(self, expr)
-    }
-
-    fn visit_path(&mut self, path: &'ast Path) {
-        walk_path(self, path)
-    }
-
-    fn visit_path_segment(&mut self, path_segment: &'ast PathSegment) {
-        walk_path_segment(self, path_segment)
     }
 
     fn visit_ty(&mut self, ty: &'ast Ty) {
@@ -196,14 +186,6 @@ pub fn walk_stmt_var<'ast, V: Visitor<'ast>>(visitor: &mut V, local: &'ast Local
         LocalKind::Decl => {}
     }
 }
-
-pub fn walk_path<'ast, V: Visitor<'ast>>(visitor: &mut V, path: &'ast Path) {
-    for segment in &path.segments {
-        visitor.visit_path_segment(segment);
-    }
-}
-
-pub fn walk_path_segment<'ast, V: Visitor<'ast>>(_visitor: &mut V, _segment: &'ast PathSegment) {}
 
 pub fn walk_ty<'ast, V: Visitor<'ast>>(_visitor: &mut V, _ty: &'ast Ty) {}
 

@@ -57,10 +57,10 @@ fn main() {
 
     let source = SourceFile::new(filename, Arc::clone(&contents));
     let file = Arc::new(source);
-    let session = session::Session::new(Arc::clone(&file));
+    let mut session = session::Session::new(Arc::clone(&file));
 
     // parsing
-    let ast = parse::parser::parse(contents.as_str(), &session);
+    let ast = parse::parser::parse(contents.as_str(), &mut session);
     if ast.is_none() {
         process::exit(1);
     }

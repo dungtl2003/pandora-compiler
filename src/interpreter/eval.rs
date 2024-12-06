@@ -4,7 +4,6 @@ use super::{environment::Environment, errors::IError, ident::Ident, stmt, ty::Ty
 
 #[derive(Debug, Clone)]
 pub enum EvalResult {
-    Value(Value),
     StmtResult(Option<ControlFlow>),
 }
 
@@ -160,7 +159,6 @@ impl Value {
                         }
                         _ => unreachable!("function body should not return continue or break"),
                     },
-                    EvalResult::Value(_) => unreachable!("statement should not return value"),
                 }
             }
             _ => unreachable!("This should be a function"),
@@ -176,10 +174,6 @@ impl Value {
             kind: ty,
             span: self.span,
         })
-    }
-
-    pub fn to_bool(&self) -> Result<bool, String> {
-        self.kind.to_bool()
     }
 
     pub fn into_iter(self) -> Result<Vec<Value>, String> {
@@ -234,13 +228,6 @@ pub struct FuncParam {
 }
 
 impl ValueKind {
-    pub fn to_bool(&self) -> Result<bool, String> {
-        match self {
-            ValueKind::Bool(val) => Ok(*val),
-            _ => Err(format!("expected bool, found {:?}", self)),
-        }
-    }
-
     pub fn try_cast_to(&self, ty: &TyKind) -> Result<ValueKind, (String, String)> {
         match self {
             ValueKind::Int(val) => match ty {

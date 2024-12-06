@@ -129,7 +129,7 @@ impl Environment {
         name: String,
         value: ValueKind,
         span: Span, // declaration span
-        is_verbose: bool,
+        _is_verbose: bool,
     ) -> Result<(), Vec<IError>> {
         // There must be no function with the same name in the current scope.
         if self.scopes.last().unwrap().functions.contains_key(&name) {
@@ -182,7 +182,7 @@ impl Environment {
         &mut self,
         name: &str,
         span: Span,
-        is_verbose: bool,
+        _is_verbose: bool,
     ) -> Result<Box<dyn Library>, Vec<IError>> {
         Ok(match name {
             "std" => Box::new(StdLib::new()),
@@ -252,9 +252,9 @@ impl Environment {
         })?);
 
         let file = Arc::new(NamedSource::new(name, Arc::clone(&contents)));
-        let session = Session::new(file);
+        let mut session = Session::new(file);
 
-        let ast = parser::parse(&contents, &session);
+        let ast = parser::parse(&contents, &mut session);
         if ast.is_none() {
             return Err(vec![IError::ParseLibraryFileFailed {
                 path: lib_path.display().to_string(),

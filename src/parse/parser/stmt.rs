@@ -7,7 +7,7 @@ use crate::{
     kw::Keyword,
 };
 
-impl Parser<'_> {
+impl Parser {
     // Remember to update ast::token::can_begin_expr as well when adding new statements.
     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
         if self.token.is_keyword(Keyword::Set) {

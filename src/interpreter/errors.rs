@@ -123,12 +123,6 @@ pub enum IError {
         span: Span,
     },
 
-    LibraryFunctionNotFound {
-        library: String,
-        function: String,
-        span: Span,
-    },
-
     LibraryNotFound {
         library: String,
         span: Span,
@@ -398,13 +392,6 @@ impl IError {
                     second_assign_span,
                     help_span,
                 )
-                .into(),
-            IError::LibraryFunctionNotFound {
-                library,
-                function,
-                span,
-            } => error_handler
-                .build_library_function_not_found_error(library, function, span)
                 .into(),
             IError::VariableIsNotInitialized {
                 var_name,

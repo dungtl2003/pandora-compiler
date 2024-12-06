@@ -7,7 +7,7 @@ use crate::{
     symbol::Symbol,
 };
 
-use super::{ident::Ident, BinOpKind};
+use super::ident::Ident;
 use BinOpToken::*;
 use TokenKind::*;
 
@@ -132,7 +132,7 @@ impl Display for TokenKind {
                 }
             }
             DocComment(_, _, _) => write!(f, "doc comment"),
-            Eof => write!(f, "EOF"),
+            Eof => write!(f, "<EOF>"),
         }
     }
 }
@@ -193,22 +193,6 @@ pub struct Lit {
 impl Lit {
     pub fn to_ty_str(&self) -> &'static str {
         self.kind.to_ty_str()
-    }
-
-    pub fn to_rust_lit_str(&self) -> String {
-        match self.kind {
-            LitKind::Bool => self.symbol.as_str().to_string(),
-            LitKind::Char => self.symbol.as_str().to_string(),
-            LitKind::Int => self.symbol.as_str().to_string(),
-            LitKind::Float => self.symbol.as_str().to_string(),
-            LitKind::Str => format!("\"{}\"", self.symbol.as_str()),
-            LitKind::RawStr(n) => format!(
-                "r{0}\"{1}\"{0}",
-                "#".repeat(n as usize),
-                self.symbol.as_str()
-            ),
-            LitKind::Err => unreachable!(),
-        }
     }
 }
 
@@ -271,22 +255,6 @@ impl Token {
         }
     }
 
-    pub fn can_begin_keyword(&self) -> bool {
-        match self.kind {
-            Ident(name, IdentIsRaw::No) => kw::is_keyword(name),
-            _ => false,
-        }
-    }
-
-    /// Returns `true` if the token can appear at the start of a const param.
-    pub fn can_begin_const_arg(&self) -> bool {
-        match self.kind {
-            OpenDelim(Delimiter::Brace) | Literal(..) | BinOp(Minus) => true,
-            Ident(name, IdentIsRaw::No) if name.is_bool_lit() => true,
-            _ => false,
-        }
-    }
-
     pub fn is_open_delim(&self, delim: Delimiter) -> bool {
         match self.kind {
             OpenDelim(d) => d == delim,
@@ -298,30 +266,6 @@ impl Token {
         match self.kind {
             CloseDelim(d) => d == delim,
             _ => false,
-        }
-    }
-
-    pub fn to_ast_binop_kind(&self) -> Option<BinOpKind> {
-        match self.kind {
-            BinOp(Plus) => Some(BinOpKind::Add),
-            BinOp(Minus) => Some(BinOpKind::Sub),
-            BinOp(Star) => Some(BinOpKind::Mul),
-            BinOp(Slash) => Some(BinOpKind::Div),
-            BinOp(Percent) => Some(BinOpKind::Mod),
-            EqEq => Some(BinOpKind::Eq),
-            Ne => Some(BinOpKind::Ne),
-            Lt => Some(BinOpKind::Lt),
-            Le => Some(BinOpKind::Le),
-            Gt => Some(BinOpKind::Gt),
-            Ge => Some(BinOpKind::Ge),
-            AndAnd => Some(BinOpKind::And),
-            OrOr => Some(BinOpKind::Or),
-            BinOp(And) => Some(BinOpKind::BitAnd),
-            BinOp(Or) => Some(BinOpKind::BitOr),
-            BinOp(Caret) => Some(BinOpKind::BitXor),
-            BinOp(Shl) => Some(BinOpKind::Shl),
-            BinOp(Shr) => Some(BinOpKind::Shr),
-            _ => None,
         }
     }
 
@@ -394,42 +338,11 @@ impl Token {
         }
     }
 
-    pub fn can_begin_stmt(&self) -> bool {
-        if self.can_begin_expr() {
-            return true;
-        }
-
-        if self.is_keyword(Keyword::Set)
-            || self.is_keyword(Keyword::When)
-            || self.is_keyword(Keyword::During)
-            || self.is_keyword(Keyword::For)
-            || self.is_keyword(Keyword::Yeet)
-            || self.is_keyword(Keyword::Fun)
-            || self.is_keyword(Keyword::Add)
-            || self.is_keyword(Keyword::Br)
-            || self.is_keyword(Keyword::Skip)
-        {
-            return true;
-        }
-
-        match self.kind {
-            TokenKind::OpenDelim(Delimiter::Brace) | TokenKind::Semicolon => true,
-            _ => false,
-        }
-    }
-
     /// Returns `true` if the token is a non-raw identifier for which `pred` holds.
     pub fn is_non_raw_ident_where(&self, pred: impl FnOnce(Ident) -> bool) -> bool {
         match self.ident() {
             Some((id, IdentIsRaw::No)) => pred(id),
             _ => false,
-        }
-    }
-
-    pub fn get_ident_if_non_raw(&self) -> Option<Ident> {
-        match self.ident() {
-            Some((id, IdentIsRaw::No)) => Some(id),
-            _ => None,
         }
     }
 
@@ -452,10 +365,6 @@ impl Token {
         Token::new(TokenKind::Question, DUMMY_SP)
     }
 
-    pub fn is_doc_comment(&self) -> bool {
-        matches!(self.kind, DocComment(..))
-    }
-
     pub fn is_keyword(&self, keyword: Keyword) -> bool {
         self.is_non_raw_ident_where(|ident| {
             let res = kw::from_str(ident.name.as_str());
@@ -469,35 +378,6 @@ impl Token {
 
     pub fn is_ident(&self) -> bool {
         matches!(self.kind, Ident(..))
-    }
-}
-
-impl TokenKind {
-    pub fn break_two_token_op(&self, n: u32) -> Option<(TokenKind, TokenKind)> {
-        assert!(n == 1 || n == 2);
-        Some(match (self, n) {
-            (Le, 1) => (Lt, Eq),
-            (EqEq, 1) => (Eq, Eq),
-            (Ne, 1) => (Not, Eq),
-            (Ge, 1) => (Gt, Eq),
-            (AndAnd, 1) => (BinOp(And), BinOp(And)),
-            (OrOr, 1) => (BinOp(Or), BinOp(Or)),
-            (BinOp(Shl), 1) => (Lt, Lt),
-            (BinOp(Shr), 1) => (Gt, Gt),
-            (BinOpEq(Plus), 1) => (BinOp(Plus), Eq),
-            (BinOpEq(Minus), 1) => (BinOp(Minus), Eq),
-            (BinOpEq(Star), 1) => (BinOp(Star), Eq),
-            (BinOpEq(Slash), 1) => (BinOp(Slash), Eq),
-            (BinOpEq(Percent), 1) => (BinOp(Percent), Eq),
-            (BinOpEq(Caret), 1) => (BinOp(Caret), Eq),
-            (BinOpEq(And), 1) => (BinOp(And), Eq),
-            (BinOpEq(Or), 1) => (BinOp(Or), Eq),
-            (BinOpEq(Shl), 1) => (Lt, Le),         // `<` + `<=`
-            (BinOpEq(Shl), 2) => (BinOp(Shl), Eq), // `<<` + `=`
-            (BinOpEq(Shr), 1) => (Gt, Ge),         // `>` + `>=`
-            (BinOpEq(Shr), 2) => (BinOp(Shr), Eq), // `>>` + `=`
-            _ => return None,
-        })
     }
 }
 

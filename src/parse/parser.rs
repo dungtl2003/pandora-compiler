@@ -5,7 +5,6 @@ mod ty;
 use std::fmt::Display;
 use std::mem;
 
-use crate::span_encoding::Span;
 use crate::symbol::Symbol;
 use crate::{
     ast::{
@@ -20,7 +19,7 @@ use crate::{
 use super::errors::PError;
 use super::{lexer, PResult};
 
-pub fn parse(contents: &str, session: &Session) -> Option<Ast> {
+pub fn parse(contents: &str, session: &mut Session) -> Option<Ast> {
     let tokens = lexer::lex_token_tree(contents, session);
     if tokens.is_err() {
         tokens.err().unwrap().iter().for_each(|err| {
@@ -30,7 +29,7 @@ pub fn parse(contents: &str, session: &Session) -> Option<Ast> {
         return None;
     }
 
-    let mut parser = Parser::new(tokens.unwrap(), session);
+    let mut parser = Parser::new(tokens.unwrap());
 
     let mut errors: Vec<PError> = Vec::new();
     let mut stmts: Vec<Box<Stmt>> = Vec::new();
@@ -53,12 +52,15 @@ pub fn parse(contents: &str, session: &Session) -> Option<Ast> {
         return None;
     }
 
+    if session.has_errors {
+        return None;
+    }
+
     let ast = Ast::new(stmts);
     Some(ast)
 }
 
-pub struct Parser<'sess> {
-    pub session: &'sess Session,
+pub struct Parser {
     /// The current token.
     pub token: Token,
     /// The spacing for the current token.
@@ -69,10 +71,9 @@ pub struct Parser<'sess> {
     token_cursor: TokenCursor,
 }
 
-impl<'sess> Parser<'sess> {
-    pub fn new(stream: TokenStream, session: &'sess Session) -> Self {
+impl Parser {
+    pub fn new(stream: TokenStream) -> Self {
         let mut parser = Parser {
-            session,
             token: Token::dummy(),
             token_spacing: Spacing::Alone,
             prev_token: Token::dummy(),
@@ -134,17 +135,6 @@ impl<'sess> Parser<'sess> {
         self.expected_tokens.clear();
     }
 
-    /// Advance the parser by one token using provided token as the next one.
-    fn advance_with(&mut self, next: (Token, Spacing)) {
-        let (next_token, next_spacing) = next;
-        // Update the current and previous tokens.
-        self.prev_token = mem::replace(&mut self.token, next_token);
-        self.token_spacing = next_spacing;
-
-        // Diagnostics.
-        self.expected_tokens.clear();
-    }
-
     /// Look-ahead `dist` tokens of `self.token` and get access to that token there.
     /// When `dist == 0` then the current token is looked at. `Eof` will be
     /// returned if the look-ahead is any distance past the end of the tokens.
@@ -163,27 +153,6 @@ impl<'sess> Parser<'sess> {
         looker(&token)
     }
 
-    pub fn is_keyword_ahead(&mut self, kws: &[Keyword]) -> bool {
-        self.look_ahead(1, |tok| {
-            if let TokenKind::Ident(ident, _) = tok.kind {
-                kws.iter().any(|kw| {
-                    let res = kw::from_str(ident.as_str());
-                    if res.is_err() {
-                        return false;
-                    }
-
-                    *kw == res.unwrap()
-                })
-            } else {
-                false
-            }
-        })
-    }
-
-    pub fn is_ident_ahead(&mut self) -> bool {
-        self.look_ahead(1, |tok| matches!(tok.kind, TokenKind::Ident(..)))
-    }
-
     fn expect(&mut self, expected: TokenKind) -> PResult<()> {
         if self.token.kind == expected {
             return Ok(());
@@ -191,74 +160,6 @@ impl<'sess> Parser<'sess> {
 
         let err = PError::ExpectedToken {
             expected: [TokenType::Token(expected)].to_vec(),
-            found: TokenType::Token(self.token.kind),
-            span: self.token.span,
-            prev_span: self.prev_token.span,
-        };
-
-        Err(vec![err])
-    }
-
-    /// Eats the expected token if it's present possibly breaking
-    /// compound tokens like multi-character operators in process.
-    /// Returns `true` if the token was eaten.
-    fn break_and_eat(&mut self, expected: TokenKind) -> bool {
-        if self.token.kind == expected {
-            self.advance();
-            return true;
-        }
-        match self.token.kind.break_two_token_op(1) {
-            Some((first, second)) if first == expected => {
-                let first_span = Span {
-                    offset: self.token.span.offset,
-                    length: 1,
-                };
-                let second_span = first_span.with_offset(self.token.span.end());
-                self.token = Token::new(first, first_span);
-                // Use the spacing of the glued token as the spacing of the
-                // unglued second token.
-                self.advance_with((Token::new(second, second_span), self.token_spacing));
-
-                true
-            }
-            _ => {
-                self.expected_tokens.push(TokenType::Token(expected));
-                false
-            }
-        }
-    }
-
-    /// Eats `<` possibly breaking tokens like `<<` in process.
-    fn eat_lt(&mut self) -> bool {
-        self.break_and_eat(TokenKind::Lt)
-    }
-
-    /// Eats `<` possibly breaking tokens like `<<` in process.
-    /// Signals an error if `<` was not eaten.
-    fn expect_lt(&mut self) -> PResult<()> {
-        if self.eat_lt() {
-            return Ok(());
-        }
-
-        let err = PError::ExpectedToken {
-            expected: [TokenType::Token(TokenKind::Lt)].to_vec(),
-            found: TokenType::Token(self.token.kind),
-            span: self.token.span,
-            prev_span: self.prev_token.span,
-        };
-
-        Err(vec![err])
-    }
-
-    /// Eats `>` possibly breaking tokens like `>>` in process.
-    /// Signals an error if `>` was not eaten.
-    fn expect_gt(&mut self) -> PResult<()> {
-        if self.break_and_eat(TokenKind::Gt) {
-            return Ok(());
-        }
-
-        let err = PError::ExpectedToken {
-            expected: [TokenType::Token(TokenKind::Gt)].to_vec(),
             found: TokenType::Token(self.token.kind),
             span: self.token.span,
             prev_span: self.prev_token.span,
@@ -301,18 +202,6 @@ impl<'sess> Parser<'sess> {
             }
         }
     }
-
-    /// Checks if the next token kind is `tok`, and returns `true` if so.
-    ///
-    /// This method will automatically add `tok` to `expected_tokens` if `tok` is not
-    /// encountered.
-    fn check(&mut self, tok: TokenKind) -> bool {
-        let is_present = self.token.kind == tok;
-        if !is_present {
-            self.expected_tokens.push(TokenType::Token(tok));
-        }
-        is_present
-    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -321,7 +210,6 @@ pub enum TokenType {
     Keyword(Symbol),
     Operator,
     Ident,
-    Type,
     Const,
 }
 
@@ -332,7 +220,6 @@ impl Display for TokenType {
             TokenType::Keyword(kw) => write!(f, "`{}`", kw),
             TokenType::Operator => write!(f, "operator"),
             TokenType::Ident => write!(f, "identifier"),
-            TokenType::Type => write!(f, "type"),
             TokenType::Const => write!(f, "constant"),
         }
     }
