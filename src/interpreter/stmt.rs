@@ -366,12 +366,21 @@ pub fn interpret_stmt_if(
     if is_verbose {
         println!("\x1b[90m[DEBUG] Interpreting if statement with condition: {:?} --- then block: {:?} --- else block: {:?}\x1b[0m", cond, then_block, else_block);
     }
+
+    let cond_result = interpret_expr(env, cond, in_loop, None, is_verbose);
+
     match then_block.kind {
         StmtKind::Block(_) => {}
         _ => {
-            return Err(vec![IError::ExpectedBlock {
+            if cond_result.is_err() {
+                return Err(cond_result.unwrap_err());
+            }
+
+            return Err(vec![IError::ExpectedBlockAfterCondition {
+                condition_span: cond_result.unwrap().span,
+                if_symbol: kw::to_string(Keyword::When),
                 stmt_span: then_block.span,
-            }])
+            }]);
         }
     }
 
@@ -388,7 +397,6 @@ pub fn interpret_stmt_if(
     }
 
     let mut errors: Vec<IError> = vec![];
-    let cond_result = interpret_expr(env, cond, in_loop, None, is_verbose);
     let then_result = interpret_stmt(env, then_block, in_loop, is_verbose);
     let else_result = if else_block.is_some() {
         interpret_stmt(env, &else_block.clone().unwrap(), in_loop, is_verbose)

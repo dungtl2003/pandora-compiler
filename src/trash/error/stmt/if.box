@@ -6,7 +6,7 @@ when fdsa {
     yeet 0;
 } alt when 1 {
     skip;
-} alt  {
+} alt  
 
 print("hello")
 ;

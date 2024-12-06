@@ -2,6 +2,11 @@ use crate::{span_encoding::Span, ErrorHandler};
 
 #[derive(Debug, Clone)]
 pub enum IError {
+    ExpectedBlockAfterCondition {
+        if_symbol: String,
+        condition_span: Span,
+        stmt_span: Span,
+    },
     UnknownSizeArray {
         ty: String,
         span: Span,
@@ -474,6 +479,13 @@ impl IError {
                 .into(),
             IError::UnknownSizeArray { ty, span } => error_handler
                 .build_unknown_size_array_error(ty, span)
+                .into(),
+            IError::ExpectedBlockAfterCondition {
+                if_symbol,
+                condition_span,
+                stmt_span,
+            } => error_handler
+                .build_expected_block_after_condition_error(if_symbol, condition_span, stmt_span)
                 .into(),
         }
     }

@@ -21,6 +21,7 @@ when fdsa {
      ;
 } alt when 1 {
     skip;
-} alt 
+} alt when
 
 println("fdasf");
+

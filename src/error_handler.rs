@@ -574,6 +574,19 @@ impl ErrorHandler {
         }
     }
 
+    pub fn build_expected_block_after_condition_error(
+        &self,
+        if_symbol: String,
+        condition_span: Span,
+        stmt_span: Span,
+    ) -> ExpectedBlockAfterCondition {
+        ExpectedBlockAfterCondition {
+            if_symbol,
+            condition_span: condition_span.to_source_span(),
+            stmt_span: stmt_span.to_source_span(),
+        }
+    }
+
     pub fn new(file: Arc<SourceFile>) -> Self {
         Self { file }
     }
@@ -600,6 +613,18 @@ impl ErrorHandler {
 }
 
 // ========================== INTERPRET ==========================
+#[derive(Error, Debug, Diagnostic)]
+#[error("expected `{{`")]
+pub struct ExpectedBlockAfterCondition {
+    if_symbol: String,
+    #[label(
+        "the `{}` expression is missing a block after this condition",
+        if_symbol
+    )]
+    condition_span: SourceSpan,
+    #[label("help: try placing this code inside a block")]
+    stmt_span: SourceSpan,
+}
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("the size for values of type `{}` cannot be known", ty)]
