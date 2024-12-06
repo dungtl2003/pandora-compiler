@@ -2,6 +2,60 @@
 
 Pandora is a simple language (with only 15 keywords) that has simple syntax and can run simple programs.
 
+Note: Pandora is still in development, so there may be some bugs and missing features.
+
+## Table of contents
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [Features](#features)
+- [Syntax](#syntax)
+  - [Variables](#variables)
+  - [Functions](#functions)
+  - [Control flow](#control-flow)
+    - [when-alt (if-else)](#when-alt-if-else)
+    - [during (while)](#during-while)
+    - [for](#for)
+  - [Comments](#comments)
+  - [Importing modules](#importing-modules)
+  - [Standard library](#standard-library)
+- [Examples](#examples)
+- [Keywords](#keywords)
+
+## Installation
+
+You need to have Rust installed on your machine.
+
+After that, you can run the following command to install Pandora:
+
+```bash
+cargo install pandora-interpreter@[version]
+```
+
+Replace `[version]` with the version you want to install (you can find the latest version on the releases page).
+
+## Usage
+
+You can run a Pandora program by using the following command:
+
+```bash
+unbox [file.box]
+```
+
+Replace `[file.box]` with the path to your Pandora file.
+
+If you want some help, you can use the following command:
+
+```bash
+unbox --help # or unbox -h for short
+```
+
+## Features
+
+- Simple syntax
+- Strongly typed
+- No implicit type conversion
+
 ## Syntax
 
 ### Variables
