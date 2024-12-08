@@ -10,6 +10,14 @@ Note: Pandora is still in development, so there may be some bugs and missing fea
 - [Usage](#usage)
 - [Features](#features)
 - [Syntax](#syntax)
+  - [Types](#types)
+    - [Integers](#integers)
+    - [Floats](#floats)
+    - [Booleans](#booleans)
+    - [Characters](#characters)
+    - [Strings](#strings)
+    - [Arrays](#arrays)
+    - [Tuples (coming soon)](#tuples-coming-soon)
   - [Variables](#variables)
   - [Functions](#functions)
   - [Control flow](#control-flow)
@@ -57,6 +65,94 @@ unbox --help # or unbox -h for short
 - No implicit type conversion
 
 ## Syntax
+
+### Types
+
+#### Integers
+
+```pandora
+5; // integer
+
+// b, o, and h are prefixes for binary, octal, and hexadecimal numbers respectively (you can also use uppercase letters)
+0b101; // binary
+0o10; // octal
+0h10; // hexadecimal
+
+// you can use underscores for better readability
+1_000_000;
+
+set x: int = 5;
+```
+
+#### Floats
+
+```pandora
+3.14; // float
+
+// you can use underscores for better readability
+1_000.0100_001; // 1000.0100001 (the first letter after the dot must be a digit)
+
+// you can also use scientific notation
+1e3; // 1000
+1.10_01e-30_5; // 1.1001e-305 (the dot must before the e)
+
+set x: float = 3.14;
+```
+
+#### Booleans
+
+```pandora
+true; // true
+false; // false
+
+set x: bool = true;
+```
+
+#### Characters
+
+```pandora
+'a'; // character
+'\n'; // newline
+'\r'; // carriage return
+'\t'; // tab
+'\\'; // backslash
+'\"'; // double quote (you can remove the backslash in this case)
+'\'': // single quote
+
+set x: char = 'a';
+```
+
+#### Strings
+
+```pandora
+"hello, world!\n"; // string
+
+r##"hello,\r\n#world!"##; // raw string (just like Rust)
+
+"hello \
+world"; // multiline string (the backslash must be the last character)
+
+set x: str = "hello, world!";
+```
+
+#### Arrays
+
+```pandora
+// elements must have the same type
+[1, 2, 3]; // array of integers
+["hello", "world"]; // array of strings
+[[1, 2], [3, 4]]; // 2D array of integers
+
+set x: [int] = [1, 2, 3];
+```
+
+#### Tuples (coming soon)
+
+This will be implemented in the future. For now, we only have `()` for empty tuples (also known as unit type), and you can't use it yet (it's just a placeholder for case when functions don't return anything). 
+
+```pandora
+(); // empty tuple 
+```
 
 ### Variables
 
