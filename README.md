@@ -68,7 +68,7 @@ set y: float = 3.14;
 set z: str; // we can assign a value later (but the type is mandatory)
 set w: [int] = [1, 2, 3]; // array of integers
 set v: [str; 3] = ["hello"; 3]; // array of strings
-set u: [[int; 2]; 3] = [[1, 2]; 3]; // 2D array of integers
+set u: [[int; 2]; 3] = [[1; 2]; 3]; // 2D array of integers
 ```
 
 If you want to modify the value of a variable, you need to have the `mut` keyword (just like Rust).

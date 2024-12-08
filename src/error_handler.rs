@@ -877,7 +877,7 @@ pub struct InvalidDigitLiteral {
 }
 
 #[derive(Error, Debug, Diagnostic)]
-#[error("missing digits after exponent symbol")]
+#[error("expected at least one digit in exponent")]
 pub struct EmptyExponentFloat {
     #[label]
     pub span: SourceSpan,
@@ -898,7 +898,7 @@ pub struct FloatLiteralUnsupportedBase {
     url("{}#{}", ERROR_CODE_URL, self.code().unwrap())
 )]
 pub struct UnterminatedCharLiteral {
-    #[label]
+    #[label("needs a closing `'`")]
     pub span: SourceSpan,
 }
 
@@ -933,6 +933,7 @@ pub struct RawStrInvalidStarter {
     help("this raw string should be terminated with `\"{}`", "#".repeat(*expected as usize)),
 )]
 pub struct RawStrUnterminated {
+    #[label("unterminated raw string")]
     pub start_span: SourceSpan,
     #[label("help: consider terminating the string here: `{}", "#".repeat(*expected as usize))]
     pub suggest_span: Option<SourceSpan>,

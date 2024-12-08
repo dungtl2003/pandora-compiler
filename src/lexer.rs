@@ -4,7 +4,7 @@ mod unescape;
 
 pub use cursor::{Cursor, EOF_CHAR};
 pub use token::{Base, DocStyle, LiteralKind, RawStrError, Token, TokenKind};
-pub use unescape::{unescape_char, unescape_str, EscapeError};
+pub use unescape::{unescape_unicode, EscapeError, Mode};
 use unicode_xid::UnicodeXID;
 
 /// Validate a raw string literal.

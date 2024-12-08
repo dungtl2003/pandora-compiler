@@ -660,13 +660,34 @@ fn interpret_expr_literal(value: &Lit) -> Result<ValueKind, Vec<IError>> {
     let Lit { kind, symbol } = value;
     let val = symbol.as_str();
     match kind {
-        LitKind::Int => Ok(ValueKind::Int(val.parse::<i64>().unwrap())),
-        LitKind::Float => Ok(ValueKind::Float(val.parse::<f64>().unwrap())),
+        LitKind::Int => Ok(ValueKind::Int(parse_int_number(val).unwrap())),
+        LitKind::Float => Ok(ValueKind::Float(parse_float_number(val).unwrap())),
         LitKind::Str => Ok(ValueKind::Str(val.to_string())),
         LitKind::Bool => Ok(ValueKind::Bool(val.parse::<bool>().unwrap())),
         LitKind::Char => Ok(ValueKind::Char(val.chars().next().unwrap())),
         LitKind::RawStr(_) => Ok(ValueKind::Str(val.to_string())),
         LitKind::Err => unreachable!(),
+    }
+}
+
+fn parse_float_number(input: &str) -> Result<f64, std::num::ParseFloatError> {
+    let mut input = input.to_string();
+    input.retain(|c| c != '_');
+    input.parse::<f64>()
+}
+
+fn parse_int_number(input: &str) -> Result<i64, std::num::ParseIntError> {
+    let mut input = input.to_string();
+    input.retain(|c| c != '_');
+
+    if input.starts_with("0b") || input.starts_with("0B") {
+        i64::from_str_radix(&input[2..], 2) // Parse as binary
+    } else if input.starts_with("0o") || input.starts_with("0O") {
+        i64::from_str_radix(&input[2..], 8) // Parse as octal
+    } else if input.starts_with("0h") || input.starts_with("0H") {
+        i64::from_str_radix(&input[2..], 16) // Parse as hexadecimal
+    } else {
+        input.parse::<i64>() // Parse as decimal
     }
 }
 

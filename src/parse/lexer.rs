@@ -1,10 +1,12 @@
 mod tokentrees;
 
+use std::ops::Range;
+
 use crate::ast::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,
     TokenStream,
 };
-use crate::lexer::{self, Base, Cursor, EscapeError, RawStrError};
+use crate::lexer::{self, Base, Cursor, EscapeError, Mode, RawStrError};
 use crate::session::{BytePos, Session};
 use crate::span_encoding::Span;
 use crate::symbol::Symbol;
@@ -47,6 +49,9 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     fn next_token(&mut self) -> Token {
         // Skip trivial (whitespaces and comments) tokens.
         loop {
+            if !self.session.can_recover() {
+                return Token::new(TokenKind::Eof, self.mk_sp(self.pos, self.pos));
+            }
             let token = self.cursor.advance_token();
             let start_pos = self.pos;
             self.pos = self.pos + token.len as BytePos;
@@ -129,15 +134,15 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
                 lexer::TokenKind::Eof => TokenKind::Eof,
             };
 
-            let span = self.mk_sp(start_pos, (self.pos - start_pos) as usize);
+            let span = self.mk_sp(start_pos, self.pos);
             return Token::new(kind, span);
         }
     }
 
-    fn mk_sp(&self, start: BytePos, len: usize) -> Span {
+    fn mk_sp(&self, start: BytePos, end: BytePos) -> Span {
         Span {
             offset: start,
-            length: len,
+            length: (end - start) as usize,
         }
     }
 
@@ -238,13 +243,14 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     ) -> TokenKind {
         if let Some(n) = n_hashes {
             // r##" "#
-            let start_content = start + n as u32 + 2;
-            let end_content = end - n as u32 - 1;
-            let symbol = self.symbol_from_to(start_content, end_content);
-            TokenKind::Literal(Lit {
-                kind: LitKind::RawStr(n),
-                symbol,
-            })
+            self.cook_unicode(
+                LitKind::RawStr(n),
+                Mode::RawStr,
+                start,
+                end,
+                2 + n as u32,
+                1 + n as u32,
+            )
         } else {
             self.report_raw_string_error(start);
             TokenKind::Literal(Lit {
@@ -263,27 +269,14 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
             });
         }
 
-        let content_inside_quote = self.str_from_to(start + 1, end - 1); // remove ""
-        let res: Result<String, Vec<lexer::EscapeError>> =
-            lexer::unescape_str(content_inside_quote);
-
-        match res {
-            Err(errs) => {
-                errs.iter().for_each(|err| {
-                    self.report_unescape_character_literal(err.clone(), start, end);
-                });
-                return TokenKind::Literal(Lit {
-                    kind: LitKind::Err,
-                    symbol: self.symbol_from_to(start, end),
-                });
-            }
-            Ok(_) => {
-                return TokenKind::Literal(Lit {
-                    kind: LitKind::Str,
-                    symbol: self.symbol_from_to(start + 1, end - 1),
-                })
-            }
-        }
+        self.cook_unicode(
+            LitKind::Str,
+            Mode::Str,
+            start,
+            end,
+            1, // skip "
+            1, // skip "
+        )
     }
 
     fn cook_char_literal(&mut self, terminated: bool, start: BytePos, end: BytePos) -> TokenKind {
@@ -295,24 +288,72 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
             });
         }
 
-        let content_inside_quote = self.str_from_to(start + 1, end - 1); // remove ''
-        let res = lexer::unescape_char(content_inside_quote);
+        self.cook_unicode(
+            LitKind::Char,
+            Mode::Char,
+            start,
+            end,
+            1, // skip '
+            1, // skip '
+        )
+    }
 
-        match res {
-            Err(e) => {
-                self.report_unescape_character_literal(e, start, end);
-                return TokenKind::Literal(Lit {
-                    kind: LitKind::Err,
-                    symbol: self.symbol_from_to(start, end),
+    fn cook_unicode(
+        &mut self,
+        kind: LitKind,
+        mode: Mode,
+        start: BytePos,
+        end: BytePos,
+        prefix_len: u32,
+        postfix_len: u32,
+    ) -> TokenKind {
+        self.cook_common(
+            kind,
+            mode,
+            start,
+            end,
+            prefix_len,
+            postfix_len,
+            |src, mode, callback| {
+                lexer::unescape_unicode(src, mode, &mut |span, res| {
+                    callback(span, res.map(drop));
                 });
+            },
+        )
+    }
+
+    fn cook_common(
+        &mut self,
+        mut kind: LitKind,
+        mode: Mode,
+        start: BytePos,
+        end: BytePos,
+        prefix_len: u32,
+        postfix_len: u32,
+        unescape: fn(&str, Mode, &mut dyn FnMut(Range<usize>, Result<(), EscapeError>)),
+    ) -> TokenKind {
+        let content_start = start + prefix_len;
+        let content_end = end - postfix_len;
+        let lit_content = self.str_from_to(content_start, content_end);
+        unescape(lit_content, mode, &mut |range, res| {
+            if let Err(err) = res {
+                // just check error
+                let (start, end) = (range.start as u32, range.end as u32);
+                let lo = content_start + start;
+                let hi = lo + end - start;
+                self.report_unescape_error(err, lo, hi);
+
+                kind = LitKind::Err;
             }
-            Ok(c) => {
-                return TokenKind::Literal(Lit {
-                    kind: LitKind::Char,
-                    symbol: c.to_string().as_str().into(),
-                })
-            }
-        }
+        });
+
+        let sym = if !matches!(kind, LitKind::Err) {
+            Symbol::from(lit_content)
+        } else {
+            self.symbol_from_to(start, end)
+        };
+
+        TokenKind::Literal(Lit { kind, symbol: sym })
     }
 
     fn cook_raw_ident(&mut self, content: &'src str) -> TokenKind {
@@ -341,10 +382,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     }
 
     fn char_from(&self, pos: BytePos) -> char {
-        self.src[pos as usize..(pos + 1) as usize]
-            .chars()
-            .next()
-            .unwrap()
+        self.src[pos as usize..].chars().next().unwrap()
     }
 
     /// Slice str from start (inclusive) to end (exclusive).
@@ -501,52 +539,34 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         self.session.error_handler.report_err(report);
     }
 
-    fn report_unescape_character_literal(
-        &mut self,
-        err: EscapeError,
-        start: BytePos,
-        end: BytePos,
-    ) {
+    // FIX: Start is not correct because string can have multiple start positions.
+    fn report_unescape_error(&mut self, err: EscapeError, start: BytePos, end: BytePos) {
         self.session.set_error(ErrorType::Recoverable);
+        let span = Span {
+            offset: start,
+            length: (end - start) as usize,
+        };
         let report = match err {
             EscapeError::ZeroChars => self
                 .session
                 .error_handler
-                .build_empty_char_literal_error(Span {
-                    offset: start + 1,
-                    length: 1,
-                })
+                .build_empty_char_literal_error(span)
                 .into(),
             EscapeError::MoreThanOneChar => self
                 .session
                 .error_handler
-                .build_more_than_one_char_literal_error(Span {
-                    offset: start,
-                    length: (end - start) as usize,
-                })
+                .build_more_than_one_char_literal_error(span)
                 .into(),
             EscapeError::LoneSlash => unimplemented!(),
             EscapeError::InvalidEscape => self
                 .session
                 .error_handler
-                .build_unknown_char_escape_error(
-                    self.char_from(start + 1),
-                    Span {
-                        offset: start + 1,
-                        length: 1,
-                    },
-                )
+                .build_unknown_char_escape_error(self.char_from(start + 1), span) // skip '\'
                 .into(),
             EscapeError::EscapeOnlyChar => self
                 .session
                 .error_handler
-                .build_escape_only_char_error(
-                    self.char_from(start + 1),
-                    Span {
-                        offset: start + 1,
-                        length: 1,
-                    },
-                )
+                .build_escape_only_char_error(self.char_from(start + 1), span) // skip '\'
                 .into(),
         };
 
@@ -573,14 +593,14 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     fn report_raw_string_error(&mut self, start: BytePos) {
         let report = match lexer::validate_raw_string(self.str_from(start)) {
             Err(RawStrError::InvalidStarter { bad_char }) => {
-                self.session.set_error(ErrorType::Recoverable);
+                self.session.set_error(ErrorType::Unrecoverable);
                 self.session
                     .error_handler
                     .build_raw_str_invalid_starter_error(
                         bad_char,
                         Span {
                             offset: start,
-                            length: self.pos as usize,
+                            length: (self.pos - start) as usize,
                         },
                     )
                     .into()
@@ -590,10 +610,10 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
                 found,
                 possible_terminator_offset,
             }) => {
-                self.session.set_error(ErrorType::Recoverable);
+                self.session.set_error(ErrorType::Unrecoverable);
                 let start_span = Span {
                     offset: start,
-                    length: (start + expected) as usize,
+                    length: 1,
                 };
                 let possible_terminator_span = if found > 0 {
                     let terminator_offset = possible_terminator_offset.unwrap();
