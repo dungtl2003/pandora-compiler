@@ -112,10 +112,6 @@ set x: bool = true;
 
 ```pandora
 'a'; // character
-'\n'; // newline
-'\r'; // carriage return
-'\t'; // tab
-'\\'; // backslash
 '\"'; // double quote (you can remove the backslash in this case)
 '\'': // single quote
 
