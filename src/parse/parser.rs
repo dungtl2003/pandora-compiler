@@ -125,6 +125,7 @@ impl Parser {
 
         match self.token.kind {
             TokenKind::Semicolon => true,
+            TokenKind::OpenDelim(Delimiter::Brace) => true,
             _ => false,
         }
     }

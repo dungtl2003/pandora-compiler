@@ -49,6 +49,10 @@ pub fn interpret_stmt_for(
     in_loop: bool,
     is_verbose: bool,
 ) -> IResult {
+    println!(
+        "\x1b[90m[DEBUG] Interpreting for loop statement with identifier: {:?} --- expression: {:?} --- block: {:?}\x1b[0m",
+        ident, expr, block
+    );
     // We cannot call interpret_stmt here because we need to push a new scope with the variable
     // declared in the for loop
     let stmts = match &block.kind {
@@ -158,6 +162,10 @@ pub fn interpret_stmt_func_decl(
     in_loop: bool,
     is_verbose: bool,
 ) -> IResult {
+    println!(
+        "\x1b[90m[DEBUG] Interpreting function declaration with function: {:?}\x1b[0m",
+        fun
+    );
     let Fun { sig, body } = fun.as_ref();
     let FunSig {
         name,
@@ -251,6 +259,10 @@ pub fn interpret_stmt_while(
     in_loop: bool,
     is_verbose: bool,
 ) -> IResult {
+    println!(
+        "\x1b[90m[DEBUG] Interpreting while statement with condition: {:?} --- block: {:?}\x1b[0m",
+        cond, block
+    );
     match block.kind {
         StmtKind::Block(_) => {}
         _ => {
@@ -299,6 +311,10 @@ pub fn interpret_stmt_expr(
     in_loop: bool,
     is_verbose: bool,
 ) -> IResult {
+    println!(
+        "\x1b[90m[DEBUG] Interpreting expression statement with expression: {:?}\x1b[0m",
+        expr
+    );
     interpret_expr(env, expr, in_loop, None, is_verbose)?;
     Ok(EvalResult::StmtResult(None))
 }
@@ -425,6 +441,10 @@ pub fn interpret_stmt_var_decl(
     in_loop: bool,
     is_verbose: bool,
 ) -> IResult {
+    println!(
+        "\x1b[90m[DEBUG] Interpreting variable declaration statement with local: {:?}\x1b[0m",
+        local
+    );
     let Local {
         is_mut,
         ident,
@@ -498,6 +518,10 @@ pub fn interpret_stmt_import(
     ident: &ast::Ident,
     is_verbose: bool,
 ) -> IResult {
+    println!(
+        "\x1b[90m[DEBUG] Interpreting import statement with identifier: {:?}\x1b[0m",
+        ident
+    );
     env.import_library(ident.name.as_str(), ident.span, is_verbose)?;
     Ok(EvalResult::StmtResult(None))
 }
