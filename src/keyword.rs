@@ -52,7 +52,6 @@ pub enum Keyword {
     In,
     During,
     As,
-    Const,
     Add,
     Yeet,
 }
@@ -102,7 +101,7 @@ pub fn to_string(keyword: Keyword) -> String {
     keyword.as_ref().to_string()
 }
 
-fn get_kw_map_arr() -> [(Keyword, (&'static str, &'static str)); 16] {
+fn get_kw_map_arr() -> [(Keyword, (&'static str, &'static str)); 15] {
     [
         (Keyword::True, ("true", "yass")),
         (Keyword::False, ("false", "nope")),
@@ -117,7 +116,6 @@ fn get_kw_map_arr() -> [(Keyword, (&'static str, &'static str)); 16] {
         (Keyword::In, ("in", "among")),
         (Keyword::During, ("during", "staylit")),
         (Keyword::As, ("as", "flexin")),
-        (Keyword::Const, ("const", "deadass")),
         (Keyword::Add, ("add", "snatch")),
         (Keyword::Yeet, ("yeet", "bounce")),
     ]
