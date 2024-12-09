@@ -1,5 +1,8 @@
+use std::str::Chars;
+
 use crate::{
     ast::{self, BinOp, BinOpKind, Expr, ExprKind, Lit, LitKind},
+    lexer,
     span_encoding::Span,
 };
 
@@ -662,12 +665,32 @@ fn interpret_expr_literal(value: &Lit) -> Result<ValueKind, Vec<IError>> {
     match kind {
         LitKind::Int => Ok(ValueKind::Int(parse_int_number(val).unwrap())),
         LitKind::Float => Ok(ValueKind::Float(parse_float_number(val).unwrap())),
-        LitKind::Str => Ok(ValueKind::Str(val.to_string())),
+        LitKind::Str => Ok(ValueKind::Str(parse_str(val))),
         LitKind::Bool => Ok(ValueKind::Bool(val.parse::<bool>().unwrap())),
-        LitKind::Char => Ok(ValueKind::Char(val.chars().next().unwrap())),
+        LitKind::Char => Ok(ValueKind::Char(parse_char(val))),
         LitKind::RawStr(_) => Ok(ValueKind::Str(val.to_string())),
         LitKind::Err => unreachable!(),
     }
+}
+
+fn parse_char(input: &str) -> char {
+    let mut ch = '\0'; // dummy value
+    lexer::unescape_unicode(input, lexer::Mode::Char, &mut |_, res| match res {
+        Ok(c) => ch = c,
+        Err(_) => unreachable!("Error in unescaping char must be handled by lexer"),
+    });
+
+    ch
+}
+
+fn parse_str(input: &str) -> String {
+    let mut result = String::new();
+    lexer::unescape_unicode(input, lexer::Mode::Str, &mut |_, res| match res {
+        Ok(c) => result.push(c),
+        Err(_) => unreachable!("Error in unescaping string must be handled by lexer"),
+    });
+
+    result
 }
 
 fn parse_float_number(input: &str) -> Result<f64, std::num::ParseFloatError> {
