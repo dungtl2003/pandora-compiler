@@ -3,10 +3,6 @@ name = "pandora-compiler"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "unbox"      # The custom command name
-path = "src/main.rs"  # Path to the binary source file
-
 [dependencies]
 emojis = "0.6.4"
 miette = { version = "7.2.0", features = ["fancy"] }
