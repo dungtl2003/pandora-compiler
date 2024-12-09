@@ -1,6 +1,6 @@
 [package]
 name = "pandora-interpreter"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 license = "MIT"
 description = "A command-line tool to run pandora language."
