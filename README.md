@@ -27,6 +27,7 @@ Note: Pandora is still in development, so there may be some bugs and missing fea
   - [Comments](#comments)
   - [Importing modules](#importing-modules)
   - [Standard library](#standard-library)
+- [Chaos mode](#chaos-mode)
 - [Examples](#examples)
 - [Keywords](#keywords)
 

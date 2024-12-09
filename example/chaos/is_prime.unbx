@@ -14,6 +14,14 @@ doit input_arr() -> [int] {
 }
 
 doit is_prime(num: int) -> bool {
+    fr num < 2 {
+        bounce nope;
+    }
+
+    fr num == 2 {
+        bounce yass;
+    }
+
     vibe chill ip: bool = yass;
 
     vibe chill i: int = 2;
