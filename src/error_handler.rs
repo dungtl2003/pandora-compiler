@@ -742,7 +742,7 @@ impl ErrorHandler {
 
     pub fn build_unknown_char_escape_error(
         &self,
-        bad_char: char,
+        bad_char: String,
         bad_char_span: Span,
     ) -> UnknownCharEscape {
         UnknownCharEscape {
@@ -753,7 +753,7 @@ impl ErrorHandler {
 
     pub fn build_escape_only_char_error(
         &self,
-        escape_char: char,
+        escape_char: String,
         escape_char_span: Span,
     ) -> EscapeOnlyChar {
         EscapeOnlyChar {
@@ -967,13 +967,14 @@ pub struct UnknownCharEscape {
     #[label("unknown character escape")]
     pub bad_char_span: SourceSpan,
 
-    pub bad_char: char,
+    pub bad_char: String,
 }
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("character constant must be escaped: `{escape_char}`")]
 pub struct EscapeOnlyChar {
-    pub escape_char: char,
+    pub escape_char: String,
+    #[label("help: escape the character: `{}`", escape_char)]
     pub escape_char_span: SourceSpan,
 }
 

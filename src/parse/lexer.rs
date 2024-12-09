@@ -338,10 +338,12 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         unescape(lit_content, mode, &mut |range, res| {
             if let Err(err) = res {
                 // just check error
+                let span_with_quotes = self.mk_sp(start, end);
                 let (start, end) = (range.start as u32, range.end as u32);
                 let lo = content_start + start;
                 let hi = lo + end - start;
-                self.report_unescape_error(err, lo, hi);
+                let span = self.mk_sp(lo, hi);
+                self.report_unescape_error(err, span_with_quotes, span);
 
                 kind = LitKind::Err;
             }
@@ -381,8 +383,28 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         TokenKind::DocComment(comment_kind, doc_style, symbol)
     }
 
+    fn str_from_sp(&self, span: Span) -> String {
+        let str = self
+            .str_from_to(span.offset, span.offset + span.length as BytePos)
+            .to_string();
+        // escape special characters
+        str.replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
+            .replace("\0", "\\0")
+            .replace("\'", "\\'")
+    }
+
     fn char_from(&self, pos: BytePos) -> char {
-        self.src[pos as usize..].chars().next().unwrap()
+        let ch = self.src[pos as usize..].chars().next().unwrap();
+
+        match ch {
+            '\n' => 'n',
+            '\r' => 'r',
+            '\t' => 't',
+            '\0' => '0',
+            _ => ch,
+        }
     }
 
     /// Slice str from start (inclusive) to end (exclusive).
@@ -539,34 +561,29 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         self.session.error_handler.report_err(report);
     }
 
-    // FIX: Start is not correct because string can have multiple start positions.
-    fn report_unescape_error(&mut self, err: EscapeError, start: BytePos, end: BytePos) {
+    fn report_unescape_error(&mut self, err: EscapeError, full_lit_span: Span, err_span: Span) {
         self.session.set_error(ErrorType::Recoverable);
-        let span = Span {
-            offset: start,
-            length: (end - start) as usize,
-        };
         let report = match err {
             EscapeError::ZeroChars => self
                 .session
                 .error_handler
-                .build_empty_char_literal_error(span)
+                .build_empty_char_literal_error(err_span)
                 .into(),
             EscapeError::MoreThanOneChar => self
                 .session
                 .error_handler
-                .build_more_than_one_char_literal_error(span)
+                .build_more_than_one_char_literal_error(full_lit_span)
                 .into(),
             EscapeError::LoneSlash => unimplemented!(),
             EscapeError::InvalidEscape => self
                 .session
                 .error_handler
-                .build_unknown_char_escape_error(self.char_from(start + 1), span) // skip '\'
+                .build_unknown_char_escape_error(self.str_from_sp(err_span), err_span)
                 .into(),
             EscapeError::EscapeOnlyChar => self
                 .session
                 .error_handler
-                .build_escape_only_char_error(self.char_from(start + 1), span) // skip '\'
+                .build_escape_only_char_error(self.str_from_sp(err_span), err_span)
                 .into(),
         };
 

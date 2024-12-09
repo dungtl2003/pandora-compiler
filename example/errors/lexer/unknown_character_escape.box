@@ -1,3 +1,2 @@
 set x: char = '\a\b';
-
-set y
+set y: char = '\b';
