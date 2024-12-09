@@ -58,6 +58,13 @@ If you want some help, you can use the following command:
 unbox --help # or unbox -h for short
 ```
 
+Some command options:
+
+- `--version`, `-v`: Print the version of Pandora
+- `--verbose`: Print the interpretation process (useful for debugging)
+- `-h`, `--help`: Print the help message
+- `--wreck`: Activate chaos mode 💀 (if you use this mode, the file's extension must be `.unbx`). More information about chaos mode can be found [here](#chaos-mode)
+
 ## Features
 
 - Simple syntax
@@ -267,7 +274,7 @@ std.println("Hello, world!"); // use the imported module (for std, you don't nee
 You can also import your own modules.
 
 ```pandora
-add my_module; // your module must be in the same directory as the main file and has .boxx extension (my_module.boxx)
+add my_module; // your module must be in the same directory as the main file and has .boxx extension (my_module.boxx). If you use chaos mode, the extension must be .unbxx
 
 my_module.my_function();
 ```
@@ -298,6 +305,43 @@ List of standard library functions:
 | math | tan | float | Get the tangent of a number |
 | math | log | float, float | Get the logarithm of a number with a base |
 | math | ln | float | Get the natural logarithm of a number |
+
+## Chaos mode
+
+Chaos mode is a mode that allows you to run Pandora programs with some tweaks. All keywords will be replaced with gen-z slang. To enable this mode, firstly, in the command line, you need to add the `--wreck` flag. Secondly, the file extension must be `.unbxx` (instead of `.box`), and the library file extension must be `.unbxx` (instead of `.boxx`). Below is the list of keywords that will be replaced:
+
+| Pandora | Chaos mode |
+| --- | --- |
+| true | yass |
+| false | nope |
+| set | vibe |
+| mut | chill |
+| when | fr |
+| alt | nah |
+| fun | doit |
+| br | bruhstop |
+| skip | keepitup |
+| for | onloop |
+| in | among |
+| during | staylit |
+| as | flexin |
+| const | deadass |
+| add | snatch |
+| yeet | bounce |
+
+Example:
+
+```pandora
+vibe x: int = 5;
+
+fr x > 5 {
+    println("x is greater than 5");
+} nah fr x == 5 {
+    println("x is equal to 5");
+} nah {
+    println("x is less than 5");
+}
+```
 
 ## Examples
 

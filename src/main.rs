@@ -34,21 +34,35 @@ fn main() {
     // collect args
     let args: Vec<String> = env::args().collect();
 
-    // verbose mode flag check
-    let is_verbose =
-        args.contains(&String::from("--verbose")) || args.contains(&String::from("-v"));
-
-    let is_genz = args.contains(&String::from("--wreck"));
-
-    // error display
-    if args.len() < 2
-        || args.contains(&String::from("help"))
-        || args.contains(&String::from("--help"))
-        || args.contains(&String::from("-h"))
-    {
+    if args.len() == 1 {
         help();
         process::exit(1);
     }
+
+    // validate options
+    if let Err(e) = validate_options(args.clone()) {
+        eprintln!("Error: {}", e);
+        process::exit(1);
+    }
+
+    // help flag check
+    if args.contains(&String::from("--help")) || args.contains(&String::from("-h")) {
+        help();
+        process::exit(0);
+    }
+
+    // version flag check
+    if args.contains(&String::from("--version")) || args.contains(&String::from("-v")) {
+        const VERSION: &str = env!("CARGO_PKG_VERSION");
+        println!("Pandora version {}", VERSION);
+        process::exit(0);
+    }
+
+    // verbose mode flag check
+    let is_verbose = args.contains(&String::from("--verbose"));
+
+    // chaos mode flag check
+    let is_genz = args.contains(&String::from("--wreck"));
 
     let filename = &args[1];
 
@@ -104,8 +118,28 @@ fn help() {
     println!("");
     println!("Usage: unbox <file.box> [--verbose | -v]");
     println!("Options:");
-    println!("  --verbose, -v      Enable verbose output");
-    println!("  help, --help, -h   Display this help message");
+    println!("  --version, -v      Display version information");
+    println!("  --verbose          Enable verbose output");
+    println!("  --help, -h         Display this help message");
     println!("  --wreck            Enable Gen Z mode ☠️☠️☠️");
     println!("");
+}
+
+fn validate_options(args: Vec<String>) -> Result<(), String> {
+    let valid_options = vec![
+        "--verbose".to_string(),
+        "-v".to_string(),
+        "--help".to_string(),
+        "-h".to_string(),
+        "--version".to_string(),
+        "--wreck".to_string(),
+    ];
+
+    for arg in args {
+        if arg.starts_with("-") && !valid_options.contains(&arg) {
+            return Err(format!("invalid option: {}", arg));
+        }
+    }
+
+    Ok(())
 }
