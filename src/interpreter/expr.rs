@@ -246,7 +246,9 @@ fn interpret_expr_assign_op(
         span: expr_span,
     };
     let result = interpret_expr(env, &Box::new(binary_expr), in_loop, is_verbose)?;
-    interpret_expr_assign_with_known_value(env, lhs, result, in_loop, expr_span, is_verbose)
+    interpret_expr_assign_with_known_value(
+        env, lhs, result, in_loop, op.span, expr_span, is_verbose,
+    )
 }
 
 fn interpret_expr_assign(
@@ -259,19 +261,15 @@ fn interpret_expr_assign(
     is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
     let rhs = interpret_expr(env, rhs, in_loop, is_verbose)?;
-    let Value { kind, span } = rhs;
-    match &lhs.kind {
-        ExprKind::Identifier(ident) => interpret_expr_assign_ident_with_known_value(
-            env, ident, kind, span, expr_span, is_verbose,
-        ),
-        ExprKind::Index(arr, idx, _) => interpret_expr_assign_array_index_with_known_value(
-            env, arr, idx, kind, in_loop, is_verbose,
-        ),
-        _ => Err(vec![IError::InvalidLhsAssign {
-            assign_span,
-            lhs_span: lhs.span,
-        }]),
-    }
+    interpret_expr_assign_with_known_value(
+        env,
+        lhs,
+        rhs,
+        in_loop,
+        assign_span,
+        expr_span,
+        is_verbose,
+    )
 }
 
 fn interpret_expr_lib_funcall(
@@ -863,6 +861,7 @@ fn interpret_expr_assign_with_known_value(
     lhs: &Box<Expr>,
     rhs: Value,
     in_loop: bool,
+    assign_span: Span,
     expr_span: Span,
     is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
@@ -876,7 +875,7 @@ fn interpret_expr_assign_with_known_value(
         ),
         _ => {
             return Err(vec![IError::InvalidLhsAssign {
-                assign_span: expr_span,
+                assign_span: assign_span,
                 lhs_span: lhs.span,
             }]);
         }

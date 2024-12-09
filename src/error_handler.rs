@@ -1261,7 +1261,7 @@ pub struct VarIsNotInitialized {
 pub struct CannotCast {
     from: String,
     to: String,
-    #[label(primary)]
+    #[label("this has type `{}`", from)]
     span: SourceSpan,
 }
 
