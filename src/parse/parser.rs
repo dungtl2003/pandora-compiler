@@ -181,6 +181,7 @@ impl Parser {
             let err = PError::ExpectedIdentifier {
                 found: TokenType::Keyword(ident.name),
                 span: self.token.span,
+                prev_span: self.prev_token.span,
             };
             return Err(vec![err]);
         }
@@ -202,6 +203,7 @@ impl Parser {
                 let err = PError::ExpectedIdentifier {
                     found: tok_type,
                     span: self.token.span,
+                    prev_span: self.prev_token.span,
                 };
 
                 Err(vec![err])

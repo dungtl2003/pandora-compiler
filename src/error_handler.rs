@@ -597,8 +597,17 @@ impl ErrorHandler {
         &self,
         found: TokenType,
         span: Span,
+        prev_span: Span,
     ) -> ExpectedIdentifier {
-        let span = span.to_source_span();
+        // If the found token is an EOF token, we want to display the error at the end of the file
+        let span = match found {
+            TokenType::Token(tok) => match tok {
+                TokenKind::Eof => Span::new(prev_span.end() - 1, prev_span.end()),
+                _ => span,
+            },
+            _ => span,
+        }
+        .to_source_span();
 
         let help_msg = match found {
             TokenType::Token(_) | TokenType::Operator => None,

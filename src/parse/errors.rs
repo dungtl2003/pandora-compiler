@@ -19,6 +19,7 @@ pub enum PError {
     ExpectedIdentifier {
         found: TokenType,
         span: Span,
+        prev_span: Span,
     },
 
     MismatchedClosingDelimiter {
@@ -52,8 +53,12 @@ impl PError {
             PError::ExpectedStatement { token, span } => error_handler
                 .build_expected_statement_error(token, span)
                 .into(),
-            PError::ExpectedIdentifier { found, span } => error_handler
-                .build_expected_identifier_error(found, span)
+            PError::ExpectedIdentifier {
+                found,
+                span,
+                prev_span,
+            } => error_handler
+                .build_expected_identifier_error(found, span, prev_span)
                 .into(),
             PError::MismatchedClosingDelimiter {
                 delimiter,
