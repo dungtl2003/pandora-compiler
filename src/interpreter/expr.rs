@@ -2,6 +2,7 @@ use std::str::Chars;
 
 use crate::{
     ast::{self, BinOp, BinOpKind, Expr, ExprKind, Lit, LitKind},
+    kw::{self, Keyword},
     lexer,
     span_encoding::Span,
 };
@@ -666,10 +667,21 @@ fn interpret_expr_literal(value: &Lit) -> Result<ValueKind, Vec<IError>> {
         LitKind::Int => Ok(ValueKind::Int(parse_int_number(val).unwrap())),
         LitKind::Float => Ok(ValueKind::Float(parse_float_number(val).unwrap())),
         LitKind::Str => Ok(ValueKind::Str(parse_str(val))),
-        LitKind::Bool => Ok(ValueKind::Bool(val.parse::<bool>().unwrap())),
+        LitKind::Bool => Ok(ValueKind::Bool(parse_bool(val))),
         LitKind::Char => Ok(ValueKind::Char(parse_char(val))),
         LitKind::RawStr(_) => Ok(ValueKind::Str(val.to_string())),
         LitKind::Err => unreachable!(),
+    }
+}
+
+fn parse_bool(input: &str) -> bool {
+    match kw::from_str(input) {
+        Ok(keyword) => match keyword {
+            Keyword::True => true,
+            Keyword::False => false,
+            _ => unreachable!(),
+        },
+        Err(_) => unreachable!(),
     }
 }
 

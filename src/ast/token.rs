@@ -384,5 +384,12 @@ impl Token {
 pub fn ident_can_begin_expr(name: Symbol, span: Span, is_raw: IdentIsRaw) -> bool {
     let ident_token = Token::new(Ident(name, is_raw), span);
 
-    !ident_token.is_non_raw_ident_where(|ident| kw::is_keyword(ident.name))
+    is_raw == IdentIsRaw::Yes
+        || ident_token.is_non_raw_ident_where(|ident| match kw::from_str(ident.name.as_str()) {
+            Ok(keyword) => match keyword {
+                Keyword::True | Keyword::False => true,
+                _ => false,
+            },
+            Err(_) => true,
+        })
 }

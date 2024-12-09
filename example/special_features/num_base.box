@@ -1,0 +1,3 @@
+println(0b1011_0100 as str);
+println(0O755 as str);
+println(0hFA as str);

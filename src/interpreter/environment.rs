@@ -235,9 +235,14 @@ impl Environment {
             .parent()
             .ok_or_else(|| vec![IError::DirectoryNotFound])?;
 
-        let lib_filename = format!("{}.boxx", name);
-        let lib_path = source_dir.join(&lib_filename);
+        let is_genz = crate::is_genz_mode();
+        let lib_filename = if is_genz {
+            format!("{}.unbxx", name)
+        } else {
+            format!("{}.boxx", name)
+        };
 
+        let lib_path = source_dir.join(&lib_filename);
         if !lib_path.exists() {
             return Err(vec![IError::ExternalLibraryNotFound {
                 lib_name: name.to_string(),

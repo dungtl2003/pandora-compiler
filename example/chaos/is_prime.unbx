@@ -1,0 +1,48 @@
+doit input_arr() -> [int] {
+    print("Enter number of elements: ");
+    vibe n: int = input() flexin int;
+    vibe chill arr: [int] = [0; n]; 
+
+    vibe chill i: int = 0;
+    staylit i < n {
+        print("arr[" + i flexin str + "] = ");
+        arr[i] = input() flexin int;
+        i += 1;
+    }
+
+    bounce arr;
+}
+
+doit is_prime(num: int) -> bool {
+    vibe chill ip: bool = yass;
+
+    vibe chill i: int = 2;
+    staylit i < num {
+        fr num % i == 0 {
+            ip = nope;
+            bruhstop;
+        }
+
+        i += 1;
+    }
+
+    fr ip {
+        bounce yass;
+    } nah {
+        bounce nope;
+    }
+}
+
+doit main() {
+    vibe arr: [int] = input_arr();
+
+    println("PRIMES:");
+    onloop el among arr {
+        fr is_prime(el) {
+            print(el flexin str + " ");
+        }
+    }
+    println("");
+}
+
+main();

@@ -16,6 +16,19 @@ use std::{env, fs, path::Path, process, sync::Arc};
 use session::SourceFile;
 
 use crate::error_handler::*;
+use once_cell::sync::Lazy;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+// Global flag for Gen Z mode
+static GENZ_MODE: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
+
+pub fn enable_genz_mode() {
+    GENZ_MODE.store(true, Ordering::SeqCst);
+}
+
+pub fn is_genz_mode() -> bool {
+    GENZ_MODE.load(Ordering::SeqCst)
+}
 
 fn main() {
     // collect args
@@ -24,6 +37,8 @@ fn main() {
     // verbose mode flag check
     let is_verbose =
         args.contains(&String::from("--verbose")) || args.contains(&String::from("-v"));
+
+    let is_genz = args.contains(&String::from("--wreck"));
 
     // error display
     if args.len() < 2
@@ -37,15 +52,27 @@ fn main() {
 
     let filename = &args[1];
 
-    if !filename.ends_with(".box") {
-        eprintln!("Error: Input file must have a .box extension");
-        process::exit(1);
+    if is_genz {
+        if !filename.ends_with(".unbx") {
+            eprintln!("Error: Input file must have a .unbx extension");
+            process::exit(1);
+        }
+    } else {
+        if !filename.ends_with(".box") {
+            eprintln!("Error: Input file must have a .box extension");
+            process::exit(1);
+        }
     }
 
     // file check disk
     if !Path::new(filename).exists() {
         eprintln!("Error: File '{}' not found", filename);
         process::exit(1);
+    }
+
+    if is_genz {
+        enable_genz_mode();
+        println!("UNLEASH THE CHAOS!!!!!!!!");
     }
 
     // read file
@@ -79,5 +106,6 @@ fn help() {
     println!("Options:");
     println!("  --verbose, -v      Enable verbose output");
     println!("  help, --help, -h   Display this help message");
+    println!("  --wreck            Enable Gen Z mode ☠️☠️☠️");
     println!("");
 }
