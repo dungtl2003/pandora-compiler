@@ -116,16 +116,18 @@ impl Parser {
     fn parse_expr_prefix(&mut self) -> PResult<Box<Expr>> {
         match self.token.kind {
             TokenKind::Not => {
+                let start = self.token.span;
                 self.advance();
                 let expr = self.parse_expr_prefix()?;
-                let span = expr.span;
+                let span = start.to(expr.span);
                 let expr = self.mk_unary(UnOp::Not, expr);
                 Ok(self.mk_expr(expr, span))
             }
             TokenKind::BinOp(BinOpToken::Minus) => {
+                let start = self.token.span;
                 self.advance();
                 let expr = self.parse_expr_prefix()?;
-                let span = self.token.span;
+                let span = start.to(expr.span);
                 let expr = self.mk_unary(UnOp::Ne, expr);
                 Ok(self.mk_expr(expr, span))
             }
