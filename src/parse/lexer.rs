@@ -395,18 +395,6 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
             .replace("\'", "\\'")
     }
 
-    fn char_from(&self, pos: BytePos) -> char {
-        let ch = self.src[pos as usize..].chars().next().unwrap();
-
-        match ch {
-            '\n' => 'n',
-            '\r' => 'r',
-            '\t' => 't',
-            '\0' => '0',
-            _ => ch,
-        }
-    }
-
     /// Slice str from start (inclusive) to end (exclusive).
     fn str_from_to(&self, start: BytePos, end: BytePos) -> &'src str {
         &self.src[start as usize..end as usize]

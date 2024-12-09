@@ -290,7 +290,6 @@ impl Environment {
                             &mut Environment::new(),
                             &output.unwrap(),
                             false,
-                            None,
                             is_verbose,
                         )?)
                     } else {
@@ -307,13 +306,7 @@ impl Environment {
                                 span,
                             } = param;
 
-                            let ty = interpret_ty(
-                                &mut Environment::new(),
-                                &ty,
-                                false,
-                                None,
-                                is_verbose,
-                            )?;
+                            let ty = interpret_ty(&mut Environment::new(), &ty, false, is_verbose)?;
                             let ident = Ident {
                                 name: ident.name.as_str().to_string(),
                                 span: ident.span,

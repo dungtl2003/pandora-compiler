@@ -1,5 +1,3 @@
-use std::str::Chars;
-
 use crate::{
     ast::{self, BinOp, BinOpKind, Expr, ExprKind, Lit, LitKind},
     kw::{self, Keyword},
@@ -13,13 +11,12 @@ pub fn interpret_expr(
     env: &mut Environment,
     expr: &Box<Expr>,
     in_loop: bool,
-    prev_comparison_span: Option<Span>,
     is_verbose: bool,
 ) -> Result<Value, Vec<IError>> {
     let expr_span = expr.span;
     let ty = match &expr.kind {
         ExprKind::Binary(op, lhs, rhs) => {
-            interpret_expr_binary(env, op, lhs, rhs, in_loop, prev_comparison_span, is_verbose)?
+            interpret_expr_binary(env, op, lhs, rhs, in_loop, is_verbose)?
         }
         ExprKind::Identifier(ident) => interpret_expr_ident(env, ident)?,
         ExprKind::Literal(value) => interpret_expr_literal(value)?,
@@ -62,8 +59,8 @@ fn interpret_expr_repeat(
     in_loop: bool,
     is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
-    let e = interpret_expr(env, element, in_loop, None, is_verbose)?;
-    let c = interpret_expr(env, count, in_loop, None, is_verbose)?;
+    let e = interpret_expr(env, element, in_loop, is_verbose)?;
+    let c = interpret_expr(env, count, in_loop, is_verbose)?;
 
     match c.kind {
         ValueKind::Int(c) => {
@@ -90,8 +87,8 @@ fn interpret_expr_index(
     in_loop: bool,
     is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
-    let a = interpret_expr(env, array, in_loop, None, is_verbose)?;
-    let i = interpret_expr(env, index, in_loop, None, is_verbose)?;
+    let a = interpret_expr(env, array, in_loop, is_verbose)?;
+    let i = interpret_expr(env, index, in_loop, is_verbose)?;
 
     match a.kind {
         ValueKind::Array(elements) => match i.kind {
@@ -127,7 +124,7 @@ fn interpret_expr_array(
     let mut result = Vec::new();
     let mut ty: Option<TyKind> = None;
     for element in elements {
-        let el = interpret_expr(env, element, in_loop, None, is_verbose)?;
+        let el = interpret_expr(env, element, in_loop, is_verbose)?;
         match ty {
             Some(ref ty) => {
                 if *ty != el.to_ty_kind() {
@@ -155,7 +152,7 @@ pub fn interpret_expr_lib_access(
     in_loop: bool,
     is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
-    let lib = interpret_expr(env, lib, in_loop, None, is_verbose)?;
+    let lib = interpret_expr(env, lib, in_loop, is_verbose)?;
     let lib_name = match lib.kind {
         ValueKind::Str(val) => val,
         _ => return Err(vec![IError::InvalidLibraryName { span: lib.span }]),
@@ -194,7 +191,7 @@ pub fn interpret_expr_unary(
     in_loop: bool,
     is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
-    let e = interpret_expr(env, expr, in_loop, None, is_verbose)?;
+    let e = interpret_expr(env, expr, in_loop, is_verbose)?;
     match op {
         ast::UnOp::Ne => match e.kind {
             ValueKind::Int(val) => Ok(ValueKind::Int(-val)),
@@ -223,8 +220,8 @@ fn interpret_expr_cast(
     in_loop: bool,
     is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
-    let e = interpret_expr(env, expr, in_loop, None, is_verbose)?;
-    let ty = interpret_ty(env, ty, in_loop, None, is_verbose)?;
+    let e = interpret_expr(env, expr, in_loop, is_verbose)?;
+    let ty = interpret_ty(env, ty, in_loop, is_verbose)?;
     match e.try_cast_to(&ty.kind) {
         Ok(val) => Ok(val.kind),
         Err((from, to)) => Err(vec![IError::CannotCast {
@@ -248,7 +245,7 @@ fn interpret_expr_assign_op(
         kind: ast::ExprKind::Binary(op.clone(), lhs.clone(), rhs.clone()),
         span: expr_span,
     };
-    let result = interpret_expr(env, &Box::new(binary_expr), in_loop, None, is_verbose)?;
+    let result = interpret_expr(env, &Box::new(binary_expr), in_loop, is_verbose)?;
     interpret_expr_assign_with_known_value(env, lhs, result, in_loop, expr_span, is_verbose)
 }
 
@@ -261,7 +258,7 @@ fn interpret_expr_assign(
     expr_span: Span,
     is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
-    let rhs = interpret_expr(env, rhs, in_loop, None, is_verbose)?;
+    let rhs = interpret_expr(env, rhs, in_loop, is_verbose)?;
     let Value { kind, span } = rhs;
     match &lhs.kind {
         ExprKind::Identifier(ident) => interpret_expr_assign_ident_with_known_value(
@@ -296,7 +293,7 @@ fn interpret_expr_lib_funcall(
     let evaluated_args = {
         let mut args_vec = Vec::new();
         for arg in args {
-            args_vec.push((interpret_expr(env, arg, in_loop, None, is_verbose)?, true));
+            args_vec.push((interpret_expr(env, arg, in_loop, is_verbose)?, true));
         }
         args_vec
     };
@@ -336,11 +333,39 @@ fn interpret_expr_binary(
     lhs: &Box<Expr>,
     rhs: &Box<Expr>,
     in_loop: bool,
-    prev_comparation_span: Option<Span>,
     is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
-    let lhs = interpret_expr(env, lhs, in_loop, prev_comparation_span, is_verbose)?;
-    let rhs = interpret_expr(env, rhs, in_loop, prev_comparation_span, is_verbose)?;
+    let prev_comparation_span = match &lhs.kind {
+        ExprKind::Binary(op, _, _) => match op.node {
+            BinOpKind::Eq
+            | BinOpKind::Ne
+            | BinOpKind::Lt
+            | BinOpKind::Le
+            | BinOpKind::Gt
+            | BinOpKind::Ge => Some(op.span),
+            _ => None,
+        },
+        _ => None,
+    };
+
+    match &binop.node {
+        BinOpKind::Eq
+        | BinOpKind::Ne
+        | BinOpKind::Lt
+        | BinOpKind::Le
+        | BinOpKind::Gt
+        | BinOpKind::Ge => {
+            if prev_comparation_span.is_some() {
+                return Err(vec![IError::ComparisonOperatorsCannotBeChained {
+                    chain_op_span: vec![prev_comparation_span.unwrap(), binop.span],
+                }]);
+            }
+        }
+        _ => {}
+    }
+
+    let lhs = interpret_expr(env, lhs, in_loop, is_verbose)?;
+    let rhs = interpret_expr(env, rhs, in_loop, is_verbose)?;
 
     let lhs_ty = lhs.to_ty_kind();
     let rhs_ty = rhs.to_ty_kind();
@@ -404,122 +429,80 @@ fn interpret_expr_binary(
                 }])
             }
         },
-        BinOpKind::Eq => {
-            if prev_comparation_span.is_some() {
-                return Err(vec![IError::ComparisonOperatorsCannotBeChained {
-                    chain_op_span: vec![prev_comparation_span.unwrap(), binop.span],
-                }]);
-            }
-            match (lhs.kind, rhs.kind) {
-                (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs == rhs)),
-                (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs == rhs)),
-                (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs == rhs)),
-                (ValueKind::Bool(lhs), ValueKind::Bool(rhs)) => Ok(ValueKind::Bool(lhs == rhs)),
-                (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs == rhs)),
-                _ => Err(vec![IError::CannotCompare {
-                    lhs_ty: lhs_ty.to_string(),
-                    rhs_ty: rhs_ty.to_string(),
-                    op: binop.to_string(),
-                    op_span: binop.span,
-                }]),
-            }
-        }
-        BinOpKind::Ne => {
-            if prev_comparation_span.is_some() {
-                return Err(vec![IError::ComparisonOperatorsCannotBeChained {
-                    chain_op_span: vec![prev_comparation_span.unwrap(), binop.span],
-                }]);
-            }
-            match (lhs.kind, rhs.kind) {
-                (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs != rhs)),
-                (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs != rhs)),
-                (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs != rhs)),
-                (ValueKind::Bool(lhs), ValueKind::Bool(rhs)) => Ok(ValueKind::Bool(lhs != rhs)),
-                (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs != rhs)),
-                _ => Err(vec![IError::CannotCompare {
-                    lhs_ty: lhs_ty.to_string(),
-                    rhs_ty: rhs_ty.to_string(),
-                    op: binop.to_string(),
-                    op_span: binop.span,
-                }]),
-            }
-        }
-        BinOpKind::Lt => {
-            if prev_comparation_span.is_some() {
-                return Err(vec![IError::ComparisonOperatorsCannotBeChained {
-                    chain_op_span: vec![prev_comparation_span.unwrap(), binop.span],
-                }]);
-            }
-            match (lhs.kind, rhs.kind) {
-                (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs < rhs)),
-                (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs < rhs)),
-                (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs < rhs)),
-                (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs < rhs)),
-                _ => Err(vec![IError::CannotCompare {
-                    lhs_ty: lhs_ty.to_string(),
-                    rhs_ty: rhs_ty.to_string(),
-                    op: binop.to_string(),
-                    op_span: binop.span,
-                }]),
-            }
-        }
-        BinOpKind::Le => {
-            if prev_comparation_span.is_some() {
-                return Err(vec![IError::ComparisonOperatorsCannotBeChained {
-                    chain_op_span: vec![prev_comparation_span.unwrap(), binop.span],
-                }]);
-            }
-            match (lhs.kind, rhs.kind) {
-                (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs <= rhs)),
-                (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs <= rhs)),
-                (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs <= rhs)),
-                (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs <= rhs)),
-                _ => Err(vec![IError::CannotCompare {
-                    lhs_ty: lhs_ty.to_string(),
-                    rhs_ty: rhs_ty.to_string(),
-                    op: binop.to_string(),
-                    op_span: binop.span,
-                }]),
-            }
-        }
-        BinOpKind::Gt => {
-            if prev_comparation_span.is_some() {
-                return Err(vec![IError::ComparisonOperatorsCannotBeChained {
-                    chain_op_span: vec![prev_comparation_span.unwrap(), binop.span],
-                }]);
-            }
-            match (lhs.kind, rhs.kind) {
-                (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs > rhs)),
-                (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs > rhs)),
-                (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs > rhs)),
-                (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs > rhs)),
-                _ => Err(vec![IError::CannotCompare {
-                    lhs_ty: lhs_ty.to_string(),
-                    rhs_ty: rhs_ty.to_string(),
-                    op: binop.to_string(),
-                    op_span: binop.span,
-                }]),
-            }
-        }
-        BinOpKind::Ge => {
-            if prev_comparation_span.is_some() {
-                return Err(vec![IError::ComparisonOperatorsCannotBeChained {
-                    chain_op_span: vec![prev_comparation_span.unwrap(), binop.span],
-                }]);
-            }
-            match (lhs.kind, rhs.kind) {
-                (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs >= rhs)),
-                (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs >= rhs)),
-                (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs >= rhs)),
-                (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs >= rhs)),
-                _ => Err(vec![IError::CannotCompare {
-                    lhs_ty: lhs_ty.to_string(),
-                    rhs_ty: rhs_ty.to_string(),
-                    op: binop.to_string(),
-                    op_span: binop.span,
-                }]),
-            }
-        }
+        BinOpKind::Eq => match (lhs.kind, rhs.kind) {
+            (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs == rhs)),
+            (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs == rhs)),
+            (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs == rhs)),
+            (ValueKind::Bool(lhs), ValueKind::Bool(rhs)) => Ok(ValueKind::Bool(lhs == rhs)),
+            (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs == rhs)),
+            _ => Err(vec![IError::CannotCompare {
+                lhs_ty: lhs_ty.to_string(),
+                rhs_ty: rhs_ty.to_string(),
+                op: binop.to_string(),
+                op_span: binop.span,
+            }]),
+        },
+        BinOpKind::Ne => match (lhs.kind, rhs.kind) {
+            (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs != rhs)),
+            (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs != rhs)),
+            (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs != rhs)),
+            (ValueKind::Bool(lhs), ValueKind::Bool(rhs)) => Ok(ValueKind::Bool(lhs != rhs)),
+            (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs != rhs)),
+            _ => Err(vec![IError::CannotCompare {
+                lhs_ty: lhs_ty.to_string(),
+                rhs_ty: rhs_ty.to_string(),
+                op: binop.to_string(),
+                op_span: binop.span,
+            }]),
+        },
+        BinOpKind::Lt => match (lhs.kind, rhs.kind) {
+            (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs < rhs)),
+            (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs < rhs)),
+            (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs < rhs)),
+            (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs < rhs)),
+            _ => Err(vec![IError::CannotCompare {
+                lhs_ty: lhs_ty.to_string(),
+                rhs_ty: rhs_ty.to_string(),
+                op: binop.to_string(),
+                op_span: binop.span,
+            }]),
+        },
+        BinOpKind::Le => match (lhs.kind, rhs.kind) {
+            (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs <= rhs)),
+            (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs <= rhs)),
+            (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs <= rhs)),
+            (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs <= rhs)),
+            _ => Err(vec![IError::CannotCompare {
+                lhs_ty: lhs_ty.to_string(),
+                rhs_ty: rhs_ty.to_string(),
+                op: binop.to_string(),
+                op_span: binop.span,
+            }]),
+        },
+        BinOpKind::Gt => match (lhs.kind, rhs.kind) {
+            (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs > rhs)),
+            (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs > rhs)),
+            (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs > rhs)),
+            (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs > rhs)),
+            _ => Err(vec![IError::CannotCompare {
+                lhs_ty: lhs_ty.to_string(),
+                rhs_ty: rhs_ty.to_string(),
+                op: binop.to_string(),
+                op_span: binop.span,
+            }]),
+        },
+        BinOpKind::Ge => match (lhs.kind, rhs.kind) {
+            (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Bool(lhs >= rhs)),
+            (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Bool(lhs >= rhs)),
+            (ValueKind::Str(lhs), ValueKind::Str(rhs)) => Ok(ValueKind::Bool(lhs >= rhs)),
+            (ValueKind::Char(lhs), ValueKind::Char(rhs)) => Ok(ValueKind::Bool(lhs >= rhs)),
+            _ => Err(vec![IError::CannotCompare {
+                lhs_ty: lhs_ty.to_string(),
+                rhs_ty: rhs_ty.to_string(),
+                op: binop.to_string(),
+                op_span: binop.span,
+            }]),
+        },
         BinOpKind::And => match (lhs.kind, rhs.kind) {
             (ValueKind::Bool(lhs), ValueKind::Bool(rhs)) => Ok(ValueKind::Bool(lhs && rhs)),
             _ => Err(vec![IError::NoImplForOp {
@@ -633,7 +616,7 @@ fn interpret_expr_funcall(
         let evaluated_args = {
             let mut args_vec = Vec::new();
             for arg in args {
-                args_vec.push((interpret_expr(env, arg, in_loop, None, is_verbose)?, true));
+                args_vec.push((interpret_expr(env, arg, in_loop, is_verbose)?, true));
             }
             args_vec
         };
@@ -654,7 +637,7 @@ fn interpret_expr_funcall(
 
     let mut evaluated_args = Vec::new();
     for arg in args {
-        evaluated_args.push(interpret_expr(env, arg, in_loop, None, is_verbose)?);
+        evaluated_args.push(interpret_expr(env, arg, in_loop, is_verbose)?);
     }
 
     Value::evaluate_function(env, result.unwrap().1, evaluated_args, is_verbose)
@@ -738,7 +721,7 @@ fn update_array_index(
     let var = loop {
         match &e.kind {
             ExprKind::Index(array, index, _) => {
-                let index = interpret_expr(env, index, false, None, is_verbose).unwrap();
+                let index = interpret_expr(env, index, false, is_verbose).unwrap();
                 match index.kind {
                     ValueKind::Int(index) => indices.push(index),
                     _ => unreachable!(),
@@ -841,11 +824,11 @@ fn interpret_expr_assign_array_index_with_known_value(
     in_loop: bool,
     is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
-    let arr = interpret_expr(env, array, in_loop, None, is_verbose)?;
+    let arr = interpret_expr(env, array, in_loop, is_verbose)?;
 
     match arr.kind {
         ValueKind::Array(mut elements) => {
-            let index = interpret_expr(env, index, in_loop, None, is_verbose)?;
+            let index = interpret_expr(env, index, in_loop, is_verbose)?;
 
             match index.kind {
                 ValueKind::Int(i) => {

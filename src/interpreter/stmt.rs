@@ -49,10 +49,12 @@ pub fn interpret_stmt_for(
     in_loop: bool,
     is_verbose: bool,
 ) -> IResult {
-    println!(
+    if is_verbose {
+        println!(
         "\x1b[90m[DEBUG] Interpreting for loop statement with identifier: {:?} --- expression: {:?} --- block: {:?}\x1b[0m",
         ident, expr, block
     );
+    }
     // We cannot call interpret_stmt here because we need to push a new scope with the variable
     // declared in the for loop
     let stmts = match &block.kind {
@@ -64,7 +66,7 @@ pub fn interpret_stmt_for(
         }
     };
 
-    let value = interpret_expr(env, expr, in_loop, None, is_verbose)?;
+    let value = interpret_expr(env, expr, in_loop, is_verbose)?;
     let value_ty = value.to_ty_kind();
     let values = value.clone().into_iter().map_err(|_| {
         [IError::ExpectedIterator {
@@ -147,7 +149,7 @@ pub fn interpret_stmt_return(
     }
 
     let value = match expr {
-        Some(expr) => interpret_expr(env, expr, false, None, is_verbose)?,
+        Some(expr) => interpret_expr(env, expr, false, is_verbose)?,
         None => Value {
             kind: ValueKind::Unit,
             span: Span::after(span),
@@ -162,10 +164,12 @@ pub fn interpret_stmt_func_decl(
     in_loop: bool,
     is_verbose: bool,
 ) -> IResult {
-    println!(
-        "\x1b[90m[DEBUG] Interpreting function declaration with function: {:?}\x1b[0m",
-        fun
-    );
+    if is_verbose {
+        println!(
+            "\x1b[90m[DEBUG] Interpreting function declaration with function: {:?}\x1b[0m",
+            fun
+        );
+    }
     let Fun { sig, body } = fun.as_ref();
     let FunSig {
         name,
@@ -176,7 +180,7 @@ pub fn interpret_stmt_func_decl(
 
     let mut params: Vec<FuncParam> = vec![];
     for input in inputs {
-        let ty = interpret_ty(env, &input.ty, in_loop, None, is_verbose)?;
+        let ty = interpret_ty(env, &input.ty, in_loop, is_verbose)?;
         let ident = Ident {
             name: input.ident.name.to_string(),
             span: input.ident.span.clone(),
@@ -192,7 +196,7 @@ pub fn interpret_stmt_func_decl(
     }
 
     let output = match output {
-        Some(ty) => Some(interpret_ty(env, ty, in_loop, None, is_verbose)?),
+        Some(ty) => Some(interpret_ty(env, ty, in_loop, is_verbose)?),
         None => None,
     };
 
@@ -259,10 +263,12 @@ pub fn interpret_stmt_while(
     in_loop: bool,
     is_verbose: bool,
 ) -> IResult {
-    println!(
+    if is_verbose {
+        println!(
         "\x1b[90m[DEBUG] Interpreting while statement with condition: {:?} --- block: {:?}\x1b[0m",
         cond, block
     );
+    }
     match block.kind {
         StmtKind::Block(_) => {}
         _ => {
@@ -273,7 +279,7 @@ pub fn interpret_stmt_while(
     }
 
     loop {
-        let value = interpret_expr(env, cond, in_loop, None, is_verbose)?;
+        let value = interpret_expr(env, cond, in_loop, is_verbose)?;
         match value.kind {
             ValueKind::Bool(is_true) => {
                 if is_true {
@@ -311,11 +317,13 @@ pub fn interpret_stmt_expr(
     in_loop: bool,
     is_verbose: bool,
 ) -> IResult {
-    println!(
-        "\x1b[90m[DEBUG] Interpreting expression statement with expression: {:?}\x1b[0m",
-        expr
-    );
-    interpret_expr(env, expr, in_loop, None, is_verbose)?;
+    if is_verbose {
+        println!(
+            "\x1b[90m[DEBUG] Interpreting expression statement with expression: {:?}\x1b[0m",
+            expr
+        );
+    }
+    interpret_expr(env, expr, in_loop, is_verbose)?;
     Ok(EvalResult::StmtResult(None))
 }
 
@@ -380,7 +388,7 @@ pub fn interpret_stmt_if(
         println!("\x1b[90m[DEBUG] Interpreting if statement with condition: {:?} --- then block: {:?} --- else block: {:?}\x1b[0m", cond, then_block, else_block);
     }
 
-    let cond_result = interpret_expr(env, cond, in_loop, None, is_verbose);
+    let cond_result = interpret_expr(env, cond, in_loop, is_verbose);
 
     match then_block.kind {
         StmtKind::Block(_) => {}
@@ -441,10 +449,12 @@ pub fn interpret_stmt_var_decl(
     in_loop: bool,
     is_verbose: bool,
 ) -> IResult {
-    println!(
-        "\x1b[90m[DEBUG] Interpreting variable declaration statement with local: {:?}\x1b[0m",
-        local
-    );
+    if is_verbose {
+        println!(
+            "\x1b[90m[DEBUG] Interpreting variable declaration statement with local: {:?}\x1b[0m",
+            local
+        );
+    }
     let Local {
         is_mut,
         ident,
@@ -453,12 +463,12 @@ pub fn interpret_stmt_var_decl(
         span: _,
     } = local;
 
-    let decl_ty = interpret_ty(env, ty, in_loop, None, is_verbose)?;
+    let decl_ty = interpret_ty(env, ty, in_loop, is_verbose)?;
 
     // If the variable is array, it must have a length if it is not declared with an initializer
     let (value, var_ty_kind, first_assigned_span) = match kind {
         LocalKind::Init(expr) => {
-            let value = interpret_expr(env, expr, false, None, is_verbose)?;
+            let value = interpret_expr(env, expr, false, is_verbose)?;
             let value_ty = value.to_ty_kind();
             if value_ty != decl_ty.kind {
                 return Err(vec![IError::MismatchedType {
@@ -518,10 +528,12 @@ pub fn interpret_stmt_import(
     ident: &ast::Ident,
     is_verbose: bool,
 ) -> IResult {
-    println!(
-        "\x1b[90m[DEBUG] Interpreting import statement with identifier: {:?}\x1b[0m",
-        ident
-    );
+    if is_verbose {
+        println!(
+            "\x1b[90m[DEBUG] Interpreting import statement with identifier: {:?}\x1b[0m",
+            ident
+        );
+    }
     env.import_library(ident.name.as_str(), ident.span, is_verbose)?;
     Ok(EvalResult::StmtResult(None))
 }

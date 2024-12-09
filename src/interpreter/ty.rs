@@ -9,14 +9,11 @@ pub fn interpret_ty(
     env: &mut Environment,
     ty: &ast::Ty,
     in_loop: bool,
-    prev_comparison_span: Option<Span>,
     is_verbose: bool,
 ) -> Result<Ty, Vec<IError>> {
     let kind = match &ty.kind {
         ast::TyKind::Named(ident) => interpret_ty_ident(ident)?,
-        ast::TyKind::Array(ty, len) => {
-            interpret_ty_array(env, ty, len, in_loop, prev_comparison_span, is_verbose)?
-        }
+        ast::TyKind::Array(ty, len) => interpret_ty_array(env, ty, len, in_loop, is_verbose)?,
     };
 
     Ok(Ty {
@@ -30,14 +27,13 @@ fn interpret_ty_array(
     ty: &ast::Ty,
     len: &Option<Box<ast::Expr>>,
     in_loop: bool,
-    prev_comparison_span: Option<Span>,
     is_verbose: bool,
 ) -> Result<TyKind, Vec<IError>> {
-    let ty = interpret_ty(env, ty, in_loop, prev_comparison_span, is_verbose)?;
+    let ty = interpret_ty(env, ty, in_loop, is_verbose)?;
 
     match len {
         Some(len) => {
-            let len = interpret_expr(env, len, in_loop, prev_comparison_span, is_verbose)?;
+            let len = interpret_expr(env, len, in_loop, is_verbose)?;
             match len.kind {
                 ValueKind::Int(len) => Ok(TyKind::Array(Box::new(ty.kind), len)),
                 _ => Err(vec![IError::MismatchedType {
