@@ -18,6 +18,34 @@ pub struct ErrorHandler {
 }
 
 impl ErrorHandler {
+    pub fn build_predefined_error(&self, span: Span, message: String) -> PredefinedError {
+        PredefinedError {
+            span: span.to_source_span(),
+            message,
+        }
+    }
+
+    pub fn build_divided_by_zero_error(&self, divident: String, span: Span) -> DividedByZero {
+        DividedByZero {
+            divident,
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_modded_by_zero_error(&self, divident: String, span: Span) -> ModdedByZero {
+        ModdedByZero {
+            divident,
+            span: span.to_source_span(),
+        }
+    }
+
+    pub fn build_lit_out_of_range_error(&self, span: Span, max: i64) -> LitOutOfRange {
+        LitOutOfRange {
+            span: span.to_source_span(),
+            max: max.to_string(),
+        }
+    }
+
     pub fn build_function_in_library_not_found_error(
         &self,
         func_name: String,
@@ -1520,6 +1548,41 @@ pub struct FunctionInLibraryNotFound {
     func_name: String,
     #[label("function not found")]
     span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("cannot divide by zero")]
+pub struct DividedByZero {
+    pub divident: String,
+    #[label("attempt to divide `{}` by zero", divident)]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("cannot calculate the remainder of `{}` divided by zero", divident)]
+pub struct ModdedByZero {
+    pub divident: String,
+    #[label(
+        "attempt to calculate the remainder of `{}` with a divisor of zero",
+        divident
+    )]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("integer literal is too large")]
+pub struct LitOutOfRange {
+    pub max: String,
+    #[label("note: value exceeds limit of `{}`", max)]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("{}", message)]
+pub struct PredefinedError {
+    #[label(primary)]
+    pub span: SourceSpan,
+    pub message: String,
 }
 
 #[derive(Debug, PartialEq, Clone)]

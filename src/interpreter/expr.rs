@@ -1,3 +1,5 @@
+use std::num::IntErrorKind;
+
 use crate::{
     ast::{self, BinOp, BinOpKind, Expr, ExprKind, Lit, LitKind},
     kw::{self, Keyword},
@@ -17,10 +19,10 @@ pub fn interpret_expr(
     let expr_span = expr.span;
     let ty = match &expr.kind {
         ExprKind::Binary(op, lhs, rhs) => {
-            interpret_expr_binary(env, op, lhs, rhs, in_loop, is_verbose)?
+            interpret_expr_binary(env, expr_span, op, lhs, rhs, in_loop, is_verbose)?
         }
         ExprKind::Identifier(ident) => interpret_expr_ident(env, ident)?,
-        ExprKind::Literal(value) => interpret_expr_literal(value)?,
+        ExprKind::Literal(value) => interpret_expr_literal(value, expr_span)?,
         ExprKind::FunCall(prefix, args) => {
             interpret_expr_funcall(env, expr_span, prefix, args, in_loop, is_verbose)?
         }
@@ -318,7 +320,12 @@ fn interpret_expr_lib_funcall(
                 span: expr_span,
                 prefix_span: *lib_span,
             };
-            func(cattrs, evaluated_args).map_err(|_err| vec![]) // FIX
+            func(cattrs, evaluated_args).map_err(|err| {
+                vec![IError::PredefinedError {
+                    span: *func_span,
+                    message: err,
+                }]
+            })
         } else {
             return Err(vec![IError::FunctionInLibraryNotFound {
                 func_name: func_name.to_string(),
@@ -336,6 +343,7 @@ fn interpret_expr_lib_funcall(
 
 fn interpret_expr_binary(
     env: &mut Environment,
+    expr_span: Span,
     binop: &BinOp,
     lhs: &Box<Expr>,
     rhs: &Box<Expr>,
@@ -415,6 +423,14 @@ fn interpret_expr_binary(
             }
         },
         BinOpKind::Div => match (lhs.kind, rhs.kind) {
+            (ValueKind::Int(lhs), ValueKind::Int(0)) => Err(vec![IError::DividedByZero {
+                divident: lhs.to_string(),
+                span: expr_span,
+            }]),
+            (ValueKind::Float(lhs), ValueKind::Float(0.0)) => Err(vec![IError::DividedByZero {
+                divident: lhs.to_string(),
+                span: expr_span,
+            }]),
             (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Int(lhs / rhs)),
             (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Float(lhs / rhs)),
             _ => {
@@ -426,6 +442,14 @@ fn interpret_expr_binary(
             }
         },
         BinOpKind::Mod => match (lhs.kind, rhs.kind) {
+            (ValueKind::Int(lhs), ValueKind::Int(0)) => Err(vec![IError::ModdedByZero {
+                divident: lhs.to_string(),
+                span: expr_span,
+            }]),
+            (ValueKind::Float(lhs), ValueKind::Float(0.0)) => Err(vec![IError::ModdedByZero {
+                divident: lhs.to_string(),
+                span: expr_span,
+            }]),
             (ValueKind::Int(lhs), ValueKind::Int(rhs)) => Ok(ValueKind::Int(lhs % rhs)),
             (ValueKind::Float(lhs), ValueKind::Float(rhs)) => Ok(ValueKind::Float(lhs % rhs)),
             _ => {
@@ -635,7 +659,12 @@ fn interpret_expr_funcall(
                     span: expr_span,
                     prefix_span: prefix.span,
                 };
-                return func(cattrs, evaluated_args).map_err(|_err| vec![]); // FIX
+                return func(cattrs, evaluated_args).map_err(|err| {
+                    vec![IError::PredefinedError {
+                        span: std_func_span,
+                        message: err,
+                    }]
+                }); // FIX
             } else {
                 return Err(vec![IError::FunctionNotInScope {
                     function: std_func_name.to_string(),
@@ -661,12 +690,12 @@ fn interpret_expr_funcall(
     )
 }
 
-fn interpret_expr_literal(value: &Lit) -> Result<ValueKind, Vec<IError>> {
+fn interpret_expr_literal(value: &Lit, span: Span) -> Result<ValueKind, Vec<IError>> {
     let Lit { kind, symbol } = value;
     let val = symbol.as_str();
     match kind {
-        LitKind::Int => Ok(ValueKind::Int(parse_int_number(val).unwrap())),
-        LitKind::Float => Ok(ValueKind::Float(parse_float_number(val).unwrap())),
+        LitKind::Int => Ok(ValueKind::Int(parse_int_number(val, span)?)),
+        LitKind::Float => Ok(ValueKind::Float(parse_float_number(val)?)),
         LitKind::Str => Ok(ValueKind::Str(parse_str(val))),
         LitKind::Bool => Ok(ValueKind::Bool(parse_bool(val))),
         LitKind::Char => Ok(ValueKind::Char(parse_char(val))),
@@ -706,24 +735,47 @@ fn parse_str(input: &str) -> String {
     result
 }
 
-fn parse_float_number(input: &str) -> Result<f64, std::num::ParseFloatError> {
-    let mut input = input.to_string();
-    input.retain(|c| c != '_');
-    input.parse::<f64>()
+fn parse_float_number(input: &str) -> Result<f64, Vec<IError>> {
+    let mut formatted_input = input.to_string();
+    formatted_input.retain(|c| c != '_');
+    let result = formatted_input.parse::<f64>();
+
+    match result {
+        Ok(val) => Ok(val),
+        Err(_) => unreachable!("this should not happend"),
+    }
 }
 
-fn parse_int_number(input: &str) -> Result<i64, std::num::ParseIntError> {
-    let mut input = input.to_string();
-    input.retain(|c| c != '_');
+fn parse_int_number(input: &str, span: Span) -> Result<i64, Vec<IError>> {
+    let mut formatted_input = input.to_string();
+    formatted_input.retain(|c| c != '_');
 
-    if input.starts_with("0b") || input.starts_with("0B") {
-        i64::from_str_radix(&input[2..], 2) // Parse as binary
-    } else if input.starts_with("0o") || input.starts_with("0O") {
-        i64::from_str_radix(&input[2..], 8) // Parse as octal
-    } else if input.starts_with("0h") || input.starts_with("0H") {
-        i64::from_str_radix(&input[2..], 16) // Parse as hexadecimal
+    let result = if formatted_input.starts_with("0b") || formatted_input.starts_with("0B") {
+        i64::from_str_radix(&formatted_input[2..], 2) // Parse as binary
+    } else if formatted_input.starts_with("0o") || formatted_input.starts_with("0O") {
+        i64::from_str_radix(&formatted_input[2..], 8) // Parse as octal
+    } else if formatted_input.starts_with("0h") || formatted_input.starts_with("0H") {
+        i64::from_str_radix(&formatted_input[2..], 16) // Parse as hexadecimal
     } else {
-        input.parse::<i64>() // Parse as decimal
+        formatted_input.parse::<i64>() // Parse as decimal
+    };
+
+    match result {
+        Ok(val) => Ok(val),
+        Err(e) => match e.kind() {
+            &IntErrorKind::Empty => unreachable!("this should be handled by lexer"),
+            &IntErrorKind::InvalidDigit => unreachable!("this should be handled by lexer"),
+            &IntErrorKind::PosOverflow => Err(vec![IError::LitOutOfRange {
+                span,
+                max: i64::MAX,
+            }]),
+            &IntErrorKind::NegOverflow => Err(vec![IError::LitOutOfRange {
+                span,
+                max: i64::MAX,
+            }]),
+            &IntErrorKind::Zero => unreachable!("this should not happen"),
+            _ => unreachable!("wtf is this"),
+        },
     }
 }
 

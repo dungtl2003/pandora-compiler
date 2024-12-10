@@ -2,6 +2,22 @@ use crate::{span_encoding::Span, ErrorHandler};
 
 #[derive(Debug, Clone)]
 pub enum IError {
+    PredefinedError {
+        message: String,
+        span: Span,
+    },
+    ModdedByZero {
+        divident: String,
+        span: Span,
+    },
+    DividedByZero {
+        divident: String,
+        span: Span,
+    },
+    LitOutOfRange {
+        span: Span,
+        max: i64,
+    },
     ArrayHasMultipleTypes {
         first_el_ty: String,
         first_mismatch_ty: String,
@@ -509,6 +525,18 @@ impl IError {
                     first_mismatch_span,
                 )
                 .into(),
+            IError::LitOutOfRange { span, max } => {
+                error_handler.build_lit_out_of_range_error(span, max).into()
+            }
+            IError::DividedByZero { divident, span } => error_handler
+                .build_divided_by_zero_error(divident, span)
+                .into(),
+            IError::ModdedByZero { divident, span } => error_handler
+                .build_modded_by_zero_error(divident, span)
+                .into(),
+            IError::PredefinedError { message, span } => {
+                error_handler.build_predefined_error(span, message).into()
+            }
         }
     }
 }

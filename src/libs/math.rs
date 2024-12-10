@@ -50,7 +50,7 @@ impl MathLib {
         // ln() function
         self.functions.insert(
             "ln".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 1 {
                     return Err("ln() takes exactly 1 argument".to_string());
                 }
@@ -66,7 +66,7 @@ impl MathLib {
         // log() function
         self.functions.insert(
             "log".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 2 {
                     return Err("log() takes exactly 2 argument".to_string());
                 }
@@ -85,7 +85,7 @@ impl MathLib {
         // tan() function
         self.functions.insert(
             "tan".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 1 {
                     return Err("tan() takes exactly 1 argument".to_string());
                 }
@@ -101,7 +101,7 @@ impl MathLib {
         // cos() function
         self.functions.insert(
             "cos".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 1 {
                     return Err("cos() takes exactly 1 argument".to_string());
                 }
@@ -117,7 +117,7 @@ impl MathLib {
         // sin() function
         self.functions.insert(
             "sin".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 1 {
                     return Err("sin() takes exactly 1 argument".to_string());
                 }
@@ -133,7 +133,7 @@ impl MathLib {
         // floor() function
         self.functions.insert(
             "floor".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 1 {
                     return Err("floor() takes exactly 1 argument".to_string());
                 }
@@ -149,7 +149,7 @@ impl MathLib {
         // ceil() function
         self.functions.insert(
             "ceil".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 1 {
                     return Err("ceil() takes exactly 1 argument".to_string());
                 }
@@ -165,7 +165,7 @@ impl MathLib {
         // gcd() function
         self.functions.insert(
             "gcd".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 2 {
                     return Err("gcd() takes exactly 2 arguments".to_string());
                 }
@@ -195,7 +195,7 @@ impl MathLib {
         // abs() function
         self.functions.insert(
             "abs".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 1 {
                     return Err("abs() takes exactly 1 argument".to_string());
                 }
@@ -211,7 +211,7 @@ impl MathLib {
         // round() function
         self.functions.insert(
             "round".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 1 {
                     return Err("round() takes exactly 1 argument".to_string());
                 }
@@ -227,7 +227,7 @@ impl MathLib {
         // sqrt() function
         self.functions.insert(
             "sqrt".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 1 {
                     return Err("sqrt() takes exactly 1 argument".to_string());
                 }
@@ -243,7 +243,7 @@ impl MathLib {
         // pow() function
         self.functions.insert(
             "pow".to_string(),
-            Box::new(|cattrs, args| {
+            Box::new(|_cattrs, args| {
                 if args.len() != 2 {
                     return Err("pow() takes exactly 2 arguments".to_string());
                 }

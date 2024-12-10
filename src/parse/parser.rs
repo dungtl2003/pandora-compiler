@@ -141,24 +141,6 @@ impl Parser {
         self.expected_tokens.clear();
     }
 
-    /// Look-ahead `dist` tokens of `self.token` and get access to that token there.
-    /// When `dist == 0` then the current token is looked at. `Eof` will be
-    /// returned if the look-ahead is any distance past the end of the tokens.
-    pub fn look_ahead<R>(&self, dist: usize, looker: impl FnOnce(&Token) -> R) -> R {
-        if dist == 0 {
-            return looker(&self.token);
-        }
-
-        let mut cursor = self.token_cursor.clone();
-        let mut i = 0;
-        let mut token = Token::dummy();
-        while i < dist {
-            token = cursor.next().0;
-            i += 1;
-        }
-        looker(&token)
-    }
-
     fn expect(&mut self, expected: TokenKind) -> PResult<()> {
         if self.token.kind == expected {
             return Ok(());
