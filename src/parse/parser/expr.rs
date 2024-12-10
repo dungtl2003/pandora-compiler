@@ -22,7 +22,6 @@ impl Parser {
         self.expected_tokens.push(TokenType::Operator);
 
         loop {
-            // TODO: Handle error probably later.
             let op_assoc = AssocOp::from_token(&self.token);
             if op_assoc.is_none() {
                 break;
@@ -149,7 +148,6 @@ impl Parser {
         }
     }
 
-    // FIX: this should be a loop
     fn parse_expr_dot_or_call_with(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
         debug_assert!(
             self.token.is_kind(TokenKind::Dot)

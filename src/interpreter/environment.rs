@@ -389,6 +389,14 @@ impl ExternalLibrary {
                     args,
                     is_verbose,
                 )
+                // FIX: we actually want to use errors, but the error handler is not emitting
+                // errors correctly when dealing with multiple files
+                .map_err(|_errs| {
+                    vec![IError::PredefinedError {
+                        span: cattrs.span,
+                        message: "Error occurred while evaluating function".to_string(),
+                    }]
+                })
             },
         );
 
