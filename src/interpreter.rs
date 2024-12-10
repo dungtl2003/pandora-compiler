@@ -3,6 +3,7 @@ mod errors;
 pub mod eval;
 mod expr;
 mod ident;
+mod libs;
 mod stmt;
 mod ty;
 

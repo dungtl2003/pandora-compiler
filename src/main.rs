@@ -4,7 +4,6 @@ mod interpreter;
 #[path = "keyword.rs"]
 mod kw;
 mod lexer;
-mod libs;
 mod parse;
 mod session;
 mod span_encoding;

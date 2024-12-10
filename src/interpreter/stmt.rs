@@ -102,11 +102,10 @@ pub fn interpret_stmt_for(
                 EvalResult::StmtResult(Some(control_flow)) => match control_flow {
                     ControlFlow::Break => {
                         env.pop_scope();
-                        break;
+                        return Ok(EvalResult::StmtResult(None));
                     }
                     ControlFlow::Continue => {
-                        env.pop_scope();
-                        continue;
+                        break; // continue to next value
                     }
                     ControlFlow::Return(value) => {
                         env.pop_scope();

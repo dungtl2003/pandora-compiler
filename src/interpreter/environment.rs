@@ -10,17 +10,15 @@ use std::{
 use miette::NamedSource;
 use variable::Variable;
 
-use crate::{
-    ast,
-    libs::{math::MathLib, std::StdLib, CallerAttrs, Library},
-    parse::parser,
-    session::Session,
-    span_encoding::Span,
-};
+use crate::{ast, parse::parser, session::Session, span_encoding::Span};
 
 use super::{
-    errors::IError, eval::ValueKind, ident::Ident, interpret_ty, Func, FuncParam, FuncSig, Ty,
-    Value,
+    errors::IError,
+    eval::ValueKind,
+    ident::Ident,
+    interpret_ty,
+    libs::{math::MathLib, std::StdLib, CallerAttrs, Library},
+    Func, FuncParam, FuncSig, Ty, Value,
 };
 
 pub type Wrapper<T> = Rc<RefCell<T>>;
@@ -343,15 +341,18 @@ impl Environment {
 }
 
 pub struct ExternalLibrary {
-    functions:
-        HashMap<String, Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, String>>>,
+    functions: HashMap<
+        String,
+        Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, Vec<IError>>>,
+    >,
 }
 
 impl Library for ExternalLibrary {
     fn get_function(
         &self,
         name: &str,
-    ) -> Option<&Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, String>>> {
+    ) -> Option<&Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, Vec<IError>>>>
+    {
         self.functions.get(name)
     }
 }
@@ -371,7 +372,9 @@ impl ExternalLibrary {
     ) -> Result<(), Vec<IError>> {
         let func_name = name.to_string();
         let function = Box::new(
-            move |cattrs: CallerAttrs, args: Vec<(Value, bool)>| -> Result<ValueKind, String> {
+            move |cattrs: CallerAttrs,
+                  args: Vec<(Value, bool)>|
+                  -> Result<ValueKind, Vec<IError>> {
                 let mut env = Environment::new();
                 // FIX: ignore value's mutability for now
                 let args = args
@@ -386,7 +389,6 @@ impl ExternalLibrary {
                     args,
                     is_verbose,
                 )
-                .map_err(|_err| "".to_string())
             },
         );
 

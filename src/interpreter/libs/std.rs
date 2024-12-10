@@ -1,20 +1,26 @@
 use std::collections::HashMap;
 
-use crate::interpreter::eval::{Value, ValueKind};
+use crate::interpreter::{
+    errors::IError,
+    eval::{Value, ValueKind},
+};
 
 use super::{CallerAttrs, Library};
 use ::std::io::{self, Write};
 
 pub struct StdLib {
-    pub functions:
-        HashMap<String, Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, String>>>,
+    pub functions: HashMap<
+        String,
+        Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, Vec<IError>>>,
+    >,
 }
 
 impl Library for StdLib {
     fn get_function(
         &self,
         name: &str,
-    ) -> Option<&Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, String>>> {
+    ) -> Option<&Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, Vec<IError>>>>
+    {
         self.functions.get(name)
     }
 }
@@ -47,16 +53,22 @@ impl StdLib {
         // delay() function
         self.functions.insert(
             "delay".to_string(),
-            Box::new(|_cattrs, args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
-                    return Err("delay() takes exactly 1 argument".to_string());
+                    return Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "delay() takes exactly 1 argument".to_string(),
+                    }]);
                 }
                 match &args[0].0.kind {
                     ValueKind::Int(ms) => {
                         std::thread::sleep(std::time::Duration::from_millis(*ms as u64));
                     }
                     _ => {
-                        return Err("delay() takes an integer".to_string());
+                        return Err(vec![IError::PredefinedError {
+                            span: cattrs.prefix_span,
+                            message: "delay() takes an integer".to_string(),
+                        }]);
                     }
                 }
                 Ok(ValueKind::Unit)
@@ -68,13 +80,19 @@ impl StdLib {
         // strlen() function for strings
         self.functions.insert(
             "strlen".to_string(),
-            Box::new(|_cattrs, args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
-                    return Err("strlen() takes exactly 1 argument".to_string());
+                    return Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "strlen() takes exactly 1 argument".to_string(),
+                    }]);
                 }
                 match &args[0].0.kind {
                     ValueKind::Str(s) => Ok(ValueKind::Int(s.len() as i64)),
-                    _ => Err("strlen() takes a string".to_string()),
+                    _ => Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "strlen() takes a string".to_string(),
+                    }]),
                 }
             }),
         );
@@ -84,13 +102,19 @@ impl StdLib {
         // arrlen() function for arrays
         self.functions.insert(
             "arrlen".to_string(),
-            Box::new(|_cattrs, args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
-                    return Err("arrlen() takes exactly 1 argument".to_string());
+                    return Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "arrlen() takes exactly 1 argument".to_string(),
+                    }]);
                 }
                 match &args[0].0.kind {
                     ValueKind::Array(arr) => Ok(ValueKind::Int(arr.len() as i64)),
-                    _ => Err("arrlen() takes an array".to_string()),
+                    _ => Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "arrlen() takes an array".to_string(),
+                    }]),
                 }
             }),
         );
@@ -100,13 +124,19 @@ impl StdLib {
         // lower() function
         self.functions.insert(
             "lower".to_string(),
-            Box::new(|_cattrs, args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
-                    return Err("lower() takes exactly 1 argument".to_string());
+                    return Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "lower() takes exactly 1 argument".to_string(),
+                    }]);
                 }
                 match &args[0].0.kind {
                     ValueKind::Str(s) => Ok(ValueKind::Str(s.to_lowercase())),
-                    _ => Err("lower() takes a string".to_string()),
+                    _ => Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "lower() takes a string".to_string(),
+                    }]),
                 }
             }),
         );
@@ -116,13 +146,19 @@ impl StdLib {
         // upper() function
         self.functions.insert(
             "upper".to_string(),
-            Box::new(|_cattrs, args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
-                    return Err("upper() takes exactly 1 argument".to_string());
+                    return Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "upper() takes exactly 1 argument".to_string(),
+                    }]);
                 }
                 match &args[0].0.kind {
                     ValueKind::Str(s) => Ok(ValueKind::Str(s.to_uppercase())),
-                    _ => Err("upper() takes a string".to_string()),
+                    _ => Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "upper() takes a string".to_string(),
+                    }]),
                 }
             }),
         );
@@ -132,9 +168,12 @@ impl StdLib {
         // input() function
         self.functions.insert(
             "input".to_string(),
-            Box::new(|_cattrs, args| {
+            Box::new(|cattrs, args| {
                 if !args.is_empty() {
-                    return Err("input() takes no arguments".to_string());
+                    return Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "input() takes no arguments".to_string(),
+                    }]);
                 }
                 let mut input = String::new();
                 std::io::stdin()
@@ -149,16 +188,22 @@ impl StdLib {
         // println() function
         self.functions.insert(
             "println".to_string(),
-            Box::new(|_cattrs, args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
-                    return Err("println() takes exactly 1 argument".to_string());
+                    return Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "println() takes exactly 1 argument".to_string(),
+                    }]);
                 }
                 match &args[0].0.kind {
                     ValueKind::Str(s) => {
                         println!("{}", s);
                     }
                     _ => {
-                        return Err("println() takes a string".to_string());
+                        return Err(vec![IError::PredefinedError {
+                            span: cattrs.prefix_span,
+                            message: "println() takes a string".to_string(),
+                        }]);
                     }
                 }
                 Ok(ValueKind::Unit)
@@ -170,19 +215,30 @@ impl StdLib {
         // print() function
         self.functions.insert(
             "print".to_string(),
-            Box::new(|_cattrs, args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
-                    return Err("print() takes exactly 1 argument".to_string());
+                    return Err(vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: "print() takes exactly 1 argument".to_string(),
+                    }]);
                 }
                 match &args[0].0.kind {
                     ValueKind::Str(s) => {
                         print!("{}", s);
                     }
                     _ => {
-                        return Err("print() takes a string".to_string());
+                        return Err(vec![IError::PredefinedError {
+                            span: cattrs.prefix_span,
+                            message: "print() takes a string".to_string(),
+                        }]);
                     }
                 }
-                io::stdout().flush().map_err(|e| e.to_string())?;
+                io::stdout().flush().map_err(|e| {
+                    vec![IError::PredefinedError {
+                        span: cattrs.prefix_span,
+                        message: format!("{e}"),
+                    }]
+                })?;
                 Ok(ValueKind::Unit)
             }),
         );

@@ -787,13 +787,15 @@ impl ErrorHandler {
     pub fn build_unterminated_block_comment_error(
         &self,
         msg: String,
-        last_start_span: Span,
-        last_terminated_span: Span,
+        last_start_span: Option<Span>,
+        last_terminated_span: Option<Span>,
+        start_span: Option<Span>,
     ) -> UnterminatedBlockComment {
         UnterminatedBlockComment {
             msg,
-            last_terminated_span: last_terminated_span.to_source_span(),
-            last_start_span: last_start_span.to_source_span(),
+            last_terminated_span: last_terminated_span.map(|s| s.to_source_span()),
+            last_start_span: last_start_span.map(|s| s.to_source_span()),
+            start_span: start_span.map(|s| s.to_source_span()),
         }
     }
 
@@ -1014,9 +1016,11 @@ pub struct RawStrUnterminated {
 pub struct UnterminatedBlockComment {
     pub msg: String,
     #[label("...as last nested comment started here, maybe you want to close this instead?")]
-    pub last_start_span: SourceSpan,
+    pub last_start_span: Option<SourceSpan>,
     #[label("...and last nested comment terminates here.")]
-    pub last_terminated_span: SourceSpan,
+    pub last_terminated_span: Option<SourceSpan>,
+    #[label]
+    pub start_span: Option<SourceSpan>, // used when there is only opening comment
 }
 
 #[derive(Error, Debug, Diagnostic)]

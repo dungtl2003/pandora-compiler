@@ -53,6 +53,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
                 return Token::new(TokenKind::Eof, self.mk_sp(self.pos, self.pos));
             }
             let token = self.cursor.advance_token();
+            let tok_len = token.len;
             let start_pos = self.pos;
             self.pos = self.pos + token.len as BytePos;
 
@@ -75,7 +76,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
                     terminated,
                 } => {
                     if !terminated {
-                        self.report_unterminated_block_comment(start_pos, doc_style);
+                        self.report_unterminated_block_comment(start_pos, doc_style, tok_len);
                     }
 
                     // Skip normal comment
@@ -487,6 +488,7 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         &mut self,
         start: BytePos,
         doc_style: Option<lexer::DocStyle>,
+        tok_len: u32,
     ) {
         self.session.set_error(ErrorType::Unrecoverable);
         let msg = match doc_style {
@@ -520,14 +522,31 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
                 .error_handler
                 .build_unterminated_block_comment_error(
                     msg,
-                    Span {
+                    Some(Span {
                         offset: start + nested_open_idx as BytePos,
                         length: 2,
-                    },
-                    Span {
+                    }),
+                    Some(Span {
                         offset: start + nested_close_idx as BytePos,
                         length: 2,
-                    },
+                    }),
+                    None,
+                )
+                .into();
+
+            self.session.error_handler.report_err(report);
+        } else {
+            let report = self
+                .session
+                .error_handler
+                .build_unterminated_block_comment_error(
+                    msg,
+                    None,
+                    None,
+                    Some(Span {
+                        offset: start,
+                        length: tok_len as usize,
+                    }),
                 )
                 .into();
 

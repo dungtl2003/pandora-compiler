@@ -4,11 +4,13 @@ use crate::{
     ast::{self, BinOp, BinOpKind, Expr, ExprKind, Lit, LitKind},
     kw::{self, Keyword},
     lexer,
-    libs::CallerAttrs,
     span_encoding::Span,
 };
 
-use super::{environment::Environment, eval::ValueKind, interpret_ty, ty::TyKind, IError, Value};
+use super::{
+    environment::Environment, eval::ValueKind, interpret_ty, libs::CallerAttrs, ty::TyKind, IError,
+    Value,
+};
 
 pub fn interpret_expr(
     env: &mut Environment,
@@ -320,12 +322,7 @@ fn interpret_expr_lib_funcall(
                 span: expr_span,
                 prefix_span: *lib_span,
             };
-            func(cattrs, evaluated_args).map_err(|err| {
-                vec![IError::PredefinedError {
-                    span: *func_span,
-                    message: err,
-                }]
-            })
+            return func(cattrs, evaluated_args);
         } else {
             return Err(vec![IError::FunctionInLibraryNotFound {
                 func_name: func_name.to_string(),
@@ -659,12 +656,7 @@ fn interpret_expr_funcall(
                     span: expr_span,
                     prefix_span: prefix.span,
                 };
-                return func(cattrs, evaluated_args).map_err(|err| {
-                    vec![IError::PredefinedError {
-                        span: std_func_span,
-                        message: err,
-                    }]
-                }); // FIX
+                return func(cattrs, evaluated_args);
             } else {
                 return Err(vec![IError::FunctionNotInScope {
                     function: std_func_name.to_string(),
