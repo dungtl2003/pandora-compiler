@@ -4,6 +4,8 @@ version = "0.1.7"
 edition = "2021"
 license = "MIT"
 description = "A command-line tool to run pandora language."
+readme = "README.md"
+repository = "https://github.com/dungtl2003/pandora"
 
 [[bin]]
 name = "unbox"        # The custom command name
