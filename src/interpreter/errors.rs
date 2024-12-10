@@ -2,6 +2,10 @@ use crate::{span_encoding::Span, ErrorHandler};
 
 #[derive(Debug, Clone)]
 pub enum IError {
+    NegArraySize {
+        size: String,
+        span: Span,
+    },
     PredefinedError {
         message: String,
         span: Span,
@@ -536,6 +540,9 @@ impl IError {
                 .into(),
             IError::PredefinedError { message, span } => {
                 error_handler.build_predefined_error(span, message).into()
+            }
+            IError::NegArraySize { size, span } => {
+                error_handler.build_neg_array_size_error(span, size).into()
             }
         }
     }

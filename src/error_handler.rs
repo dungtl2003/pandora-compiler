@@ -18,6 +18,13 @@ pub struct ErrorHandler {
 }
 
 impl ErrorHandler {
+    pub fn build_neg_array_size_error(&self, span: Span, size: String) -> NegArraySize {
+        NegArraySize {
+            size,
+            span: span.to_source_span(),
+        }
+    }
+
     pub fn build_predefined_error(&self, span: Span, message: String) -> PredefinedError {
         PredefinedError {
             span: span.to_source_span(),
@@ -1578,6 +1585,14 @@ pub struct ModdedByZero {
 pub struct LitOutOfRange {
     pub max: String,
     #[label("note: value exceeds limit of `{}`", max)]
+    pub span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("Array size must be non-negative, found `{}`", size)]
+pub struct NegArraySize {
+    pub size: String,
+    #[label("expected non-negative size")]
     pub span: SourceSpan,
 }
 

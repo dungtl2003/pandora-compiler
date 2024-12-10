@@ -33,9 +33,19 @@ fn interpret_ty_array(
 
     match len {
         Some(len) => {
+            let len_span = len.span;
             let len = interpret_expr(env, len, in_loop, is_verbose)?;
             match len.kind {
-                ValueKind::Int(len) => Ok(TyKind::Array(Box::new(ty.kind), len)),
+                ValueKind::Int(len) => {
+                    if len < 0 {
+                        return Err(vec![IError::NegArraySize {
+                            size: len.to_string(),
+                            span: len_span,
+                        }]);
+                    } else {
+                        return Ok(TyKind::Array(Box::new(ty.kind), len));
+                    }
+                }
                 _ => Err(vec![IError::MismatchedType {
                     expected: TyKind::Int.to_string(),
                     found: len.to_ty_kind().to_string(),
