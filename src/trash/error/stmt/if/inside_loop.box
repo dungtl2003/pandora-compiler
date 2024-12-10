@@ -1,8 +1,0 @@
-during true {
-    when true {
-        br;
-    } alt when xyz {
-        yeet;
-    } alt when 
-    print("");
-}

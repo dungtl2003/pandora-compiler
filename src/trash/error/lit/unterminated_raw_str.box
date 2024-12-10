@@ -1,4 +1,0 @@
-fun main() {
-    //! Unterminated raw string
-    let s1: String = String.new(r#####"Begin of the string"###Some more"###moreeee"####End of the string"##);
-}
