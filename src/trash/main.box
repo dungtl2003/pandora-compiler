@@ -1,0 +1,10 @@
+add std;
+
+std.print("Enter age: ");
+var age: int = std.input() as int;
+
+if age < 18 {
+    std.println("You are not allowed to watch this movie");
+} else {
+    std.println("Actually, you are allowed to watch this");
+}

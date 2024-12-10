@@ -1,0 +1,17 @@
+\newcommand{\regexty}{
+    \begin{rg}
+    TYPE -> PATH\_IN\_TYPE | NEVER\_TYPE
+
+    NEVER\_TYPE -> \w{void}
+    \end{rg}
+}
+
+\newcommand{\regextypebound}{
+    \begin{rg}
+    TYPE\_PARAM\_BOUNDS -> 
+
+    \hspace{3.5cm}TYPE\_PARAM\_BOUND (\w{+} TYPE\_PARAM\_BOUND)*
+
+    TYPE\_PARAM\_BOUND -> TYPE
+    \end{rg}
+}

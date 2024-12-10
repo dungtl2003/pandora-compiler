@@ -1,0 +1,7 @@
+set mut r#true: int = 5;
+
+println("before: " + r#true as str);
+
+r#true = 6;
+
+println("after: " + r#true as str);

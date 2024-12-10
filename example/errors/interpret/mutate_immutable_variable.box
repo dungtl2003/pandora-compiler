@@ -1,0 +1,14 @@
+//set x: int = 5;
+//
+//x = 6; // should not work
+
+set x: int;
+
+
+x = 5;
+
+
+
+
+
+x = 6; // should not work too

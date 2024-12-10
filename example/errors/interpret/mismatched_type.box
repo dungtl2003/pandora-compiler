@@ -1,0 +1,3 @@
+set x: int = 5;
+
+set y: str = x;

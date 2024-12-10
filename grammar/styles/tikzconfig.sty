@@ -1,0 +1,15 @@
+\ProvidesPackage{mytikzconfig}
+\usepackage{tikz}
+\tikzset{
+  default/.style={
+    node distance=4cm,
+    on grid,
+    auto,
+    every state/.style={draw=red, fill=red!30},
+    every initial by arrow/.style={
+      text=red,
+      thick,
+      -stealth
+    }
+  }
+}

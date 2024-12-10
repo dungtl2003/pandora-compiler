@@ -1,0 +1,2 @@
+set a: float = 102E;
+print("a = " + a as str);

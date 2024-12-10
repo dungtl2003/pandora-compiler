@@ -1,0 +1,17 @@
+\subsection{Câu lệnh khai báo (\textit{Declaration statement})}
+
+\regexdeclstmt
+
+Câu lệnh khai báo là câu lệnh dùng để tạo ra một tên mới trong chương trình. 
+
+\noindent\textbf{Câu lệnh khai báo biến (\textit{Variable declaration statement})}
+
+\regexvardeclstmt
+
+Câu lệnh khai báo biến dùng để tạo ra một biến mới trong chương trình. Biến là một vùng nhớ được dùng để lưu trữ dữ liệu. Mỗi biến sẽ có một kiểu dữ liệu và một tên riêng. Câu lệnh khai báo biến bắt đầu bằng từ khóa \kw{var}, sau đó là tên biến và kiểu dữ liệu của biến. Ta có thể gán giá trị cho biến ngay sau khi khai báo hoặc sau đó. Nếu ta muốn biến đó thay đổi giá trị, ta có thể khai báo biến với từ khóa \kw{mut} ở trước tên biến. Câu lệnh khai báo biến kết thúc bằng dấu chấm phẩy '\textbf{;}'. Ta có thể tạo 1 biến mới với tên trùng với tên của biến đã tồn tại trong cùng 1 phạm vi (shadow variable).
+
+\noindent\textbf{Câu lệnh khai báo hằng (\textit{Constant declaration statement})}
+
+\regexconstdeclstmt
+
+Câu lệnh khai báo hằng dùng để tạo ra một hằng số mới trong chương trình. Hằng số là một giá trị không thay đổi trong suốt quá trình chạy của chương trình. Câu lệnh khai báo hằng bắt đầu bằng từ khóa \kw{const}, sau đó là tên hằng số và kiểu dữ liệu của hằng số. Ta phải gán giá trị cho hằng số ngay sau khi khai báo. Câu lệnh khai báo hằng kết thúc bằng dấu chấm phẩy '\textbf{;}'. Ta không thể tạo 1 biến mới với tên trùng với tên của hằng số đã tồn tại trong cùng 1 phạm vi.

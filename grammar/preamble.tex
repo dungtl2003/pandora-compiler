@@ -1,0 +1,27 @@
+% Basic font setup
+\usepackage{mathpazo}       % Palatino for main text
+\usepackage{eulervm}        % Euler for math symbols
+\usepackage{inconsolata}    % Inconsolata for code and syntax
+\usepackage{microtype}      % Better typography (spacing and kerning)
+
+% Code highlighting settings (optional)
+\usepackage{listings}
+\lstset{
+    basicstyle=\ttfamily\small, % Monospace for code blocks
+    keywordstyle=\color{blue}\bfseries, % Bold keywords
+    commentstyle=\color{gray}, % Gray comments
+    stringstyle=\color{red}, % Red strings
+    frame=single, % Box around code
+    breaklines=true % Line breaks
+}
+
+% Optional: Adjust section title styles
+\usepackage{titlesec}
+\titleformat{\chapter}[block]{\Large\scshape\bfseries}{\thechapter.}{1em}{}
+\titleformat{\section}[block]{\large\scshape\bfseries}{\thesection}{1em}{}
+
+\usepackage[nounderscore]{syntax} % grammar production
+
+% Draw diagram
+\usepackage{styles/tikzconfig}
+\usetikzlibrary{automata, arrows.meta, positioning}

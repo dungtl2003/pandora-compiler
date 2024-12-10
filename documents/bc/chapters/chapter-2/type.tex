@@ -1,0 +1,47 @@
+\section{Kiểu dữ liệu (\textit{Type})}
+
+\regexty
+
+Tất cả các biến, vật phẩm và giá trị trong Pandora đều có kiểu dữ liệu. Kiểu dữ liệu xác định loại dữ liệu mà biến, vật phẩm hoặc giá trị đó có thể chứa. Kiểu dữ liệu cũng xác định các phép toán mà biến, vật phẩm hoặc giá trị đó có thể thực hiện. Kiểu dữ liệu trong Pandora được chia thành hai loại: kiểu dữ liệu nguyên thủy và kiểu dữ liệu người dùng tự định nghĩa (\textit{User-defined type}).
+
+\subsection{Kiểu dữ liệu nguyên thủy (\textit{Primitive type})}
+
+Kiểu dữ liệu nguyên thủy là kiểu dữ liệu cơ bản, không thể chia nhỏ thành các phần nhỏ hơn. Kiểu dữ liệu nguyên thủy trong Pandora bao gồm:
+
+\begin{itemize}
+    \item \textbf{Kiểu số nguyên (\textit{int})}: Kiểu dữ liệu số nguyên là kiểu dữ liệu dùng để lưu trữ các số nguyên.
+    
+    \item \textbf{Kiểu số thực (\textit{float})}: Kiểu dữ liệu số thực là kiểu dữ liệu dùng để lưu trữ các số thực.
+
+    \item \textbf{Kiểu ký tự (\textit{char})}: Kiểu dữ liệu ký tự là kiểu dữ liệu dùng để lưu trữ các ký tự.
+
+    \item \textbf{Kiểu logic (\textit{bool})}: Kiểu dữ liệu logic là kiểu dữ liệu dùng để lưu trữ giá trị \textit{true} hoặc \textit{false}.
+
+    \item \textbf{Kiểu không có giá trị (\textit{void})}: Kiểu dữ liệu không có giá trị là kiểu dữ liệu dùng để chỉ ra rằng một hàm không trả về giá trị.
+\end{itemize}
+
+\subsection{Kiểu dữ liệu người dùng tự định nghĩa (\textit{User-defined type})}
+
+Kiểu dữ liệu người dùng tự định nghĩa trong Pandora bao gồm:
+
+\begin{itemize}
+    \item \textbf{Kiểu lớp (\textit{class})}: Kiểu dữ liệu lớp là kiểu dữ liệu dùng để lưu trữ các lớp.
+
+    \item \textbf{Kiểu giao diện (\textit{interface})}: Kiểu dữ liệu giao diện là kiểu dữ liệu dùng để lưu trữ các giao diện.
+\end{itemize}
+
+\subsection{Giới hạn kiểu dữ liệu chung (\textit{Generic type bound})}
+
+\regextypebound
+
+Giới hạn kiểu dữ liệu chung cho phép chúng ta giới hạn kiểu dữ liệu mà một kiểu dữ liệu chung có thể nhận. Ví du:
+
+\begin{lstlisting}[]
+    fun calc<T ext Add<T> + Sub<T>>(a: T, b: T, mode: int) -> T {
+        if mode == 0 {
+            return a + b;
+        } else {
+            return a - b;
+        }
+    }
+\end{lstlisting}

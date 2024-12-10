@@ -1,0 +1,2 @@
+set x: char = 'abcde';
+set y: char = 'abfcde';

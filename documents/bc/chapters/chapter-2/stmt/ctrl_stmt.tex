@@ -1,0 +1,31 @@
+\subsection{Câu lệnh điều khiển (\textit{Control flow statement})}
+
+\noindent\textbf{Câu lệnh khối (\textit{Block statement})}
+
+\regexblockstmt
+
+Câu lệnh khối là một nhóm các câu lệnh được đặt trong dấu ngoặc nhọn '\textbf{\{ \}}'. Câu lệnh khối được sử dụng để nhóm các câu lệnh lại với nhau. Câu lệnh khối có thể chứa một hoặc nhiều câu lệnh bên trong, cũng có thể không chứa lệnh nào. Câu lệnh khối thường được sử dụng trong các câu lệnh điều khiển như câu lệnh rẽ nhánh hoặc câu lệnh lặp. Đôi khi, chúng cũng được dùng độc lập để giới hạn phạm vi của biến.
+
+\noindent\textbf{Câu lệnh rẽ nhánh (\textit{If statement})}
+
+\regexifstmt
+
+Câu lệnh rẽ nhánh là câu lệnh dùng để kiểm tra một điều kiện nào đó. Nếu điều kiện đó đúng, chương trình sẽ thực thi một nhóm câu lệnh nào đó. Nếu điều kiện đó sai, chương trình sẽ thực thi một nhóm câu lệnh khác. Câu lệnh rẽ nhánh bắt đầu bằng từ khóa \kw{if}, sau đó là điều kiện cần kiểm tra. Nếu điều kiện đúng, chương trình sẽ thực thi câu lệnh nằm trong dấu ngoặc nhọn '\textbf{\{ \}}' ngay sau. Nếu điều kiện sai, chương trình sẽ thực thi câu lệnh ngay sau từ khóa \kw{else}. Câu lệnh rẽ nhánh có thể không có phần \kw{else}. Biểu thức điều kiện bắt buộc phải là một biểu thức trả về giá trị đúng sai (boolean).
+
+\noindent\textbf{Câu lệnh lặp (\textit{Loop statement})}
+
+\regexloopstmt
+
+Câu lệnh lặp là câu lệnh dùng để lặp lại một nhóm câu lệnh nào đó nhiều lần.
+
+\noindent\textbf{Câu lệnh lặp biểu thức điều kiện (\textit{Predicate loop statement})}
+
+\regexpredloopstmt
+
+Câu lệnh lặp biểu thức điều kiện là câu lệnh dùng để lặp lại một nhóm câu lệnh nào đó nhiều lần dựa trên một biểu thức điều kiện. Câu lệnh lặp biểu thức điều kiện bắt đầu bằng từ khóa \kw{while}, sau đó là biểu thức điều kiện cần kiểm tra. Nếu biểu thức điều kiện đúng, chương trình sẽ thực thi câu lệnh nằm trong dấu ngoặc nhọn '\textbf{\{ \}}' ngay sau. Sau đó, chương trình sẽ kiểm tra lại biểu thức điều kiện. Nếu biểu thức điều kiện sai, chương trình sẽ thoát khỏi vòng lặp. Biểu thức điều kiện bắt buộc phải là một biểu thức trả về giá trị đúng sai (boolean).
+
+\noindent\textbf{Câu lệnh lặp trình lặp (\textit{Iterator loop statement})}
+
+\regexiterloopstmt
+
+Câu lệnh lặp trình lặp là câu lệnh dùng để lặp qua một tập hợp các phần tử nào đó. Câu lệnh lặp trình lặp bắt đầu bằng từ khóa \kw{for}, sau đó là biến lặp, từ khóa \kw{in} và tập hợp cần lặp qua. Biến lặp sẽ lấy giá trị của từng phần tử trong tập hợp. Câu lệnh lặp trình lặp có thể chứa một hoặc nhiều câu lệnh bên trong. Biểu thức tập hợp bắt buộc phải là một biểu thức trả về một đối tượng có thể lặp qua (iterable).

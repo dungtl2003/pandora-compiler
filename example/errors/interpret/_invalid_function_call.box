@@ -1,0 +1,5 @@
+fun abc() {
+    println("hmm");
+}
+
+abc(1, 2);

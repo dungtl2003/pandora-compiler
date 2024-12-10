@@ -1,0 +1,36 @@
+fun print_rubix(rubix: [[[int]]]) {
+    for layer in rubix {
+        for row in layer {
+            for el in row {
+                print(el as str + " ");
+            }
+            println("");
+        }
+        println("");
+    }
+}
+
+set mut m2: [[int]] = [
+    [1, 3, 2],
+    [2, 3, 1],
+    [2, 2, 2],
+];
+
+m2[0][1] = 100;
+
+for row in m2 {
+    for col in row {
+        print(col as str + " ");
+    }
+    println("");
+}
+
+println("");
+println("");
+
+set mut rubix: [[[int; 3]; 3]; 3] = [[[0; 3]; 3]; 3];
+rubix[0][1][2] = 30;
+rubix[2][2] = [1, 6, 7];
+rubix[1] = [[6, 9, 6], [9, 6, 9], [9, 6, 6]];
+print_rubix(rubix);
+println("rubix[0][1][2] = " + rubix[0][1][2] as str);

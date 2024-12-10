@@ -1,0 +1,6 @@
+set arr: [int] = [0, 1, 2]; // this is fine
+
+set matrix: [[int]; 2] = [[0, 1, 2], [1, 1, 1]]; // this is also fine
+
+//set arr: [int]; // WARNINGGGGGG
+set matrix: [[int;2]];// WARNINGGGGGG
