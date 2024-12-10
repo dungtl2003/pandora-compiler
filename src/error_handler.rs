@@ -39,12 +39,37 @@ impl ErrorHandler {
 
     pub fn build_non_function_declared_in_external_library_error(
         &self,
+        span: Span,
     ) -> NonFunctionDeclaredInExternalLibrary {
-        NonFunctionDeclaredInExternalLibrary
+        NonFunctionDeclaredInExternalLibrary {
+            span: span.to_source_span(),
+        }
     }
 
-    pub fn build_parse_library_file_failed_error(&self, path: String) -> ParseLibraryFileFailed {
-        ParseLibraryFileFailed { path }
+    pub fn build_array_has_multiple_types_error(
+        &self,
+        first_el_ty: String,
+        first_mismatch_ty: String,
+        first_el_span: Span,
+        first_mismatch_span: Span,
+    ) -> ArrayHasMultipleTypes {
+        ArrayHasMultipleTypes {
+            first_el_ty,
+            first_mismatch_ty,
+            first_el_span: first_el_span.to_source_span(),
+            first_mismatch_span: first_mismatch_span.to_source_span(),
+        }
+    }
+
+    pub fn build_parse_library_file_failed_error(
+        &self,
+        span: Span,
+        path: String,
+    ) -> ParseLibraryFileFailed {
+        ParseLibraryFileFailed {
+            span: span.to_source_span(),
+            path,
+        }
     }
 
     pub fn build_read_library_file_failed_error(&self, path: String) -> ReadLibraryFileFailed {
@@ -72,11 +97,13 @@ impl ErrorHandler {
 
     pub fn build_missing_return_statement_error(
         &self,
+        ret_kw: String,
         expected: String,
         expected_span: Span,
         func_decl_span: Span,
     ) -> MissingReturnStatement {
         MissingReturnStatement {
+            ret_kw,
             expected,
             expected_span: expected_span.to_source_span(),
             func_decl_span: func_decl_span.to_source_span(),
@@ -98,12 +125,14 @@ impl ErrorHandler {
 
     pub fn build_mutate_immutable_variable_error(
         &self,
+        mut_kw: String,
         var_name: String,
         first_assign_span: Span,
         second_assign_span: Span,
         help_span: Span,
     ) -> MutateImmutableVariable {
         MutateImmutableVariable {
+            mut_kw,
             var_name,
             first_assign_span: first_assign_span.to_source_span(),
             second_assign_span: second_assign_span.to_source_span(),
@@ -129,16 +158,17 @@ impl ErrorHandler {
     pub fn build_function_param_mismatch(
         &self,
         func_decl_span: Span,
+        args: usize,
         mismatch_params: Vec<(Span, String, String)>,
         missing_param_tys: Vec<String>, // this and unexpected_params should never be non empty at the
         // same time
         unexpected_param_tys: Vec<(Span, String)>,
-        after_sig_span: Span,
+        prefix_span: Span,
     ) -> FunctionParamMismatch {
         let mut missing_params: Vec<String> = missing_param_tys;
         let mut param_labels: Vec<LabeledSpan> = vec![];
 
-        for (span, arg_ty, param_ty) in mismatch_params.iter() {
+        for (span, param_ty, arg_ty) in mismatch_params.iter() {
             param_labels.push(LabeledSpan::at(
                 span.to_source_span(),
                 format!("expected `{}`, found `{}`", param_ty, arg_ty).to_string(),
@@ -153,17 +183,16 @@ impl ErrorHandler {
                     vec![],
                 )
             } else if !missing_params.is_empty() {
-                let total_params = mismatch_params.len() + missing_params.len();
-                let open_span = after_sig_span.to_source_span();
+                let total_params = args + missing_params.len();
                 let expected_arg_eng = if total_params == 1 {
                     "1 argument".to_string()
                 } else {
                     format!("{} arguments", total_params)
                 };
-                let found_arg_eng = if mismatch_params.len() == 1 {
+                let found_arg_eng = if args == 1 {
                     "1 argument".to_string()
                 } else {
-                    format!("{} arguments", mismatch_params.len())
+                    format!("{} arguments", args)
                 };
 
                 let missing_msg: String = if missing_params.len() == 1 {
@@ -180,20 +209,23 @@ impl ErrorHandler {
                         "this function takes {} but {} were supplied",
                         expected_arg_eng, found_arg_eng,
                     ),
-                    Some(LabeledSpan::at(open_span, missing_msg.to_string())),
+                    Some(LabeledSpan::at(
+                        prefix_span.to_source_span(),
+                        missing_msg.to_string(),
+                    )),
                     vec![],
                 )
             } else {
-                let total_params = mismatch_params.len() - unexpected_param_tys.len();
+                let total_params = args - unexpected_param_tys.len();
                 let expected_arg_eng = if total_params == 1 {
                     "1 argument".to_string()
                 } else {
                     format!("{} arguments", total_params)
                 };
-                let found_arg_eng = if mismatch_params.len() == 1 {
+                let found_arg_eng = if args == 1 {
                     "1 argument".to_string()
                 } else {
-                    format!("{} arguments", mismatch_params.len())
+                    format!("{} arguments", args)
                 };
 
                 let labels: Vec<LabeledSpan> = unexpected_param_tys
@@ -1210,6 +1242,17 @@ pub struct CannotModulo {
 }
 
 #[derive(Error, Debug, Diagnostic)]
+#[error("array has multiple types")]
+pub struct ArrayHasMultipleTypes {
+    pub first_el_ty: String,
+    pub first_mismatch_ty: String,
+    #[label("first element has type `{}`", first_el_ty)]
+    pub first_el_span: SourceSpan,
+    #[label("but this element has type `{}`", first_mismatch_ty)]
+    pub first_mismatch_span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
 #[error("can't compare `{}` with `{}`", lhs_ty, rhs_ty)]
 pub struct CannotCompare {
     lhs_ty: String,
@@ -1343,7 +1386,7 @@ pub struct LibraryFunctionNotFound {
 #[derive(Error, Debug, Diagnostic)]
 #[error("invalid library path")]
 pub struct InvalidLibraryPath {
-    #[label(primary)]
+    #[label("This should be an identifier")]
     span: SourceSpan,
 }
 
@@ -1372,6 +1415,7 @@ pub struct FunctionParamMismatch {
     func_decl_span: SourceSpan,
     #[label(collection)]
     mismatch_spans: Vec<LabeledSpan>,
+    #[label(collection)]
     missing_span: Option<LabeledSpan>,
     #[label(collection)]
     unexpected_spans: Vec<LabeledSpan>,
@@ -1401,16 +1445,21 @@ pub struct MissingFunctionReturnType {
 #[derive(Error, Debug, Diagnostic)]
 #[error("mismatched types")]
 pub struct MissingReturnStatement {
+    ret_kw: String,
     expected: String,
     #[label("expected `{}`, found `()`", expected)]
     expected_span: SourceSpan,
-    #[label("implicitly returns `()` as its body has no tail or `return` expression")]
+    #[label(
+        "implicitly returns `()` as its body has no tail or `{}` expression",
+        ret_kw
+    )]
     func_decl_span: SourceSpan,
 }
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot assign twice to immutable variable `{}`", var_name)]
 pub struct MutateImmutableVariable {
+    mut_kw: String,
     var_name: String,
     #[label("first assignment to `{}`", var_name)]
     first_assign_span: SourceSpan,
@@ -1445,12 +1494,17 @@ pub struct ReadLibraryFileFailed {
 #[derive(Error, Debug, Diagnostic)]
 #[error("failed to parse library file `{}`", path)]
 pub struct ParseLibraryFileFailed {
+    #[label("failed to parse library file")]
+    span: SourceSpan,
     path: String,
 }
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("only function declarations are allowed in external libraries")]
-pub struct NonFunctionDeclaredInExternalLibrary;
+pub struct NonFunctionDeclaredInExternalLibrary {
+    #[label("this library contains a non-function declaration")]
+    span: SourceSpan,
+}
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("invalid library name")]

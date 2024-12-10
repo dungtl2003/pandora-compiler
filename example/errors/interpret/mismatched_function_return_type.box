@@ -1,0 +1,7 @@
+fun test() -> int {
+    yeet 3.5;
+}
+
+
+
+test();

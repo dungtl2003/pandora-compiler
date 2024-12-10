@@ -2,6 +2,7 @@ use crate::{
     ast::{self, BinOp, BinOpKind, Expr, ExprKind, Lit, LitKind},
     kw::{self, Keyword},
     lexer,
+    libs::CallerAttrs,
     span_encoding::Span,
 };
 
@@ -21,10 +22,10 @@ pub fn interpret_expr(
         ExprKind::Identifier(ident) => interpret_expr_ident(env, ident)?,
         ExprKind::Literal(value) => interpret_expr_literal(value)?,
         ExprKind::FunCall(prefix, args) => {
-            interpret_expr_funcall(env, prefix, args, in_loop, is_verbose)?
+            interpret_expr_funcall(env, expr_span, prefix, args, in_loop, is_verbose)?
         }
         ExprKind::LibFunCall(lib_fun, args) => {
-            interpret_expr_lib_funcall(env, lib_fun, args, in_loop, is_verbose)?
+            interpret_expr_lib_funcall(env, expr_span, lib_fun, args, in_loop, is_verbose)?
         }
         ExprKind::Cast(expr, ty) => interpret_expr_cast(env, expr, ty, in_loop, is_verbose)?,
         ExprKind::Assign(lhs, rhs, assign_span) => {
@@ -122,21 +123,24 @@ fn interpret_expr_array(
     is_verbose: bool,
 ) -> Result<ValueKind, Vec<IError>> {
     let mut result = Vec::new();
-    let mut ty: Option<TyKind> = None;
+    let mut first_el: Option<(Span, TyKind)> = None;
     for element in elements {
+        let el_span = element.span;
         let el = interpret_expr(env, element, in_loop, is_verbose)?;
-        match ty {
-            Some(ref ty) => {
-                if *ty != el.to_ty_kind() {
-                    return Err(vec![IError::MismatchedType {
-                        expected: ty.to_string(),
-                        found: el.to_ty_kind().to_string(),
-                        span: element.span,
+        let el_ty = el.to_ty_kind();
+        match first_el {
+            Some((first_el_span, ref first_el_ty)) => {
+                if *first_el_ty != el_ty {
+                    return Err(vec![IError::ArrayHasMultipleTypes {
+                        first_el_ty: first_el_ty.to_string(),
+                        first_el_span,
+                        first_mismatch_ty: el_ty.to_string(),
+                        first_mismatch_span: el_span,
                     }]);
                 }
             }
             None => {
-                ty = Some(el.to_ty_kind());
+                first_el = Some((el_span, el.to_ty_kind()));
             }
         }
         result.push(el);
@@ -274,6 +278,7 @@ fn interpret_expr_assign(
 
 fn interpret_expr_lib_funcall(
     env: &mut Environment,
+    expr_span: Span,
     lib_fun: &Box<Expr>,
     args: &Vec<Box<Expr>>,
     in_loop: bool,
@@ -282,7 +287,7 @@ fn interpret_expr_lib_funcall(
     let (lib, func) = match &lib_fun.kind {
         ExprKind::LibAccess(prefix, func) => match &prefix.kind {
             ExprKind::Identifier(lib) => (lib, func),
-            _ => return Err(vec![IError::InvalidLibraryPath { span: lib_fun.span }]),
+            _ => return Err(vec![IError::InvalidLibraryPath { span: prefix.span }]),
         },
         _ => unreachable!("Library function call prefix must be a library access"),
     };
@@ -309,7 +314,11 @@ fn interpret_expr_lib_funcall(
 
     if let Some((_span, lib)) = env.lookup_library(lib_name) {
         if let Some(func) = lib.get_function(func_name) {
-            func(evaluated_args).map_err(|_err| vec![]) // FIX
+            let cattrs = CallerAttrs {
+                span: expr_span,
+                prefix_span: *lib_span,
+            };
+            func(cattrs, evaluated_args).map_err(|_err| vec![]) // FIX
         } else {
             return Err(vec![IError::FunctionInLibraryNotFound {
                 func_name: func_name.to_string(),
@@ -594,6 +603,7 @@ fn interpret_expr_ident(
 
 fn interpret_expr_funcall(
     env: &mut Environment,
+    expr_span: Span,
     prefix: &Box<Expr>,
     args: &Vec<Box<Expr>>,
     in_loop: bool,
@@ -621,7 +631,11 @@ fn interpret_expr_funcall(
 
         if let Some(lib) = env.lookup_default_library("std") {
             if let Some(func) = lib.get_function(std_func_name) {
-                return func(evaluated_args).map_err(|_err| vec![]); // FIX
+                let cattrs = CallerAttrs {
+                    span: expr_span,
+                    prefix_span: prefix.span,
+                };
+                return func(cattrs, evaluated_args).map_err(|_err| vec![]); // FIX
             } else {
                 return Err(vec![IError::FunctionNotInScope {
                     function: std_func_name.to_string(),
@@ -638,7 +652,13 @@ fn interpret_expr_funcall(
         evaluated_args.push(interpret_expr(env, arg, in_loop, is_verbose)?);
     }
 
-    Value::evaluate_function(env, result.unwrap().1, evaluated_args, is_verbose)
+    Value::evaluate_function(
+        env,
+        prefix.span,
+        result.unwrap().1,
+        evaluated_args,
+        is_verbose,
+    )
 }
 
 fn interpret_expr_literal(value: &Lit) -> Result<ValueKind, Vec<IError>> {
@@ -790,6 +810,7 @@ fn interpret_expr_assign_ident_with_known_value(
     let decl_span = var.borrow().ident.span;
     if !var.borrow().can_be_assigned() {
         return Err(vec![IError::MutateImmutableVariable {
+            mut_kw: Keyword::Mut.as_ref().to_string(),
             var_name: ident.name.to_string(),
             first_assign_span: first_assign_span.expect("Variable must be assigned before"),
             second_assign_span: expr_span,

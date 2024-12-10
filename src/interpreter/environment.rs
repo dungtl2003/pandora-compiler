@@ -12,7 +12,7 @@ use variable::Variable;
 
 use crate::{
     ast,
-    libs::{math::MathLib, std::StdLib, Library},
+    libs::{math::MathLib, std::StdLib, CallerAttrs, Library},
     parse::parser,
     session::Session,
     span_encoding::Span,
@@ -262,6 +262,7 @@ impl Environment {
         let ast = parser::parse(&contents, &mut session);
         if ast.is_none() {
             return Err(vec![IError::ParseLibraryFileFailed {
+                span,
                 path: lib_path.display().to_string(),
             }]);
         }
@@ -333,7 +334,7 @@ impl Environment {
                     let name = name.name.to_string();
                     lib.add_function(name, eval_function, is_verbose)?;
                 }
-                _ => return Err(vec![IError::NonFunctionDeclaredInExternalLibrary]),
+                _ => return Err(vec![IError::NonFunctionDeclaredInExternalLibrary { span }]),
             }
         }
 
@@ -342,14 +343,15 @@ impl Environment {
 }
 
 pub struct ExternalLibrary {
-    functions: HashMap<String, Box<dyn Fn(Vec<(Value, bool)>) -> Result<ValueKind, String>>>,
+    functions:
+        HashMap<String, Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, String>>>,
 }
 
 impl Library for ExternalLibrary {
     fn get_function(
         &self,
         name: &str,
-    ) -> Option<&Box<dyn Fn(Vec<(Value, bool)>) -> Result<ValueKind, String>>> {
+    ) -> Option<&Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, String>>> {
         self.functions.get(name)
     }
 }
@@ -369,7 +371,7 @@ impl ExternalLibrary {
     ) -> Result<(), Vec<IError>> {
         let func_name = name.to_string();
         let function = Box::new(
-            move |args: Vec<(Value, bool)>| -> Result<ValueKind, String> {
+            move |cattrs: CallerAttrs, args: Vec<(Value, bool)>| -> Result<ValueKind, String> {
                 let mut env = Environment::new();
                 // FIX: ignore value's mutability for now
                 let args = args
@@ -377,8 +379,14 @@ impl ExternalLibrary {
                     .map(|(val, _is_mut)| val)
                     .collect::<Vec<Value>>();
 
-                Value::evaluate_function(&mut env, eval.clone(), args, is_verbose)
-                    .map_err(|_err| "".to_string())
+                Value::evaluate_function(
+                    &mut env,
+                    cattrs.prefix_span,
+                    eval.clone(),
+                    args,
+                    is_verbose,
+                )
+                .map_err(|_err| "".to_string())
             },
         );
 

@@ -2,6 +2,12 @@ use crate::{span_encoding::Span, ErrorHandler};
 
 #[derive(Debug, Clone)]
 pub enum IError {
+    ArrayHasMultipleTypes {
+        first_el_ty: String,
+        first_mismatch_ty: String,
+        first_el_span: Span,
+        first_mismatch_span: Span,
+    },
     ExpectedBlockAfterCondition {
         if_symbol: String,
         condition_span: Span,
@@ -56,9 +62,12 @@ pub enum IError {
         span: Span,
     },
 
-    NonFunctionDeclaredInExternalLibrary,
+    NonFunctionDeclaredInExternalLibrary {
+        span: Span,
+    },
 
     ParseLibraryFileFailed {
+        span: Span,
         path: String,
     },
 
@@ -76,6 +85,7 @@ pub enum IError {
     NoSourceFileSpecified,
 
     MissingReturnStatement {
+        ret_kw: String,
         expected: String,
         expected_span: Span,
         func_decl_span: Span,
@@ -88,6 +98,7 @@ pub enum IError {
     },
 
     MutateImmutableVariable {
+        mut_kw: String,
         var_name: String,
         first_assign_span: Span,
         second_assign_span: Span,
@@ -103,11 +114,12 @@ pub enum IError {
 
     FunctionParamMismatch {
         func_decl_span: Span,
+        args: usize,
         mismatch_params: Vec<(Span, String, String)>,
         missing_param_tys: Vec<String>, // this and unexpected_params should never be non empty at the
         // same time
         unexpected_param_tys: Vec<(Span, String)>,
-        after_sig_span: Span,
+        prefix_span: Span,
     },
 
     FunctionNotInScope {
@@ -295,17 +307,19 @@ impl IError {
                 .into(),
             IError::FunctionParamMismatch {
                 func_decl_span,
+                args,
                 mismatch_params,
                 missing_param_tys,
                 unexpected_param_tys,
-                after_sig_span,
+                prefix_span,
             } => error_handler
                 .build_function_param_mismatch(
                     func_decl_span,
+                    args,
                     mismatch_params,
                     missing_param_tys,
                     unexpected_param_tys,
-                    after_sig_span,
+                    prefix_span,
                 )
                 .into(),
             IError::NoImplForOp {
@@ -367,26 +381,34 @@ impl IError {
             IError::NoSourceFileSpecified => {
                 error_handler.build_no_source_file_specified_error().into()
             }
-            IError::ParseLibraryFileFailed { path } => error_handler
-                .build_parse_library_file_failed_error(path)
+            IError::ParseLibraryFileFailed { span, path } => error_handler
+                .build_parse_library_file_failed_error(span, path)
                 .into(),
             IError::MissingReturnStatement {
+                ret_kw,
                 expected,
                 expected_span,
                 func_decl_span,
             } => error_handler
-                .build_missing_return_statement_error(expected, expected_span, func_decl_span)
+                .build_missing_return_statement_error(
+                    ret_kw,
+                    expected,
+                    expected_span,
+                    func_decl_span,
+                )
                 .into(),
             IError::ExternalLibraryNotFound { lib_name, span } => error_handler
                 .build_external_library_not_found_error(lib_name, span)
                 .into(),
             IError::MutateImmutableVariable {
+                mut_kw,
                 var_name,
                 first_assign_span,
                 second_assign_span,
                 help_span,
             } => error_handler
                 .build_mutate_immutable_variable_error(
+                    mut_kw,
                     var_name,
                     first_assign_span,
                     second_assign_span,
@@ -415,8 +437,8 @@ impl IError {
             } => error_handler
                 .build_mismatched_function_return_type(expected, found, expected_span, found_span)
                 .into(),
-            IError::NonFunctionDeclaredInExternalLibrary => error_handler
-                .build_non_function_declared_in_external_library_error()
+            IError::NonFunctionDeclaredInExternalLibrary { span } => error_handler
+                .build_non_function_declared_in_external_library_error(span)
                 .into(),
             IError::MultipleLibrariesInScope {
                 lib_name,
@@ -473,6 +495,19 @@ impl IError {
                 stmt_span,
             } => error_handler
                 .build_expected_block_after_condition_error(if_symbol, condition_span, stmt_span)
+                .into(),
+            IError::ArrayHasMultipleTypes {
+                first_el_ty,
+                first_mismatch_ty,
+                first_el_span,
+                first_mismatch_span,
+            } => error_handler
+                .build_array_has_multiple_types_error(
+                    first_el_ty,
+                    first_mismatch_ty,
+                    first_el_span,
+                    first_mismatch_span,
+                )
                 .into(),
         }
     }

@@ -1,0 +1,4 @@
+set x: int = 5;
+set y: bool = x as bool;
+
+println(y as str);

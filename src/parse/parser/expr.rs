@@ -178,7 +178,7 @@ impl Parser {
         let start = self.token.span;
         self.advance();
         let field = self.parse_ident()?;
-        let span = start.to(self.token.span);
+        let span = start.to(field.span);
         let dot = ExprKind::LibAccess(base, field);
         Ok(self.mk_expr(dot, span))
     }
@@ -319,7 +319,10 @@ impl Parser {
 
     fn parse_expr_ident(&mut self) -> PResult<Box<Expr>> {
         debug_assert!(self.token.is_ident());
-        if self.look_ahead(0, |tok| tok.ident().unwrap().0.name.is_bool_lit()) {
+        if self
+            .token
+            .is_non_raw_ident_where(|ident| ident.name.is_bool_lit())
+        {
             self.parse_expr_lit()
         } else {
             let ident = self.parse_ident()?;

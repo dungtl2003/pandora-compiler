@@ -2,18 +2,19 @@ use std::collections::HashMap;
 
 use crate::interpreter::eval::{Value, ValueKind};
 
-use super::Library;
+use super::{CallerAttrs, Library};
 use ::std::io::{self, Write};
 
 pub struct StdLib {
-    pub functions: HashMap<String, Box<dyn Fn(Vec<(Value, bool)>) -> Result<ValueKind, String>>>,
+    pub functions:
+        HashMap<String, Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, String>>>,
 }
 
 impl Library for StdLib {
     fn get_function(
         &self,
         name: &str,
-    ) -> Option<&Box<dyn Fn(Vec<(Value, bool)>) -> Result<ValueKind, String>>> {
+    ) -> Option<&Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, String>>> {
         self.functions.get(name)
     }
 }
@@ -46,7 +47,7 @@ impl StdLib {
         // delay() function
         self.functions.insert(
             "delay".to_string(),
-            Box::new(|args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
                     return Err("delay() takes exactly 1 argument".to_string());
                 }
@@ -67,7 +68,7 @@ impl StdLib {
         // strlen() function for strings
         self.functions.insert(
             "strlen".to_string(),
-            Box::new(|args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
                     return Err("strlen() takes exactly 1 argument".to_string());
                 }
@@ -83,7 +84,7 @@ impl StdLib {
         // arrlen() function for arrays
         self.functions.insert(
             "arrlen".to_string(),
-            Box::new(|args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
                     return Err("arrlen() takes exactly 1 argument".to_string());
                 }
@@ -99,7 +100,7 @@ impl StdLib {
         // lower() function
         self.functions.insert(
             "lower".to_string(),
-            Box::new(|args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
                     return Err("lower() takes exactly 1 argument".to_string());
                 }
@@ -115,7 +116,7 @@ impl StdLib {
         // upper() function
         self.functions.insert(
             "upper".to_string(),
-            Box::new(|args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
                     return Err("upper() takes exactly 1 argument".to_string());
                 }
@@ -131,7 +132,7 @@ impl StdLib {
         // input() function
         self.functions.insert(
             "input".to_string(),
-            Box::new(|args| {
+            Box::new(|cattrs, args| {
                 if !args.is_empty() {
                     return Err("input() takes no arguments".to_string());
                 }
@@ -148,7 +149,7 @@ impl StdLib {
         // println() function
         self.functions.insert(
             "println".to_string(),
-            Box::new(|args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
                     return Err("println() takes exactly 1 argument".to_string());
                 }
@@ -169,7 +170,7 @@ impl StdLib {
         // print() function
         self.functions.insert(
             "print".to_string(),
-            Box::new(|args| {
+            Box::new(|cattrs, args| {
                 if args.len() != 1 {
                     return Err("print() takes exactly 1 argument".to_string());
                 }

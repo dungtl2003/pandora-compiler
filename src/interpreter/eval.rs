@@ -1,4 +1,4 @@
-use crate::{ast::Stmt, span_encoding::Span};
+use crate::{ast::Stmt, kw::Keyword, span_encoding::Span};
 
 use super::{environment::Environment, errors::IError, ident::Ident, stmt, ty::TyKind, Ty};
 
@@ -23,6 +23,7 @@ pub struct Value {
 impl Value {
     pub fn evaluate_function(
         env: &Environment,
+        prefix_span: Span,
         function: ValueKind,
         evaluated_args: Vec<Value>,
         is_verbose: bool,
@@ -101,13 +102,14 @@ impl Value {
                     }
                 }
 
-                if !mismatch_params.is_empty() {
+                if !mismatch_params.is_empty() || !unexpected_param_tys.is_empty() {
                     errors.push(IError::FunctionParamMismatch {
                         func_decl_span: func_name_span.clone(),
+                        args: evaluated_args.len(),
                         mismatch_params,
                         missing_param_tys,
                         unexpected_param_tys,
-                        after_sig_span,
+                        prefix_span,
                     });
                 }
 
@@ -146,9 +148,10 @@ impl Value {
                         None => {
                             if ret_ty_kind != TyKind::Unit {
                                 errors.push(IError::MissingReturnStatement {
+                                    ret_kw: Keyword::Yeet.as_ref().to_string(),
                                     expected: ret_ty_kind.to_string(),
                                     expected_span: output.unwrap().span,
-                                    func_decl_span: span,
+                                    func_decl_span: ident.span,
                                 })
                             }
                             if errors.is_empty() {
