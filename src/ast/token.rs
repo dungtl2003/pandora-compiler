@@ -7,7 +7,7 @@ use crate::{
     symbol::Symbol,
 };
 
-use super::{ident::Ident, BinOpKind};
+use super::ident::Ident;
 use BinOpToken::*;
 use TokenKind::*;
 
@@ -19,7 +19,7 @@ pub struct Token {
 
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self.kind)
+        write!(f, "{}", self.kind)
     }
 }
 
@@ -84,6 +84,59 @@ pub enum TokenKind {
     Eof,
 }
 
+impl Display for TokenKind {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Eq => write!(f, "="),
+            Lt => write!(f, "<"),
+            Le => write!(f, "<="),
+            EqEq => write!(f, "=="),
+            Ne => write!(f, "!="),
+            Ge => write!(f, ">="),
+            Gt => write!(f, ">"),
+            AndAnd => write!(f, "&&"),
+            OrOr => write!(f, "||"),
+            Not => write!(f, "!"),
+            Tilde => write!(f, "~"),
+            BinOp(op) => write!(f, "{}", op),
+            BinOpEq(op) => write!(f, "{}=", op),
+            Dot => write!(f, "."),
+            Comma => write!(f, ","),
+            Semicolon => write!(f, ";"),
+            Colon => write!(f, ":"),
+            PathSep => write!(f, "::"),
+            RArrow => write!(f, "->"),
+            Question => write!(f, "?"),
+            OpenDelim(delim) => {
+                let s = match delim {
+                    Delimiter::Parenthesis => "(",
+                    Delimiter::Brace => "{",
+                    Delimiter::Bracket => "[",
+                };
+                write!(f, "{}", s)
+            }
+            CloseDelim(delim) => {
+                let s = match delim {
+                    Delimiter::Parenthesis => ")",
+                    Delimiter::Brace => "}",
+                    Delimiter::Bracket => "]",
+                };
+                write!(f, "{}", s)
+            }
+            Literal(lit) => write!(f, "{}", lit.to_ty_str()),
+            Ident(_name, is_raw) => {
+                if *is_raw == IdentIsRaw::Yes {
+                    return write!(f, "raw identifier");
+                } else {
+                    return write!(f, "identifier");
+                }
+            }
+            DocComment(_, _, _) => write!(f, "doc comment"),
+            Eof => write!(f, "<EOF>"),
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum BinOpToken {
     Plus,
@@ -96,6 +149,23 @@ pub enum BinOpToken {
     Or,
     Shl,
     Shr,
+}
+
+impl Display for BinOpToken {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            Plus => write!(f, "+"),
+            Minus => write!(f, "-"),
+            Star => write!(f, "*"),
+            Slash => write!(f, "/"),
+            Percent => write!(f, "%"),
+            Caret => write!(f, "^"),
+            And => write!(f, "&"),
+            Or => write!(f, "|"),
+            Shl => write!(f, "<<"),
+            Shr => write!(f, ">>"),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -121,20 +191,8 @@ pub struct Lit {
 }
 
 impl Lit {
-    pub fn to_rust_lit_str(&self) -> String {
-        match self.kind {
-            LitKind::Bool => self.symbol.as_str().to_string(),
-            LitKind::Char => self.symbol.as_str().to_string(),
-            LitKind::Int => self.symbol.as_str().to_string(),
-            LitKind::Float => self.symbol.as_str().to_string(),
-            LitKind::Str => format!("\"{}\"", self.symbol.as_str()),
-            LitKind::RawStr(n) => format!(
-                "r{0}\"{1}\"{0}",
-                "#".repeat(n as usize),
-                self.symbol.as_str()
-            ),
-            LitKind::Err => unreachable!(),
-        }
+    pub fn to_ty_str(&self) -> &'static str {
+        self.kind.to_ty_str()
     }
 }
 
@@ -154,6 +212,19 @@ pub enum LitKind {
     RawStr(u8), // raw string delimited by `n` hash symbols
 
     Err,
+}
+
+impl LitKind {
+    pub fn to_ty_str(&self) -> &'static str {
+        match self {
+            LitKind::Bool => "bool",
+            LitKind::Char => "char",
+            LitKind::Int => "int",
+            LitKind::Float => "float",
+            LitKind::Str | LitKind::RawStr(_) => "str",
+            LitKind::Err => unreachable!(),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -177,6 +248,13 @@ impl Token {
         self.kind == kind
     }
 
+    pub fn can_begin_operator(&self) -> bool {
+        match self.kind {
+            BinOp(_) | AndAnd | OrOr | Not | Tilde => true,
+            _ => false,
+        }
+    }
+
     pub fn is_open_delim(&self, delim: Delimiter) -> bool {
         match self.kind {
             OpenDelim(d) => d == delim,
@@ -188,30 +266,6 @@ impl Token {
         match self.kind {
             CloseDelim(d) => d == delim,
             _ => false,
-        }
-    }
-
-    pub fn to_ast_binop_kind(&self) -> Option<BinOpKind> {
-        match self.kind {
-            BinOp(Plus) => Some(BinOpKind::Add),
-            BinOp(Minus) => Some(BinOpKind::Sub),
-            BinOp(Star) => Some(BinOpKind::Mul),
-            BinOp(Slash) => Some(BinOpKind::Div),
-            BinOp(Percent) => Some(BinOpKind::Mod),
-            EqEq => Some(BinOpKind::Eq),
-            Ne => Some(BinOpKind::Ne),
-            Lt => Some(BinOpKind::Lt),
-            Le => Some(BinOpKind::Le),
-            Gt => Some(BinOpKind::Gt),
-            Ge => Some(BinOpKind::Ge),
-            AndAnd => Some(BinOpKind::And),
-            OrOr => Some(BinOpKind::Or),
-            BinOp(And) => Some(BinOpKind::BitAnd),
-            BinOp(Or) => Some(BinOpKind::BitOr),
-            BinOp(Caret) => Some(BinOpKind::BitXor),
-            BinOp(Shl) => Some(BinOpKind::Shl),
-            BinOp(Shr) => Some(BinOpKind::Shr),
-            _ => None,
         }
     }
 
@@ -292,13 +346,6 @@ impl Token {
         }
     }
 
-    pub fn get_ident_if_non_raw(&self) -> Option<Ident> {
-        match self.ident() {
-            Some((id, IdentIsRaw::No)) => Some(id),
-            _ => None,
-        }
-    }
-
     /// Returns an identifier if this token is an identifier.
     pub fn ident(&self) -> Option<(Ident, IdentIsRaw)> {
         match self.kind {
@@ -318,10 +365,6 @@ impl Token {
         Token::new(TokenKind::Question, DUMMY_SP)
     }
 
-    pub fn is_doc_comment(&self) -> bool {
-        matches!(self.kind, DocComment(..))
-    }
-
     pub fn is_keyword(&self, keyword: Keyword) -> bool {
         self.is_non_raw_ident_where(|ident| {
             let res = kw::from_str(ident.name.as_str());
@@ -338,37 +381,15 @@ impl Token {
     }
 }
 
-impl TokenKind {
-    pub fn break_two_token_op(&self, n: u32) -> Option<(TokenKind, TokenKind)> {
-        assert!(n == 1 || n == 2);
-        Some(match (self, n) {
-            (Le, 1) => (Lt, Eq),
-            (EqEq, 1) => (Eq, Eq),
-            (Ne, 1) => (Not, Eq),
-            (Ge, 1) => (Gt, Eq),
-            (AndAnd, 1) => (BinOp(And), BinOp(And)),
-            (OrOr, 1) => (BinOp(Or), BinOp(Or)),
-            (BinOp(Shl), 1) => (Lt, Lt),
-            (BinOp(Shr), 1) => (Gt, Gt),
-            (BinOpEq(Plus), 1) => (BinOp(Plus), Eq),
-            (BinOpEq(Minus), 1) => (BinOp(Minus), Eq),
-            (BinOpEq(Star), 1) => (BinOp(Star), Eq),
-            (BinOpEq(Slash), 1) => (BinOp(Slash), Eq),
-            (BinOpEq(Percent), 1) => (BinOp(Percent), Eq),
-            (BinOpEq(Caret), 1) => (BinOp(Caret), Eq),
-            (BinOpEq(And), 1) => (BinOp(And), Eq),
-            (BinOpEq(Or), 1) => (BinOp(Or), Eq),
-            (BinOpEq(Shl), 1) => (Lt, Le),         // `<` + `<=`
-            (BinOpEq(Shl), 2) => (BinOp(Shl), Eq), // `<<` + `=`
-            (BinOpEq(Shr), 1) => (Gt, Ge),         // `>` + `>=`
-            (BinOpEq(Shr), 2) => (BinOp(Shr), Eq), // `>>` + `=`
-            _ => return None,
-        })
-    }
-}
-
 pub fn ident_can_begin_expr(name: Symbol, span: Span, is_raw: IdentIsRaw) -> bool {
     let ident_token = Token::new(Ident(name, is_raw), span);
 
-    !ident_token.is_non_raw_ident_where(|ident| kw::is_keyword(ident.name))
+    is_raw == IdentIsRaw::Yes
+        || ident_token.is_non_raw_ident_where(|ident| match kw::from_str(ident.name.as_str()) {
+            Ok(keyword) => match keyword {
+                Keyword::True | Keyword::False => true,
+                _ => false,
+            },
+            Err(_) => true,
+        })
 }

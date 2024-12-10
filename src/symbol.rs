@@ -29,24 +29,14 @@ impl Display for Symbol {
 }
 
 impl Symbol {
-    pub fn new(s: &str) -> Self {
-        let sym: Sym = s.into();
-        Self { sym }
-    }
-
     pub fn as_str(&self) -> &str {
         self.sym.as_str()
     }
 
     pub fn is_bool_lit(&self) -> bool {
-        self.sym == Keyword::True || self.sym == Keyword::False
-    }
-
-    pub fn is_keyword(&self) -> bool {
-        kw::from_str(self.sym.as_str()).is_ok()
-    }
-
-    pub fn is_mutability(&self) -> bool {
-        self.sym == Keyword::Mut
+        match kw::from_str(self.sym.as_str()) {
+            Ok(Keyword::True) | Ok(Keyword::False) => true,
+            _ => false,
+        }
     }
 }

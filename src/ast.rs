@@ -7,7 +7,7 @@ use core::fmt;
 use std::fmt::{Display, Formatter};
 
 pub use ident::Ident;
-pub use tokenstream::{pprint, DelimSpan, Spacing, TokenStream, TokenTree, TokenTreeCursor};
+pub use tokenstream::{DelimSpan, Spacing, TokenStream, TokenTree, TokenTreeCursor};
 
 pub use token::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,
@@ -58,29 +58,6 @@ pub enum StmtKind {
     Import(Ident),
     /// An empty statement: ';'.
     Empty,
-}
-
-/// A "Path" is essentially Pandora's notion of a name.
-///
-/// It's represented as a sequence of identifiers,
-/// along with a bunch of supporting information.
-///
-/// E.g., `std::cmp::PartialEq`.
-#[derive(Debug, Clone)]
-pub struct Path {
-    pub span: Span,
-    /// The segments in the path: the things separated by `::`.
-    /// Global paths begin with `kw::PathRoot`.
-    pub segments: Vec<PathSegment>,
-}
-
-/// A segment of a path: an identifier and a set of types.
-///
-/// E.g., `std`
-#[derive(Debug, Clone)]
-pub struct PathSegment {
-    /// The identifier portion of this path segment.
-    pub ident: Ident,
 }
 
 #[derive(Debug, Clone)]
@@ -207,26 +184,19 @@ pub enum UnOp {
     Ne,
 }
 
-impl UnOp {
-    pub fn to_rust_op_str(&self) -> String {
-        (match self {
-            UnOp::Not => "!",
-            UnOp::Ne => "-",
-        })
-        .to_string()
-    }
-}
-
 impl Display for UnOp {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            UnOp::Not => write!(f, "!"),
+            UnOp::Ne => write!(f, "-"),
+        }
     }
 }
 
 pub type BinOp = Spanned<BinOpKind>;
 
 impl BinOp {
-    pub fn to_rust_op_str(&self) -> String {
+    pub fn to_string(&self) -> String {
         (match self.node {
             BinOpKind::Add => "+",
             BinOpKind::Sub => "-",

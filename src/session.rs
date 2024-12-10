@@ -2,12 +2,11 @@ use std::sync::Arc;
 
 use miette::NamedSource;
 
-use crate::ErrorHandler;
+use crate::{ErrorHandler, ErrorType};
 
 #[derive(Debug)]
 pub struct Session {
-    pub file: Arc<SourceFile>,
-    pub has_errors: bool,
+    pub error_type: ErrorType,
     pub error_handler: ErrorHandler,
 }
 
@@ -18,9 +17,20 @@ pub type SourceFile = NamedSource<Arc<String>>;
 impl Session {
     pub fn new(file: Arc<SourceFile>) -> Self {
         Self {
-            file: Arc::clone(&file),
-            has_errors: false,
+            error_type: ErrorType::NoError,
             error_handler: ErrorHandler::new(Arc::clone(&file)),
         }
+    }
+
+    pub fn set_error(&mut self, error_type: ErrorType) {
+        self.error_type = error_type;
+    }
+
+    pub fn has_error(&self) -> bool {
+        self.error_type != ErrorType::NoError
+    }
+
+    pub fn can_recover(&self) -> bool {
+        self.error_type == ErrorType::Recoverable || self.error_type == ErrorType::NoError
     }
 }

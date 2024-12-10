@@ -16,33 +16,6 @@ impl TokenStream {
     }
 }
 
-pub fn pprint(stream: &TokenStream) {
-    print_recursive(stream, 0);
-}
-
-fn print_recursive(stream: &TokenStream, depth: u32) {
-    let spaces = " ".repeat((depth * 4) as usize);
-    for tt in stream.0.iter() {
-        match tt {
-            TokenTree::Token(tok, _) => {
-                println!(
-                    "{spaces}{:?} [{} - {}]",
-                    tok.kind,
-                    tok.span.offset,
-                    tok.span.offset + tok.span.length as u32
-                );
-            }
-            TokenTree::Delimited(delim_span, delimiter, s) => {
-                println!(
-                    "{spaces}Delimited, type: {delimiter:?}, [{} - {}]",
-                    delim_span.open.offset, delim_span.close.offset
-                );
-                print_recursive(s, depth + 1);
-            }
-        }
-    }
-}
-
 /// Part of a `TokenStream`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenTree {
@@ -104,9 +77,5 @@ impl TokenTreeCursor {
             self.index += 1;
             tree
         })
-    }
-
-    pub fn look_ahead(&self, n: usize) -> Option<&TokenTree> {
-        self.stream.0.get(self.index + n)
     }
 }

@@ -1,11 +1,15 @@
-use crate::interpreter::{eval::Value, ty::Ty};
+use crate::{
+    interpreter::{ident::Ident, Ty, Value},
+    span_encoding::Span,
+};
 
 #[derive(Debug, Clone)]
 pub struct Variable {
-    pub name: String,
+    pub ident: Ident,
     pub is_mut: bool,
     pub val: Option<Value>,
     pub ty: Ty,
+    pub first_assigned_span: Option<Span>,
 }
 
 impl Variable {

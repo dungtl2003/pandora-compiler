@@ -1,0 +1,7 @@
+add std;
+
+add math;
+
+println("still work normally");
+
+add abc;

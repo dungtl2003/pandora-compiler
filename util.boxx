@@ -1,3 +1,0 @@
-fun sum(a: int, b: int, c: int) -> int {
-    yeet a + b + c;
-}

@@ -2,14 +2,17 @@ use crate::{
     ast::{
         BinOp, BinOpKind, BinOpToken, Delimiter, Expr, ExprKind, Lit, LitKind, TokenKind, Ty, UnOp,
     },
-    parse::util::parser::{AssocOp, Fixity},
+    parse::{
+        errors::PError,
+        util::parser::{AssocOp, Fixity},
+    },
     span_encoding::Span,
 };
 
 use super::{PResult, Parser, TokenType};
 use crate::span_encoding;
 
-impl Parser<'_> {
+impl Parser {
     pub fn parse_expr(&mut self) -> PResult<Box<Expr>> {
         let lhs = self.parse_expr_prefix()?;
         self.parse_expr_rest(0, lhs)
@@ -19,7 +22,6 @@ impl Parser<'_> {
         self.expected_tokens.push(TokenType::Operator);
 
         loop {
-            // TODO: Handle error probably later.
             let op_assoc = AssocOp::from_token(&self.token);
             if op_assoc.is_none() {
                 break;
@@ -113,16 +115,18 @@ impl Parser<'_> {
     fn parse_expr_prefix(&mut self) -> PResult<Box<Expr>> {
         match self.token.kind {
             TokenKind::Not => {
+                let start = self.token.span;
                 self.advance();
                 let expr = self.parse_expr_prefix()?;
-                let span = expr.span;
+                let span = start.to(expr.span);
                 let expr = self.mk_unary(UnOp::Not, expr);
                 Ok(self.mk_expr(expr, span))
             }
             TokenKind::BinOp(BinOpToken::Minus) => {
+                let start = self.token.span;
                 self.advance();
                 let expr = self.parse_expr_prefix()?;
-                let span = self.token.span;
+                let span = start.to(expr.span);
                 let expr = self.mk_unary(UnOp::Ne, expr);
                 Ok(self.mk_expr(expr, span))
             }
@@ -144,7 +148,6 @@ impl Parser<'_> {
         }
     }
 
-    // FIX: this should be a loop
     fn parse_expr_dot_or_call_with(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
         debug_assert!(
             self.token.is_kind(TokenKind::Dot)
@@ -173,7 +176,7 @@ impl Parser<'_> {
         let start = self.token.span;
         self.advance();
         let field = self.parse_ident()?;
-        let span = start.to(self.token.span);
+        let span = start.to(field.span);
         let dot = ExprKind::LibAccess(base, field);
         Ok(self.mk_expr(dot, span))
     }
@@ -240,7 +243,21 @@ impl Parser<'_> {
                 self.parse_expr_grouped(Delimiter::Parenthesis)
             }
             TokenKind::OpenDelim(Delimiter::Bracket) => self.parse_expr_array(),
-            _ => Err(format!("Unexpected token: {:?}", self.token).into()),
+            _ => {
+                let err = PError::ExpectedToken {
+                    expected: vec![
+                        TokenType::Const,
+                        TokenType::Ident,
+                        TokenType::Token(TokenKind::OpenDelim(Delimiter::Parenthesis)),
+                        TokenType::Token(TokenKind::OpenDelim(Delimiter::Bracket)),
+                    ],
+                    found: TokenType::Token(self.token.kind.clone()),
+                    span: self.token.span,
+                    prev_span: self.prev_token.span,
+                };
+
+                return Err(vec![err]);
+            }
         }
     }
 
@@ -261,7 +278,17 @@ impl Parser<'_> {
             // Check for array repeat syntax `[expr; len]`
             if self.token.is_kind(TokenKind::Semicolon) {
                 if elements.len() != 1 {
-                    return Err("Expected only 1 element before semicolon".into());
+                    let err = PError::ExpectedToken {
+                        expected: vec![
+                            TokenType::Token(TokenKind::CloseDelim(Delimiter::Bracket)),
+                            TokenType::Operator,
+                        ],
+                        found: TokenType::Token(TokenKind::Semicolon),
+                        span: self.token.span,
+                        prev_span: self.prev_token.span,
+                    };
+
+                    return Err(vec![err]);
                 }
                 self.advance(); // eat semicolon
                 let len = self.parse_expr()?;
@@ -281,7 +308,7 @@ impl Parser<'_> {
 
         self.expect(TokenKind::CloseDelim(Delimiter::Bracket))?;
 
-        let span = self.mk_expr_sp(&elements[0], self.token.span);
+        let span = start.to(self.token.span);
         let array = ExprKind::Array(elements);
         self.advance();
 
@@ -290,7 +317,10 @@ impl Parser<'_> {
 
     fn parse_expr_ident(&mut self) -> PResult<Box<Expr>> {
         debug_assert!(self.token.is_ident());
-        if self.look_ahead(0, |tok| tok.ident().unwrap().0.name.is_bool_lit()) {
+        if self
+            .token
+            .is_non_raw_ident_where(|ident| ident.name.is_bool_lit())
+        {
             self.parse_expr_lit()
         } else {
             let ident = self.parse_ident()?;
@@ -329,10 +359,27 @@ impl Parser<'_> {
                     self.advance();
                     Ok(Lit { kind, symbol })
                 } else {
-                    Err("Expected literal".into())
+                    let err = PError::ExpectedToken {
+                        expected: vec![TokenType::Const],
+                        found: TokenType::Ident,
+                        span: self.token.span,
+                        prev_span: self.prev_token.span,
+                    };
+
+                    Err(vec![err])
                 }
             }
-            _ => Err("Expected literal".into()),
+
+            _ => {
+                let err = PError::ExpectedToken {
+                    expected: vec![TokenType::Const],
+                    found: TokenType::Token(self.token.kind.clone()),
+                    span: self.token.span,
+                    prev_span: self.prev_token.span,
+                };
+
+                Err(vec![err])
+            }
         }
     }
 

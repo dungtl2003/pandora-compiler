@@ -1,0 +1,30 @@
+
+
+
+
+
+
+
+fun abc(s: str) {
+    println("unexpected args");
+}
+
+
+
+
+
+
+
+abc(1, true, "", 3);
+
+//fun abc(a: int, b: str, c: bool, d: [int]) {
+//    println("missing some args");
+//}
+//
+//abc(1, 2, "fdsa");
+
+// fun abc(a: bool, b: str, c: int, d: [str; 3]) {
+//     println("missing some args");
+// }
+// 
+// abc(1, 2, 3, ["fdas", "fdsa"]);

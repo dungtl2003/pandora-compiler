@@ -1,6 +1,8 @@
 use core::fmt;
 use std::fmt::{Display, Formatter};
 
+use miette::SourceSpan;
+
 use crate::session::BytePos;
 
 pub const DUMMY_SP: Span = Span {
@@ -24,19 +26,16 @@ impl Span {
             length: (end - start) as usize,
         }
     }
-    pub fn dummy() -> Self {
-        DUMMY_SP
-    }
 
-    pub fn with_offset(self, offset: BytePos) -> Self {
+    pub fn after(span: Span) -> Self {
         Span {
-            offset,
-            length: self.length,
+            offset: span.end(),
+            length: 1,
         }
     }
 
-    pub fn from_offset(offset: BytePos, length: usize) -> Self {
-        Span { offset, length }
+    pub fn to_source_span(&self) -> SourceSpan {
+        (self.offset as usize, self.length).into()
     }
 
     /// Returns the end of the span (exclusive).
@@ -44,19 +43,11 @@ impl Span {
         self.offset + self.length as u32
     }
 
-    pub fn is_dummy(&self) -> bool {
-        *self == DUMMY_SP
-    }
-
     pub fn to(&self, other: Span) -> Span {
         Span {
             offset: self.offset,
             length: (other.end() - self.offset) as usize,
         }
-    }
-
-    pub fn is_after(&self, other: Span) -> bool {
-        self.offset >= other.offset
     }
 }
 

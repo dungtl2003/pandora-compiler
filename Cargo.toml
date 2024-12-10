@@ -1,15 +1,21 @@
 [package]
-name = "pandora-compiler"
-version = "0.1.0"
+name = "pandora-interpreter"
+version = "0.1.8"
 edition = "2021"
+license = "MIT"
+description = "A command-line tool to run pandora language."
+readme = "README.md"
+repository = "https://github.com/dungtl2003/pandora"
+
+[[bin]]
+name = "unbox"        # The custom command name
+path = "src/main.rs"  # Path to the binary source file
 
 [dependencies]
 emojis = "0.6.4"
+english-numbers = "0.3.3"
 miette = { version = "7.2.0", features = ["fancy"] }
-strum = "0.26"
-strum_macros = "0.26"
+once_cell = "1.20.2"
 symbol = "0.1.9"
 thiserror = "1.0.67"
 unicode-xid = "0.2.6"
-# llvm-sys = { package = "llvm-sys", version = "180", features = ["prefer-static"] }
-# inkwell = { version = "0.5.0", features = ["llvm18-0"] }

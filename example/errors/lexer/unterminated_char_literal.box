@@ -1,0 +1,7 @@
+println("begin");
+set ch: char = 'a;
+
+println("do something here");
+
+
+println("more in here");

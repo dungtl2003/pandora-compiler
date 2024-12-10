@@ -1,23 +1,27 @@
 mod tokentrees;
 
+use std::ops::Range;
+
 use crate::ast::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,
     TokenStream,
 };
-use crate::lexer::{self, Base, Cursor, EscapeError, RawStrError};
+use crate::lexer::{self, Base, Cursor, EscapeError, Mode, RawStrError};
 use crate::session::{BytePos, Session};
 use crate::span_encoding::Span;
 use crate::symbol::Symbol;
+use crate::ErrorType;
 
-use super::parser::PResult;
+use super::PResult;
 
 pub fn lex_token_tree<'sess, 'src>(
     src: &'src str,
-    session: &'sess Session,
+    session: &'sess mut Session,
 ) -> PResult<TokenStream> {
     let string_reader = StringReader::new(src, session);
 
     let (tokenstream, res) = tokentrees::TokenTreesReader::lex_all_token_trees(string_reader);
+
     if res.is_err() {
         return Err(res.unwrap_err());
     }
@@ -25,30 +29,15 @@ pub fn lex_token_tree<'sess, 'src>(
     Ok(tokenstream)
 }
 
-pub fn tokenize<'sess, 'src>(src: &'src str, session: &'sess Session) -> Vec<Token> {
-    let mut tokens: Vec<Token> = Vec::new();
-    let mut string_reader = StringReader::new(src, session);
-
-    loop {
-        let token = string_reader.next_token();
-        let is_last_token = token.kind == TokenKind::Eof;
-        tokens.push(token);
-
-        if is_last_token {
-            return tokens;
-        }
-    }
-}
-
 struct StringReader<'sess, 'src> {
     src: &'src str,
     pos: BytePos,
     cursor: Cursor<'src>,
-    session: &'sess Session,
+    session: &'sess mut Session,
 }
 
 impl<'sess, 'src> StringReader<'sess, 'src> {
-    fn new(src: &'src str, session: &'sess Session) -> StringReader<'sess, 'src> {
+    fn new(src: &'src str, session: &'sess mut Session) -> StringReader<'sess, 'src> {
         StringReader {
             src,
             pos: 0,
@@ -60,7 +49,11 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     fn next_token(&mut self) -> Token {
         // Skip trivial (whitespaces and comments) tokens.
         loop {
+            if !self.session.can_recover() {
+                return Token::new(TokenKind::Eof, self.mk_sp(self.pos, self.pos));
+            }
             let token = self.cursor.advance_token();
+            let tok_len = token.len;
             let start_pos = self.pos;
             self.pos = self.pos + token.len as BytePos;
 
@@ -68,8 +61,6 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
             // This also turn strings into interned symbols.
             let kind = match token.kind {
                 lexer::TokenKind::LineComment { doc_style } => {
-                    // We will skip doc comments for now.
-                    continue;
                     // Skip normal comment
                     let Some(doc_style) = doc_style else {
                         continue;
@@ -85,10 +76,8 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
                     terminated,
                 } => {
                     if !terminated {
-                        self.report_unterminated_block_comment(start_pos, doc_style);
+                        self.report_unterminated_block_comment(start_pos, doc_style, tok_len);
                     }
-                    // We will skip doc comments for now.
-                    continue;
 
                     // Skip normal comment
                     let Some(doc_style) = doc_style else {
@@ -146,15 +135,15 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
                 lexer::TokenKind::Eof => TokenKind::Eof,
             };
 
-            let span = self.mk_sp(start_pos, (self.pos - start_pos) as usize);
+            let span = self.mk_sp(start_pos, self.pos);
             return Token::new(kind, span);
         }
     }
 
-    fn mk_sp(&self, start: BytePos, len: usize) -> Span {
+    fn mk_sp(&self, start: BytePos, end: BytePos) -> Span {
         Span {
             offset: start,
-            length: len,
+            length: (end - start) as usize,
         }
     }
 
@@ -255,13 +244,14 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
     ) -> TokenKind {
         if let Some(n) = n_hashes {
             // r##" "#
-            let start_content = start + n as u32 + 2;
-            let end_content = end - n as u32 - 1;
-            let symbol = self.symbol_from_to(start_content, end_content);
-            TokenKind::Literal(Lit {
-                kind: LitKind::RawStr(n),
-                symbol,
-            })
+            self.cook_unicode(
+                LitKind::RawStr(n),
+                Mode::RawStr,
+                start,
+                end,
+                2 + n as u32,
+                1 + n as u32,
+            )
         } else {
             self.report_raw_string_error(start);
             TokenKind::Literal(Lit {
@@ -273,29 +263,21 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
 
     fn cook_str_literal(&mut self, terminated: bool, start: BytePos, end: BytePos) -> TokenKind {
         if !terminated {
-            todo!();
-            //self.report_unterminated_str_literal();
+            self.report_unterminated_str_literal(start, end);
+            return TokenKind::Literal(Lit {
+                kind: LitKind::Err,
+                symbol: self.symbol_from_to(start, end),
+            });
         }
 
-        let content_inside_quote = self.str_from_to(start + 1, end - 1); // remove ""
-        let res: Result<String, lexer::EscapeError> = lexer::unescape_str(content_inside_quote);
-
-        match res {
-            Err(_) => {
-                // TODO
-                //self.report_unescape_char_literal();
-                return TokenKind::Literal(Lit {
-                    kind: LitKind::Err,
-                    symbol: self.symbol_from_to(start, end),
-                });
-            }
-            Ok(_) => {
-                return TokenKind::Literal(Lit {
-                    kind: LitKind::Str,
-                    symbol: self.symbol_from_to(start + 1, end - 1),
-                })
-            }
-        }
+        self.cook_unicode(
+            LitKind::Str,
+            Mode::Str,
+            start,
+            end,
+            1, // skip "
+            1, // skip "
+        )
     }
 
     fn cook_char_literal(&mut self, terminated: bool, start: BytePos, end: BytePos) -> TokenKind {
@@ -307,24 +289,74 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
             });
         }
 
-        let content_inside_quote = self.str_from_to(start + 1, end - 1); // remove ''
-        let res = lexer::unescape_char(content_inside_quote);
+        self.cook_unicode(
+            LitKind::Char,
+            Mode::Char,
+            start,
+            end,
+            1, // skip '
+            1, // skip '
+        )
+    }
 
-        match res {
-            Err(e) => {
-                self.report_unescape_character_literal(e, start, end);
-                return TokenKind::Literal(Lit {
-                    kind: LitKind::Err,
-                    symbol: self.symbol_from_to(start, end),
+    fn cook_unicode(
+        &mut self,
+        kind: LitKind,
+        mode: Mode,
+        start: BytePos,
+        end: BytePos,
+        prefix_len: u32,
+        postfix_len: u32,
+    ) -> TokenKind {
+        self.cook_common(
+            kind,
+            mode,
+            start,
+            end,
+            prefix_len,
+            postfix_len,
+            |src, mode, callback| {
+                lexer::unescape_unicode(src, mode, &mut |span, res| {
+                    callback(span, res.map(drop));
                 });
+            },
+        )
+    }
+
+    fn cook_common(
+        &mut self,
+        mut kind: LitKind,
+        mode: Mode,
+        start: BytePos,
+        end: BytePos,
+        prefix_len: u32,
+        postfix_len: u32,
+        unescape: fn(&str, Mode, &mut dyn FnMut(Range<usize>, Result<(), EscapeError>)),
+    ) -> TokenKind {
+        let content_start = start + prefix_len;
+        let content_end = end - postfix_len;
+        let lit_content = self.str_from_to(content_start, content_end);
+        unescape(lit_content, mode, &mut |range, res| {
+            if let Err(err) = res {
+                // just check error
+                let span_with_quotes = self.mk_sp(start, end);
+                let (start, end) = (range.start as u32, range.end as u32);
+                let lo = content_start + start;
+                let hi = lo + end - start;
+                let span = self.mk_sp(lo, hi);
+                self.report_unescape_error(err, span_with_quotes, span);
+
+                kind = LitKind::Err;
             }
-            Ok(c) => {
-                return TokenKind::Literal(Lit {
-                    kind: LitKind::Char,
-                    symbol: c.to_string().as_str().into(),
-                })
-            }
-        }
+        });
+
+        let sym = if !matches!(kind, LitKind::Err) {
+            Symbol::from(lit_content)
+        } else {
+            self.symbol_from_to(start, end)
+        };
+
+        TokenKind::Literal(Lit { kind, symbol: sym })
     }
 
     fn cook_raw_ident(&mut self, content: &'src str) -> TokenKind {
@@ -352,11 +384,16 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         TokenKind::DocComment(comment_kind, doc_style, symbol)
     }
 
-    fn char_from(&self, pos: BytePos) -> char {
-        self.src[pos as usize..(pos + 1) as usize]
-            .chars()
-            .next()
-            .unwrap()
+    fn str_from_sp(&self, span: Span) -> String {
+        let str = self
+            .str_from_to(span.offset, span.offset + span.length as BytePos)
+            .to_string();
+        // escape special characters
+        str.replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
+            .replace("\0", "\\0")
+            .replace("\'", "\\'")
     }
 
     /// Slice str from start (inclusive) to end (exclusive).
@@ -375,11 +412,85 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         content.into()
     }
 
+    fn report_unterminated_str_literal(&mut self, start_quote_pos: BytePos, end: BytePos) {
+        self.session.set_error(ErrorType::Unrecoverable);
+        let report = self
+            .session
+            .error_handler
+            .build_unterminated_string_literal_error(Span {
+                offset: start_quote_pos,
+                length: (end - start_quote_pos) as usize,
+            })
+            .into();
+
+        self.session.error_handler.report_err(report);
+    }
+
+    fn report_no_digits_literal(&mut self, start: BytePos, end: BytePos) {
+        self.session.set_error(ErrorType::Recoverable);
+        let span = Span {
+            offset: start,
+            length: (end - start) as usize,
+        };
+        let report = self
+            .session
+            .error_handler
+            .build_no_digits_literal_error(span)
+            .into();
+        self.session.error_handler.report_err(report);
+    }
+
+    fn report_float_literal_unsupported_base(&mut self, base: String, pos: BytePos, len: usize) {
+        self.session.set_error(ErrorType::Recoverable);
+        let span = Span {
+            offset: pos,
+            length: len,
+        };
+        let report = self
+            .session
+            .error_handler
+            .build_float_literal_unsupported_base_error(base, span)
+            .into();
+        self.session.error_handler.report_err(report);
+    }
+
+    fn report_invalid_digits_literal(&mut self, base: u32, pos: BytePos) {
+        self.session.set_error(ErrorType::Recoverable);
+        let span = Span {
+            offset: pos,
+            length: 1,
+        };
+
+        let report = self
+            .session
+            .error_handler
+            .build_invalid_digit_literal_error(base, span)
+            .into();
+        self.session.error_handler.report_err(report);
+    }
+
+    fn report_empty_exponent_float(&mut self, pos: BytePos, len: usize) {
+        self.session.set_error(ErrorType::Recoverable);
+        let span = Span {
+            offset: pos,
+            length: len,
+        };
+        let report = self
+            .session
+            .error_handler
+            .build_empty_exponent_float_error(span)
+            .into();
+
+        self.session.error_handler.report_err(report);
+    }
+
     fn report_unterminated_block_comment(
-        &self,
+        &mut self,
         start: BytePos,
         doc_style: Option<lexer::DocStyle>,
+        tok_len: u32,
     ) {
+        self.session.set_error(ErrorType::Unrecoverable);
         let msg = match doc_style {
             Some(_) => "unterminated block doc-comment",
             None => "unterminated block comment",
@@ -406,108 +517,162 @@ impl<'sess, 'src> StringReader<'sess, 'src> {
         }
 
         if let Some((nested_open_idx, nested_close_idx)) = last_nested_block_comment_idxs {
-            self.session
+            let report = self
+                .session
                 .error_handler
-                .report_unterminated_block_comment(
+                .build_unterminated_block_comment_error(
                     msg,
-                    (start as usize + nested_open_idx, 2).into(),
-                    (start as usize + nested_close_idx, 2).into(),
-                );
+                    Some(Span {
+                        offset: start + nested_open_idx as BytePos,
+                        length: 2,
+                    }),
+                    Some(Span {
+                        offset: start + nested_close_idx as BytePos,
+                        length: 2,
+                    }),
+                    None,
+                )
+                .into();
+
+            self.session.error_handler.report_err(report);
+        } else {
+            let report = self
+                .session
+                .error_handler
+                .build_unterminated_block_comment_error(
+                    msg,
+                    None,
+                    None,
+                    Some(Span {
+                        offset: start,
+                        length: tok_len as usize,
+                    }),
+                )
+                .into();
+
+            self.session.error_handler.report_err(report);
         }
     }
 
-    fn report_unterminated_character_literal(&self, start_quote_pos: BytePos) {
-        self.session
+    fn report_unterminated_character_literal(&mut self, start_quote_pos: BytePos) {
+        self.session.set_error(ErrorType::Unrecoverable);
+        let report = self
+            .session
             .error_handler
-            .report_unterminated_character_literal((start_quote_pos as usize, 1).into());
+            .build_unterminated_character_literal_error(Span {
+                offset: start_quote_pos,
+                length: 1,
+            })
+            .into();
+
+        self.session.error_handler.report_err(report);
     }
 
-    fn report_unescape_character_literal(&self, err: EscapeError, start: BytePos, end: BytePos) {
-        match err {
+    fn report_unescape_error(&mut self, err: EscapeError, full_lit_span: Span, err_span: Span) {
+        self.session.set_error(ErrorType::Recoverable);
+        let report = match err {
             EscapeError::ZeroChars => self
                 .session
                 .error_handler
-                .report_empty_char_literal(((start + 1) as usize, 1).into()),
+                .build_empty_char_literal_error(err_span)
+                .into(),
             EscapeError::MoreThanOneChar => self
                 .session
                 .error_handler
-                .report_more_than_one_char_literal((start as usize, (end - start) as usize).into()),
+                .build_more_than_one_char_literal_error(full_lit_span)
+                .into(),
             EscapeError::LoneSlash => unimplemented!(),
-            EscapeError::InvalidEscape => self.session.error_handler.report_unknown_char_escape(
-                self.char_from(start + 1),
-                ((start + 1) as usize, 1).into(),
-            ),
-            EscapeError::EscapeOnlyChar => self.session.error_handler.report_escape_only_char(
-                self.char_from(start + 1),
-                ((start + 1) as usize, 1).into(),
-            ),
-        }
+            EscapeError::InvalidEscape => self
+                .session
+                .error_handler
+                .build_unknown_char_escape_error(self.str_from_sp(err_span), err_span)
+                .into(),
+            EscapeError::EscapeOnlyChar => self
+                .session
+                .error_handler
+                .build_escape_only_char_error(self.str_from_sp(err_span), err_span)
+                .into(),
+        };
+
+        self.session.error_handler.report_err(report);
     }
 
-    fn report_unknown_symbol(&self, start: BytePos, end: BytePos) {
-        self.session.error_handler.report_unknown_symbol(
-            self.str_from_to(start, end).to_string(),
-            (start as usize, end as usize).into(),
-        );
+    fn report_unknown_symbol(&mut self, start: BytePos, end: BytePos) {
+        self.session.set_error(ErrorType::Recoverable);
+        let report = self
+            .session
+            .error_handler
+            .build_unknown_symbol_error(
+                self.str_from_to(start, end).to_string(),
+                Span {
+                    offset: start,
+                    length: (end - start) as usize,
+                },
+            )
+            .into();
+
+        self.session.error_handler.report_err(report)
     }
 
-    fn report_raw_string_error(&self, start: BytePos) {
-        match lexer::validate_raw_string(self.str_from(start)) {
+    fn report_raw_string_error(&mut self, start: BytePos) {
+        let report = match lexer::validate_raw_string(self.str_from(start)) {
             Err(RawStrError::InvalidStarter { bad_char }) => {
-                self.session.error_handler.report_raw_str_invalid_starter(
-                    bad_char,
-                    (start as usize, self.pos as usize).into(),
-                );
+                self.session.set_error(ErrorType::Unrecoverable);
+                self.session
+                    .error_handler
+                    .build_raw_str_invalid_starter_error(
+                        bad_char,
+                        Span {
+                            offset: start,
+                            length: (self.pos - start) as usize,
+                        },
+                    )
+                    .into()
             }
             Err(RawStrError::NoTerminator {
                 expected,
                 found,
                 possible_terminator_offset,
             }) => {
-                let start_span = (start as usize, (start + expected) as usize).into();
+                self.session.set_error(ErrorType::Unrecoverable);
+                let start_span = Span {
+                    offset: start,
+                    length: 1,
+                };
                 let possible_terminator_span = if found > 0 {
                     let terminator_offset = possible_terminator_offset.unwrap();
                     Some(((start + terminator_offset) as usize, found as usize))
                 } else {
                     None
                 };
-                self.session.error_handler.report_raw_str_unterminated(
-                    start_span,
-                    expected,
-                    possible_terminator_span.map(|value| value.into()),
-                );
+                self.session
+                    .error_handler
+                    .build_raw_str_unterminated_error(
+                        start_span,
+                        expected,
+                        possible_terminator_span.map(|value| Span {
+                            offset: value.0 as BytePos,
+                            length: value.1,
+                        }),
+                    )
+                    .into()
             }
             Err(RawStrError::TooManyHashes { found }) => {
-                self.session.error_handler.report_raw_str_too_many_hashes(
-                    found,
-                    (start as usize, (self.pos - start) as usize).into(),
-                )
+                self.session.set_error(ErrorType::Unrecoverable);
+                self.session
+                    .error_handler
+                    .build_raw_str_too_many_hashes_error(
+                        found,
+                        Span {
+                            offset: start,
+                            length: (self.pos - start) as usize,
+                        },
+                    )
+                    .into()
             }
             Ok(()) => panic!("no error found for supposedly invalid raw string literal"),
         };
-    }
 
-    fn report_no_digits_literal(&self, start: BytePos, end: BytePos) {
-        self.session
-            .error_handler
-            .report_no_digits_literal((start as usize, (end - start) as usize).into());
-    }
-
-    fn report_invalid_digits_literal(&self, base: u32, pos: BytePos) {
-        self.session
-            .error_handler
-            .report_invalid_digit_literal(base, (pos as usize, 1).into());
-    }
-
-    fn report_empty_exponent_float(&self, pos: BytePos, len: usize) {
-        self.session
-            .error_handler
-            .report_empty_exponent_float((pos as usize, len).into());
-    }
-
-    fn report_float_literal_unsupported_base(&self, base: String, pos: BytePos, len: usize) {
-        self.session
-            .error_handler
-            .report_float_literal_unsupported_base(base, (pos as usize, len).into());
+        self.session.error_handler.report_err(report);
     }
 }

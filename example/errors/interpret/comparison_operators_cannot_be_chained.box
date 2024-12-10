@@ -1,0 +1,5 @@
+println("start");
+
+when 1 < 2 < true < false {
+    println("hello world");
+}

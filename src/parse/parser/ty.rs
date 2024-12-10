@@ -2,7 +2,7 @@ use crate::ast::{Delimiter, Expr, TokenKind, Ty, TyKind};
 
 use super::{PResult, Parser};
 
-impl Parser<'_> {
+impl Parser {
     pub fn parse_ty(&mut self) -> PResult<Ty> {
         if self.token.is_open_delim(Delimiter::Bracket) {
             self.parse_ty_array()

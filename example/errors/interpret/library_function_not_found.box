@@ -1,0 +1,3 @@
+add std;
+
+std.nonexist();

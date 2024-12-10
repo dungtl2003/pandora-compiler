@@ -1,6 +1,0 @@
-var a: float = 5.2;
-var b: int;
-var c: int = 7;
-var d: float = a + 5;
-
-b = 5;

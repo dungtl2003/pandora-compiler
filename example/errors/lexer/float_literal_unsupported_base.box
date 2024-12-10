@@ -1,0 +1,3 @@
+set x: float = 0b1011E5;
+set x: float = 0o1771.2;
+set x: float = 0H17A.2;

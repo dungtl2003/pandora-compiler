@@ -1,28 +1,11 @@
 mod cursor;
-mod literal_error_reporter;
 mod token;
 mod unescape;
-mod unescape_error_reporter;
 
 pub use cursor::{Cursor, EOF_CHAR};
 pub use token::{Base, DocStyle, LiteralKind, RawStrError, Token, TokenKind};
-pub use unescape::{unescape_char, unescape_str, EscapeError};
+pub use unescape::{unescape_unicode, EscapeError, Mode};
 use unicode_xid::UnicodeXID;
-
-pub fn tokenize(source: &str) -> Vec<Token> {
-    let mut tokens: Vec<Token> = Vec::new();
-    let mut cursor = Cursor::new(source);
-
-    loop {
-        let token = cursor.advance_token();
-        let is_last_token = token.kind == TokenKind::Eof;
-        tokens.push(token);
-
-        if is_last_token {
-            return tokens;
-        }
-    }
-}
 
 /// Validate a raw string literal.
 pub fn validate_raw_string(input: &str) -> Result<(), RawStrError> {
@@ -1332,5 +1315,20 @@ customer_id_is_1
                 1,
             )
         );
+    }
+
+    fn tokenize(source: &str) -> Vec<Token> {
+        let mut tokens: Vec<Token> = Vec::new();
+        let mut cursor = Cursor::new(source);
+
+        loop {
+            let token = cursor.advance_token();
+            let is_last_token = token.kind == TokenKind::Eof;
+            tokens.push(token);
+
+            if is_last_token {
+                return tokens;
+            }
+        }
     }
 }

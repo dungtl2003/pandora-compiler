@@ -1,0 +1,3 @@
+when true { // if `false` then cannot detect bc we interpret
+    yeet "haiz";
+}

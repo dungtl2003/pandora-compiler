@@ -10,17 +10,15 @@ use std::{
 use miette::NamedSource;
 use variable::Variable;
 
-use crate::{
-    ast::{self, Stmt},
-    libs::{math::MathLib, std::StdLib, Library},
-    parse::{lexer, parser},
-    session::Session,
-};
+use crate::{ast, parse::parser, session::Session, span_encoding::Span};
 
 use super::{
-    eval::{ControlFlow, EvalResult, Value},
-    interpret_stmt_block, interpret_ty,
-    ty::Ty,
+    errors::IError,
+    eval::ValueKind,
+    ident::Ident,
+    interpret_ty,
+    libs::{math::MathLib, std::StdLib, CallerAttrs, Library},
+    Func, FuncParam, FuncSig, Ty, Value,
 };
 
 pub type Wrapper<T> = Rc<RefCell<T>>;
@@ -43,23 +41,27 @@ impl Environment {
         }
     }
 
-    pub fn new_with_parent(parent: &Environment) -> Self {
+    pub fn new_with_parent(parent: &Environment, is_verbose: bool) -> Self {
         let mut env = Environment::new();
 
         let mut functions = vec![];
-        let mut lib_names = HashSet::new();
+        let mut has_lib = HashSet::new();
+        let mut libs = vec![];
         for scope in parent.scopes.iter() {
             functions.extend(scope.functions.clone());
-            for name in scope.libraries.keys() {
-                lib_names.insert(name.clone());
+            for (name, (span, _)) in scope.libraries.iter() {
+                if !has_lib.contains(name) {
+                    has_lib.insert(name.to_string());
+                    libs.push((name.to_string(), span.clone()));
+                }
             }
         }
 
-        for name in lib_names {
-            env.import_library(&name).unwrap();
+        for (name, span) in libs {
+            env.import_library(&name, span, is_verbose).unwrap();
         }
-        for (name, value) in functions {
-            env.insert_function(name, value).unwrap();
+        for (name, (span, value)) in functions {
+            env.insert_function(name, value, span, is_verbose).unwrap();
         }
 
         env
@@ -82,83 +84,113 @@ impl Environment {
     }
 
     /// Lookup the nearest function with the given name.
-    pub fn lookup_function(&self, name: &str) -> Option<Value> {
+    pub fn lookup_function(&self, name: &str) -> Option<(Span, ValueKind)> {
         self.scopes
             .iter()
             .rev()
             .find_map(|scope| scope.lookup_function(name))
     }
 
-    pub fn lookup_library(&self, name: &str) -> Option<&Box<dyn Library>> {
-        let lib_func = self
-            .scopes
+    pub fn lookup_library(&self, name: &str) -> Option<&(Span, Box<dyn Library>)> {
+        self.scopes
             .iter()
             .rev()
-            .find_map(|scope| scope.lookup_library(name));
-
-        if lib_func.is_none() {
-            self.default_libs.get(name)
-        } else {
-            lib_func
-        }
+            .find_map(|scope| scope.lookup_library(name))
     }
 
-    pub fn insert_variable(&mut self, name: &str, value: Option<Value>, is_mut: bool, ty: Ty) {
+    pub fn lookup_default_library(&self, name: &str) -> Option<&Box<dyn Library>> {
+        self.default_libs.get(name)
+    }
+
+    pub fn insert_variable(
+        &mut self,
+        ident: Ident,
+        value: Option<Value>,
+        is_mut: bool,
+        ty: Ty,
+        first_assigned_span: Option<Span>,
+    ) {
         let var = Variable {
-            name: name.to_string(),
+            ident,
             is_mut,
             val: value,
             ty,
+            first_assigned_span,
         };
 
         let var = Rc::new(RefCell::new(var));
         self.scopes.last_mut().unwrap().variables.push(var);
     }
 
-    pub fn insert_function(&mut self, name: String, value: Value) -> Result<(), String> {
+    pub fn insert_function(
+        &mut self,
+        name: String,
+        value: ValueKind,
+        span: Span, // declaration span
+        _is_verbose: bool,
+    ) -> Result<(), Vec<IError>> {
         // There must be no function with the same name in the current scope.
         if self.scopes.last().unwrap().functions.contains_key(&name) {
-            return Err(format!(
-                "Function with name '{}' already exists in this scope",
-                name
-            ));
+            let first_decl_span = self.scopes.last().unwrap().functions[&name].0;
+            return Err(vec![IError::FunctionAlreadyDeclaredInScope {
+                func_name: name,
+                first_decl_span,
+                second_decl_span: span,
+            }]);
         }
 
         self.scopes
             .last_mut()
             .unwrap()
             .functions
-            .insert(name, value);
+            .insert(name, (span, value));
         Ok(())
     }
 
-    pub fn import_library(&mut self, name: &str) -> Result<(), String> {
+    pub fn import_library(
+        &mut self,
+        name: &str,
+        span: Span,
+        is_verbose: bool,
+    ) -> Result<(), Vec<IError>> {
         if self.scopes.last().unwrap().libraries.contains_key(name) {
-            return Err(format!(
-                "There are multiple libraries with the same name '{}' in the same scope",
-                name
-            ));
+            let first_import_span = self.scopes.last().unwrap().libraries[name].0;
+            return Err(vec![IError::MultipleLibrariesInScope {
+                lib_name: name.to_string(),
+                first_lib_span: first_import_span,
+                second_lib_span: span,
+            }]);
         }
 
         let lib: Box<dyn Library> = if self.can_resolve_external_file(name) {
-            self.load_external_library(name)?
+            self.load_external_library(name, span, is_verbose)?
         } else {
-            self.load_embedded_library(name)?
+            self.load_embedded_library(name, span, is_verbose)?
         };
 
         self.scopes
             .last_mut()
             .unwrap()
             .libraries
-            .insert(name.to_string(), lib);
+            .insert(name.to_string(), (span, lib));
         Ok(())
     }
 
-    fn load_embedded_library(&mut self, name: &str) -> Result<Box<dyn Library>, String> {
+    fn load_embedded_library(
+        &mut self,
+        name: &str,
+        span: Span,
+        _is_verbose: bool,
+    ) -> Result<Box<dyn Library>, Vec<IError>> {
         Ok(match name {
             "std" => Box::new(StdLib::new()),
             "math" => Box::new(MathLib::new()),
-            _ => return Err(format!("Library '{}' not found", name)),
+            _ => {
+                return Err(vec![IError::LibraryNotFound {
+                    library: name.to_string(),
+                    span,
+                }])
+            }
         })
     }
 
@@ -185,44 +217,57 @@ impl Environment {
         true
     }
 
-    fn load_external_library(&mut self, name: &str) -> Result<Box<dyn Library>, String> {
+    fn load_external_library(
+        &mut self,
+        name: &str,
+        span: Span,
+        is_verbose: bool,
+    ) -> Result<Box<dyn Library>, Vec<IError>> {
         let args: Vec<String> = std::env::args().collect();
         if args.len() < 2 {
-            return Err("No source file specified".to_string());
+            return Err(vec![IError::NoSourceFileSpecified]);
         }
 
         let source_path = std::path::Path::new(&args[1]);
         let source_dir = source_path
             .parent()
-            .ok_or_else(|| "Could not determine source file directory".to_string())?;
+            .ok_or_else(|| vec![IError::DirectoryNotFound])?;
 
-        let lib_filename = format!("{}.boxx", name);
+        let is_genz = crate::is_genz_mode();
+        let lib_filename = if is_genz {
+            format!("{}.unbxx", name)
+        } else {
+            format!("{}.boxx", name)
+        };
+
         let lib_path = source_dir.join(&lib_filename);
-
         if !lib_path.exists() {
-            return Err(format!("External library '{}' not found", name));
+            return Err(vec![IError::ExternalLibraryNotFound {
+                lib_name: name.to_string(),
+                span,
+            }]);
         }
 
-        let contents = Arc::new(
-            std::fs::read_to_string(&lib_path)
-                .map_err(|_| format!("Failed to read library file '{}'", lib_path.display()))?,
-        );
+        let contents = Arc::new(std::fs::read_to_string(&lib_path).map_err(|_| {
+            vec![IError::ReadLibraryFileFailed {
+                path: lib_path.display().to_string(),
+            }]
+        })?);
 
         let file = Arc::new(NamedSource::new(name, Arc::clone(&contents)));
-        let session = Session::new(file);
+        let mut session = Session::new(file);
 
-        let tokens = lexer::lex_token_tree(&contents, &session)
-            .map_err(|e| format!("Failed to lex library file '{}': {}", lib_path.display(), e))?;
-        let ast = parser::parse(tokens, &session).map_err(|e| {
-            format!(
-                "Failed to parse library file '{}': {}",
-                lib_path.display(),
-                e
-            )
-        })?;
+        let ast = parser::parse(&contents, &mut session);
+        if ast.is_none() {
+            return Err(vec![IError::ParseLibraryFileFailed {
+                span,
+                path: lib_path.display().to_string(),
+            }]);
+        }
 
         let mut lib = Box::new(ExternalLibrary::new());
 
+        let ast = ast.unwrap();
         for stmt in ast.stmts {
             match stmt.kind {
                 ast::StmtKind::FuncDecl(fun) => {
@@ -230,39 +275,64 @@ impl Environment {
                     let ast::FunSig {
                         name,
                         inputs,
-                        output: _,
-                        span: _,
+                        output,
+                        span,
                     } = sig;
 
-                    let mut params = vec![];
-                    for input in inputs {
-                        let ast::FunParam {
-                            ty,
-                            ident,
-                            is_mut,
-                            span: _,
-                        } = input;
-
-                        let ty = interpret_ty(&mut Environment::new(), &ty, false, false)?;
-                        let name = ident.name.to_string();
-                        params.push((name, ty, is_mut));
-                    }
-
-                    let stmts = match body.kind {
-                        ast::StmtKind::Block(stmts) => stmts,
-                        _ => {
-                            unreachable!("This should be resolved within the parser");
-                        }
+                    let ident = Ident {
+                        name: name.name.to_string(),
+                        span: name.span,
                     };
 
+                    let output = if output.is_some() {
+                        Some(interpret_ty(
+                            &mut Environment::new(),
+                            &output.unwrap(),
+                            false,
+                            is_verbose,
+                        )?)
+                    } else {
+                        None
+                    };
+
+                    let inputs = inputs
+                        .iter()
+                        .map(|param| {
+                            let ast::FunParam {
+                                ty,
+                                ident,
+                                is_mut,
+                                span,
+                            } = param;
+
+                            let ty = interpret_ty(&mut Environment::new(), &ty, false, is_verbose)?;
+                            let ident = Ident {
+                                name: ident.name.as_str().to_string(),
+                                span: ident.span,
+                            };
+
+                            Ok(FuncParam {
+                                ty,
+                                ident,
+                                is_mut: *is_mut,
+                                span: *span,
+                            })
+                        })
+                        .collect::<Result<Vec<FuncParam>, Vec<IError>>>()?;
+
+                    let sig = FuncSig {
+                        ident,
+                        inputs,
+                        output,
+                        span,
+                    };
+
+                    let eval_function = ValueKind::Function(Func { sig, body });
+
                     let name = name.name.to_string();
-                    lib.add_function(name, params, stmts)?;
+                    lib.add_function(name, eval_function, is_verbose)?;
                 }
-                _ => {
-                    return Err(
-                        "Only function declarations are allowed in external libraries".to_string(),
-                    )
-                }
+                _ => return Err(vec![IError::NonFunctionDeclaredInExternalLibrary { span }]),
             }
         }
 
@@ -271,14 +341,18 @@ impl Environment {
 }
 
 pub struct ExternalLibrary {
-    functions: HashMap<String, Box<dyn Fn(Vec<(Value, bool)>) -> Result<Value, String>>>,
+    functions: HashMap<
+        String,
+        Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, Vec<IError>>>,
+    >,
 }
 
 impl Library for ExternalLibrary {
     fn get_function(
         &self,
         name: &str,
-    ) -> Option<&Box<dyn Fn(Vec<(Value, bool)>) -> Result<Value, String>>> {
+    ) -> Option<&Box<dyn Fn(CallerAttrs, Vec<(Value, bool)>) -> Result<ValueKind, Vec<IError>>>>
+    {
         self.functions.get(name)
     }
 }
@@ -293,58 +367,38 @@ impl ExternalLibrary {
     pub fn add_function(
         &mut self,
         name: String,
-        params: Vec<(String, Ty, bool)>,
-        body: Vec<Box<Stmt>>,
-    ) -> Result<(), String> {
+        eval: ValueKind,
+        is_verbose: bool,
+    ) -> Result<(), Vec<IError>> {
         let func_name = name.to_string();
-        let function = Box::new(move |args: Vec<(Value, bool)>| -> Result<Value, String> {
-            let mut env = Environment::new();
-            env.in_function = true;
+        let function = Box::new(
+            move |cattrs: CallerAttrs,
+                  args: Vec<(Value, bool)>|
+                  -> Result<ValueKind, Vec<IError>> {
+                let mut env = Environment::new();
+                // FIX: ignore value's mutability for now
+                let args = args
+                    .into_iter()
+                    .map(|(val, _is_mut)| val)
+                    .collect::<Vec<Value>>();
 
-            if args.len() != params.len() {
-                return Err(format!(
-                    "Function '{}' expects {} arguments but got {}",
-                    name,
-                    params.len(),
-                    args.len()
-                ));
-            }
-
-            // FIX: handle mutable arguments
-            for ((p_name, p_ty, _p_is_mut), (arg_val, arg_is_mut)) in params.iter().zip(args) {
-                if *p_ty != arg_val.to_ty() {
-                    return Err(format!(
-                        "Function '{}' expects argument '{}' to be of type {:?} but got {:?}",
-                        name,
-                        p_name,
-                        p_ty,
-                        arg_val.to_ty()
-                    ));
-                }
-                let var_name = p_name.to_string();
-                let value = Some(arg_val);
-                let is_arg_mut = arg_is_mut;
-                let ty = p_ty.clone();
-                env.insert_variable(var_name.as_str(), value, is_arg_mut, ty);
-            }
-
-            let result = interpret_stmt_block(&mut env, &body, false)?;
-            match result {
-                EvalResult::StmtResult(None) => Ok(Value::Unit),
-                EvalResult::StmtResult(Some(control_flow)) => match control_flow {
-                    ControlFlow::Break => {
-                        return Err("break statement outside of loop".to_string());
-                    }
-                    ControlFlow::Continue => {
-                        return Err("continue statement outside of loop".to_string());
-                    }
-                    ControlFlow::Return(value) => Ok(value),
-                },
-                EvalResult::Value(_) => {
-                    unreachable!("statement should not return value");
-                }
-            }
-        });
+                Value::evaluate_function(
+                    &mut env,
+                    cattrs.prefix_span,
+                    eval.clone(),
+                    args,
+                    is_verbose,
+                )
+                // FIX: we actually want to use errors, but the error handler is not emitting
+                // errors correctly when dealing with multiple files
+                .map_err(|_errs| {
+                    vec![IError::PredefinedError {
+                        span: cattrs.span,
+                        message: "Error occurred while evaluating function".to_string(),
+                    }]
+                })
+            },
+        );
 
         self.functions.insert(func_name, function);
         Ok(())
@@ -353,8 +407,8 @@ impl ExternalLibrary {
 
 pub struct Scope {
     pub variables: Vec<Wrapper<Variable>>,
-    pub libraries: HashMap<String, Box<dyn Library>>,
-    pub functions: HashMap<String, Value>,
+    pub libraries: HashMap<String, (Span, Box<dyn Library>)>, // (import span, library)
+    pub functions: HashMap<String, (Span, ValueKind)>,        // (declaration span, function)
 }
 
 impl Scope {
@@ -371,15 +425,15 @@ impl Scope {
         self.variables
             .iter()
             .rev()
-            .find(|var| var.borrow().name == name)
+            .find(|var| var.borrow().ident.name == name)
             .cloned()
     }
 
-    pub fn lookup_function(&self, name: &str) -> Option<Value> {
+    pub fn lookup_function(&self, name: &str) -> Option<(Span, ValueKind)> {
         self.functions.get(name).cloned()
     }
 
-    pub fn lookup_library(&self, name: &str) -> Option<&Box<dyn Library>> {
+    pub fn lookup_library(&self, name: &str) -> Option<&(Span, Box<dyn Library>)> {
         self.libraries.get(name)
     }
 }
