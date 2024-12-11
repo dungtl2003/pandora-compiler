@@ -419,10 +419,6 @@ impl Parser {
             }
 
             let start = self.token.span;
-            let ident = self.parse_ident()?;
-
-            self.expect(TokenKind::Colon)?;
-            self.advance(); // Eat ':'
 
             let is_mut = if self.token.is_keyword(Keyword::Mut) {
                 self.advance(); // Eat 'mut'
@@ -430,6 +426,11 @@ impl Parser {
             } else {
                 false
             };
+
+            let ident = self.parse_ident()?;
+
+            self.expect(TokenKind::Colon)?;
+            self.advance(); // Eat ':'
 
             let ty = self.parse_ty()?;
             let end = self.prev_token.span;

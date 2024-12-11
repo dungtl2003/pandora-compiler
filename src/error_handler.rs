@@ -1716,7 +1716,11 @@ pub struct MutateImmutableVariable {
     first_assign_span: SourceSpan,
     #[label("cannot assign twice to immutable variable")]
     second_assign_span: SourceSpan,
-    #[label("help: consider making this binding mutable: `mut {}`", var_name)]
+    #[label(
+        "help: consider making this binding mutable: `{} {}`",
+        mut_kw,
+        var_name
+    )]
     help_span: SourceSpan,
 }
 

@@ -35,7 +35,11 @@ pub fn get_error_docs() -> HashMap<&'static str, &'static str> {
     docs.insert("E0209", include_str!("../error_codes/E0209.md"));
     docs.insert("E0210", include_str!("../error_codes/E0210.md"));
     docs.insert("E0211", include_str!("../error_codes/E0211.md"));
+    docs.insert("E0212", include_str!("../error_codes/E0212.md"));
     docs.insert("E0213", include_str!("../error_codes/E0213.md"));
+    docs.insert("E0214", include_str!("../error_codes/E0214.md"));
+    docs.insert("E0215", include_str!("../error_codes/E0215.md"));
+    docs.insert("E0216", include_str!("../error_codes/E0216.md"));
     docs.insert("E0217", include_str!("../error_codes/E0217.md"));
     docs.insert("E0218", include_str!("../error_codes/E0218.md"));
     docs.insert("E0219", include_str!("../error_codes/E0219.md"));
@@ -46,6 +50,7 @@ pub fn get_error_docs() -> HashMap<&'static str, &'static str> {
     docs.insert("E0224", include_str!("../error_codes/E0224.md"));
     docs.insert("E0225", include_str!("../error_codes/E0225.md"));
     docs.insert("E0226", include_str!("../error_codes/E0226.md"));
+    docs.insert("E0227", include_str!("../error_codes/E0227.md"));
     docs.insert("E0228", include_str!("../error_codes/E0228.md"));
     docs.insert("E0229", include_str!("../error_codes/E0229.md"));
     docs.insert("E0230", include_str!("../error_codes/E0230.md"));
@@ -54,6 +59,7 @@ pub fn get_error_docs() -> HashMap<&'static str, &'static str> {
     docs.insert("E0233", include_str!("../error_codes/E0233.md"));
     docs.insert("E0234", include_str!("../error_codes/E0234.md"));
     docs.insert("E0235", include_str!("../error_codes/E0235.md"));
+    docs.insert("E0236", include_str!("../error_codes/E0236.md"));
     docs.insert("E0237", include_str!("../error_codes/E0237.md"));
     docs.insert("E0238", include_str!("../error_codes/E0238.md"));
     docs.insert("E0239", include_str!("../error_codes/E0239.md"));
@@ -65,14 +71,8 @@ pub fn get_error_docs() -> HashMap<&'static str, &'static str> {
     docs.insert("E0245", include_str!("../error_codes/E0245.md"));
     docs.insert("E0246", include_str!("../error_codes/E0246.md"));
     docs.insert("E0247", include_str!("../error_codes/E0247.md"));
-    docs.insert("E0249", include_str!("../error_codes/E0249.md"));
-    docs.insert("E0212", include_str!("../error_codes/E0212.md"));
-    docs.insert("E0214", include_str!("../error_codes/E0214.md"));
-    docs.insert("E0215", include_str!("../error_codes/E0215.md"));
-    docs.insert("E0216", include_str!("../error_codes/E0216.md"));
-    docs.insert("E0227", include_str!("../error_codes/E0227.md"));
-    docs.insert("E0236", include_str!("../error_codes/E0236.md"));
     docs.insert("E0248", include_str!("../error_codes/E0248.md"));
+    docs.insert("E0249", include_str!("../error_codes/E0249.md"));
     docs.insert("E0250", include_str!("../error_codes/E0250.md"));
     docs
 }
