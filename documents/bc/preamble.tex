@@ -59,19 +59,20 @@
 \definecolor{codegray}{rgb}{0.5,0.5,0.5}
 \definecolor{codepurple}{rgb}{0.58,0,0.82}
 \definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\definecolor{codered}{rgb}{1,0,0}
 
 \lstdefinestyle{mystyle}{
     backgroundcolor=\color{backcolour},   
     commentstyle=\color{codegreen},
     keywordstyle=\color{magenta},
-    numberstyle=\tiny\color{codegray},
+    numberstyle=\tiny\color{codered},
     stringstyle=\color{codepurple},
     basicstyle=\ttfamily\footnotesize,
     breakatwhitespace=false,         
     breaklines=true,                 
     captionpos=b,                    
     keepspaces=true,                 
-    % numbers=left,                    
+    numbers=left,                    
     numbersep=5pt,                  
     showspaces=false,                
     showstringspaces=false,
@@ -82,3 +83,18 @@
 \lstset{style=mystyle}
 
 
+% \usepackage{draftwatermark}
+% \setwatermarkimage[scale=0.5]{./images/logo-hoc-vien-ky-thuat-mat-ma.jpg}
+\usepackage{background} 
+\backgroundsetup{
+    scale=1,  % Tỉ lệ hình ảnh
+    % color=black,  % Màu (đen, nhưng sẽ không ảnh hưởng nếu là ảnh)
+    opacity=0.1,  % Độ mờ (0.0 - hoàn toàn trong suốt, 1.0 - hoàn toàn rõ)
+    angle=0,  % Góc xoay của hình ảnh
+    % position=current page.center,  % Vị trí (ví dụ: đáy trang)
+    % vshift=5cm,  % Dịch chuyển theo chiều dọc
+    % hshift=0cm,  % Dịch chuyển theo chiều ngang
+    contents={\includegraphics[width=\paperwidth]{./images/logo-hoc-vien-ky-thuat-mat-ma.jpg}}
+}
+
+\usepackage[toc,page]{appendix}

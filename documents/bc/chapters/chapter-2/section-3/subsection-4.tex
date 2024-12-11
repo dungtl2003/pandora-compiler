@@ -1,5 +1,5 @@
-\section{Biểu thức (\textit{Expression})}
-
+\subsection{Biểu thức (\textit{Expression})}
+\label{ch2:expr}
 \regexexpr
 
 Biểu thức là một thành phần quan trọng trong ngôn ngữ lập trình Pandora. Một biểu thức là một giá trị hoặc bất cứ thứ gì thực thi và kết thúc là một giá trị. Biểu thức có thể là một hằng số, một biến, một lời gọi hàm hay một phép toán giữa các biểu thức khác. Biểu thức có thể được sử dụng trong nhiều ngữ cảnh khác nhau như gán giá trị cho biến, truyền tham số cho hàm, điều kiện, vòng lặp, ...
@@ -39,7 +39,7 @@ Function calls & \\
 \hline
 \end{longtable}
 
-\subsection{Biểu thức hằng (\textit{Literal expression})}
+\subsubsection{Biểu thức hằng (\textit{Literal expression})}
 
 \regexlitexpr
 
@@ -65,7 +65,7 @@ Biểu thức hằng là một biểu thức mà giá trị của nó không tha
 
 1 biểu thức hằng số boolean bao gồm từ khóa \kw{true} hoặc \kw{false}. Kiểu của biểu thức là kiểu boolean (boolean) nguyên thủy.
 
-\subsection{Biểu thức toán tử (\textit{Operator expression})}
+\subsubsection{Biểu thức toán tử (\textit{Operator expression})}
 
 \regexopexpr
 
@@ -114,13 +114,13 @@ Biểu thức gán phức tạp là một biểu thức mà giá trị của nó
 
 Biểu thức boolean lười biếng là một biểu thức mà giá trị của nó luôn là từ khóa boolean \kw{true} hoặc \kw{false}. Biểu thức boolean lười biếng có thể là phép AND hoặc phép OR. Gọi là lười biếng vì nó chỉ thực hiện phép toán cần thiết để xác định giá trị của biểu thức.
 
-\subsection{Biểu thức nhóm (\textit{Grouped expression})}
+\subsubsection{Biểu thức nhóm (\textit{Grouped expression})}
 
 \regexgroupexpr
 
 Biểu thức nhóm là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của biểu thức con. Biểu thức nhóm bắt đầu và kết thúc bằng cặp ngoặc tròn (U+0028 và U+0029). Biểu thức nhóm giúp thay đổi thứ tự thực hiện của các phép toán.
 
-\subsection{Biểu thức lời gọi hàm (\textit{Function call expression})}
+\subsubsection{Biểu thức lời gọi hàm (\textit{Function call expression})}
 
 \regexfuncallexpr
 
