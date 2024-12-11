@@ -1,8 +1,59 @@
+% \newlist{myap}{enumerate}{5}
+% \newcommand{\myapi}{\arabic{myapi}.}
+% \newcommand{\myapii}{\myapi\arabic{myapii}.}
+% \newcommand{\myapiii}{\myapii\arabic{myapiii}.}
+% \newcommand{\myapiv}{\myapiii\arabic{myapiv}.}
+% \newcommand{\myapv}{\myapiv\arabic{myapv}.}
+
+% \setlist[myap,1]{
+%     label = \fontsize{13}{0} Phụ lục \myapi,
+%     leftmargin=2.5cm,
+%     %rightmargin=10pt
+% }
+% \setlist[myap,2]{
+%     label = \myapii
+% }
+% \setlist[myap,3]{
+%     label = \myapiii
+% }
+% \setlist[myap,4]{
+%     label = \myapiv
+% }
+% \setlist[myap,5]{
+%     label = \myapv
+% }
+
+
+
+
 \chapter*{PHỤ LỤC}
 \addcontentsline{toc}{chapter}{PHỤ LỤC}
-\section*{Phụ lục 1. Mã chương trình ...}
-\label{appendix:1}
-\begin{lstlisting}[]
+\addtocontents{toc}{\protect\setcounter{tocdepth}{0}}
+{
+\setcounter{chapter}{1}
+% \titleformat{\chapter}[block]{\centering}{\textbf{\MakeUppercase\chaptername\space\thechapter.\space}}{0pt}{\textbf}{}
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+\renewcommand{\thesubsubsection}{\thesubsection.\arabic{subsubsection}}
+\renewcommand{\theparagraph}{\thesubsubsection.\arabic{paragraph}}
+\titleformat{\section}[block]{}{\textbf{Phụ lục \thesection. }}{0pt}{\textbf}{}
+\titleformat{\subsection}[block]{}{\textbf{\thesubsection. }}{0pt}{\textbf}{}
+\titleformat{\subsubsection}[block]{}{\textbf{\thesubsubsection. }}{0pt}{\textbf}{}
+\titleformat{\paragraph}[block]{}{\textbf{\theparagraph. }}{0pt}{\textbf}{}
+
+\section{Mã chương trình}
+\subsection{Bộ phân tích từ vựng}
+\subsubsection{Phân tích từ tố sơ cấp}
+\begin{itemize}
+  \item \label{ap1:simple_token}Từ tố sơ cấp. \textbf{(lexer::token::Token)}
+  \begin{lstlisting}[]
+    pub struct Token {
+      pub kind: TokenKind,
+      pub len: u32,
+    }
+  \end{lstlisting}
+  \item Các loại từ tố sơ cấp. \textbf{(lexer::token::TokenKind)}
+  \begin{lstlisting}[]
     pub enum TokenKind {
       /* one char symbol */
       /// :
@@ -54,6 +105,171 @@
       /// `|`
       Or,
 
-      ...
+      // Literal
+      Literal(LiteralKind),
+
+      // Identifier
+      Ident,
+
+      // Raw identifier
+      RawIdent,
+
+      // Comments
+      LineComment {
+          doc_style: Option<DocStyle>,
+      },
+      BlockComment {
+          doc_style: Option<DocStyle>,
+          terminated: bool,
+      },
+
+      Whitespace,
+
+      // Unknown token's kind.
+      Unknown,
+
+      /// End of input.
+      Eof,
     }
   \end{lstlisting}
+  \item Loại từ tố chuỗi ký tự. \textbf{(lexer::token::LiteralKind)}
+  \begin{lstlisting}
+    pub enum LiteralKind {
+      /// `"abc"`, `"ab`, `"ab\"`, `"ab\""`.
+      Str {
+          terminated: bool,
+      },
+      /// `r#"abc"#`, `r###"ab"##c"###`, `r###"ab"######`, None means invalid.
+      RawStr {
+          n_hashes: Option<u8>,
+      },
+      /// `1_000`, `0b1101`, `0o657`, `0h1af9`.
+      Int {
+          base: Base,
+          empty_int: bool,
+      },
+      Float {
+          base: Base,
+          empty_exponent: bool,
+      },
+      // Although kind can be Char but it can be many symbols (error). Ex: 'abc' -> error.
+      /// `'a'`, `'\''`, `'\\'`, `'abc'`, `'ab`.
+      Char {
+          terminated: bool,
+      },
+    }
+  \end{lstlisting}
+  \item Hàm \textit{advance\_token}. \textbf{(lexer::advance\_token)}
+  \begin{lstlisting}
+    pub fn advance_token(&mut self) -> Token {
+      self.reset_bytes_eaten();
+
+      let first_char = match self.eat() {
+          Some(c) => c,
+          None => return Token::new(TokenKind::Eof, 0),
+      };
+
+      let kind = match first_char {
+          c if is_whitespace(c) => self.whitespace(),
+
+          ':' => TokenKind::Colon,
+          ',' => TokenKind::Comma,
+          '.' => TokenKind::Dot,
+          ';' => TokenKind::Semicolon,
+          '?' => TokenKind::Question,
+          '(' => TokenKind::OpenParen,
+          ')' => TokenKind::CloseParen,
+          '[' => TokenKind::OpenBracket,
+          ']' => TokenKind::CloseBracket,
+          '{' => TokenKind::OpenBrace,
+          '}' => TokenKind::CloseBrace,
+          '!' => TokenKind::Bang,
+          '=' => TokenKind::Eq,
+          '>' => TokenKind::Gt,
+          '<' => TokenKind::Lt,
+          '~' => TokenKind::Tilde,
+          '+' => TokenKind::Plus,
+          '-' => TokenKind::Minus,
+          '*' => TokenKind::Star,
+          '%' => TokenKind::Percent,
+          '^' => TokenKind::Caret,
+          '&' => TokenKind::And,
+          '|' => TokenKind::Or,
+
+          // Slash, comment or block comment.
+          '/' => match self.first() {
+              '/' => self.line_comment(),
+              '*' => self.block_comment(),
+              _ => TokenKind::Slash,
+          },
+
+          '0'..='9' => self.number(),
+
+          // Raw identifier, Identifier, Raw double quote string
+          'r' => match (self.first(), self.second()) {
+              ('#', c1) if is_id_start(c1) => self.raw_identifier(),
+              ('#', _) | ('"', _) => {
+                  let res = self.raw_double_quote_string();
+                  TokenKind::Literal(LiteralKind::RawStr { n_hashes: res.ok() })
+              }
+              _ => self.identifier(),
+          },
+
+          '\'' => self.single_quote_string(),
+          '"' => self.double_quote_string(),
+
+          c if is_id_start(c) => self.identifier(),
+
+          _ => TokenKind::Unknown,
+      };
+
+      Token::new(kind, self.bytes_eaten())
+    }
+  \end{lstlisting}
+\end{itemize}
+
+\subsubsection{Phân tích từ tố thứ cấp}
+\begin{itemize}
+  \item \label{ap1:flextoken}Từ tố thứ cấp. \textbf{(ast::token::Token)}
+  \begin{lstlisting}[]
+    pub struct Token {
+      pub kind: TokenKind,
+      pub span: Span,
+    }
+  \end{lstlisting}
+  \item Vị trí của từ tố thứ cấp.
+  \item Các loại từ tố thứ cấp.
+  \item Loại từ tố phép toán học.
+  \item Loại từ tố ngoặc.
+  \item Loại từ tố chuỗi ký tự.
+  \item Loại từ tố tên.
+  \item Loại từ tố chú thích tài liệu.
+  \item Hàm \textit{next\_token}
+\end{itemize}
+
+\subsubsection{Phân tích cây từ tố}
+\begin{itemize}
+  \item \label{ap1:tokentree}Cây từ tố. \textbf{(ast::tokenstream::TokenTree)}
+  \begin{lstlisting}
+    pub enum TokenTree {
+      /// A single token. Should never be `OpenDelim` or `CloseDelim`, because
+      /// delimiters are implicitly represented by `Delimited`.
+      Token(Token, Spacing),
+      // A delimited sequence of token trees.
+      Delimited(DelimSpan, Delimiter, TokenStream),
+    }
+  \end{lstlisting}
+  \item Kiểu liên kết từ tố.
+  \item Vị trí đóng mở ngoặc.
+  \item Kiểu của ngoặc
+  \item Hàm \textit{lex\_token\_trees}
+\end{itemize}
+
+\subsection{Bộ phân tích cú pháp}
+\subsubsection{Câu lệnh khai báo}
+\label{ap1:decl}
+\subsubsection{Câu lệnh điều khiển}
+\subsubsection{Câu lệnh biểu thức}
+\subsubsection{Biểu thức}
+
+}

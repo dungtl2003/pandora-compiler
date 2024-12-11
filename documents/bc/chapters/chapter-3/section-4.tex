@@ -5,453 +5,281 @@ Giai đoạn phân tích cú pháp là bước tiếp theo sau khi mã nguồn �
 Trong ngôn ngữ Pandora, các loại câu lệnh như khai báo biến, biểu thức, câu lệnh điều khiển, và các cấu trúc phức tạp khác đóng vai trò quan trọng trong việc xây dựng logic của chương trình. Việc triển khai bộ phân tích cú pháp cho các câu lệnh này là một phần thiết yếu trong việc xây dựng compiler, giúp đảm bảo rằng tất cả các cấu trúc cú pháp được phân tích và xử lý đúng cách. Phần này sẽ giới thiệu cách thức parser hoạt động khi phân tích các loại câu lệnh khác nhau, cùng với việc cung cấp mã nguồn triển khai cụ thể và giải thích chi tiết.
 
 \subsection{Câu lệnh}
-Quá trình phân tích câu lệnh bắt đầu bằng việc nhận diện loại câu lệnh hiện tại thông qua token tiếp theo trong luồng đầu vào thông qua hàm \textit{parse\_stmt}, cụ thể sẽ được trình bày qua các phần bên dưới.
+Quá trình phân tích cú pháp bắt đầu bằng việc nhận diện loại câu lệnh hiện tại. Điều này được thực hiện thông qua token tiếp theo trong luồng đầu vào và được xử lý bởi hàm parse\_stmt. Hàm này có nhiệm vụ phân loại câu lệnh dựa trên từ tố đầu tiên, từ đó chuyển hướng quá trình phân tích đến hàm phù hợp cho từng loại câu lệnh (ví dụ: khai báo biến, câu lệnh điều kiện, vòng lặp, v.v.).
+
+Chi tiết mã nguồn của hàm \textit{parse\_stmt} sẽ được trình bày tại \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}. 
 \subsubsection{Câu lệnh khai báo}
 \textbf{Câu lệnh khai báo biến:}
-Khi từ tố đọc được hiện tại là từ khóa \textbf{var}, câu lệnh khai báo biến sẽ được phân tích thông qua hàm \\\textit{parse\_stmt\_var\_decl} như sau:
 
-\begin{lstlisting}
-    pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
-        if self.token.is_keyword(Keyword::Var) {
-            self.parse_stmt_var_decl()
-        } 
+Cú pháp của câu lệnh khai báo biến được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:decl_var_stmt]{\bf Chương 2}.
 
-        ...
-    }
-\end{lstlisting}
+Câu lệnh khai báo biến được bắt đầu khi từ tố hiện tại là từ khóa \kw{var}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_var\_decl}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
 
-Sau khi đoạn nhận từ tố từ khóa \textbf{var}, các bước tiếp theo sẽ được thực hiện lần lượt:
+Cụ thể hàm \textit{parse\_stmt\_var\_decl} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh khai báo biến như sau:
 
 \begin{itemize}
-    \item Kiểm tra xem biến được khai báo có thể thay đổi giá trị hay không:
-\begin{lstlisting}
-    pub fn parse_stmt_var_decl(&mut self) -> PResult<Box<Stmt>> {
-        ...
-
-        let binding_mode = if self.is_keyword_ahead(&[Keyword::Mut]) {
-            self.advance(); // 'mut'
-            BindingMode(Mutability::Mutable)
-        } else {
-            BindingMode(Mutability::Immutable)
-        };
-
-        ...
-    }
-\end{lstlisting}
-    \item Xác định tên biến:
-\begin{lstlisting}
-    pub fn parse_stmt_var_decl(&mut self) -> PResult<Box<Stmt>> {
-        ...
-
-        let ident = self.token.ident().unwrap().0;
-
-        ...
-    }
-\end{lstlisting}
-    \item Xác định kiểu của biến:
-\begin{lstlisting}
-    pub fn parse_stmt_var_decl(&mut self) -> PResult<Box<Stmt>> {
-        ...
-
-        let ty = self.parse_ty()?;
-
-        ...
-    }
-\end{lstlisting}
-    \item Xác định kiểu khai báo có gán giá trị hay không:
-\begin{lstlisting}
-    pub fn parse_stmt_var_decl(&mut self) -> PResult<Box<Stmt>> {
-        ...
-
-        let init = if self.token.kind == TokenKind::Eq {
-            self.advance(); // expr
-            Some(self.parse_expr()?)
-        } else {
-            None
-        };
-
-        if self.token.kind != TokenKind::Semicolon {
-            return Err("Expected ';'".into());
-        }
-        let kind = if let Some(init) = init {
-            LocalKind::Init(init)
-        } else {
-            LocalKind::Decl
-        };
-
-        ...
-    }
-\end{lstlisting}
+    \item \textbf{Xác định chế độ gán giá trị của biến:}
+    Sau khi nhận diện từ khóa \kw{var}, chương trình kiểm tra từ khóa bổ sung để xác định liệu biến được khai báo có thể thay đổi giá trị hay không. Nếu từ khóa \kw{mut} xuất hiện ngay sau \kw{var}, biến được đánh dấu là mutable (có thể thay đổi giá trị). Ngược lại, biến sẽ là immutable (không thể thay đổi giá trị).
+    \item \textbf{Xác định tên biến:}
+    Sau khi đã xác định được chế độ gán giá trị của biến, chương trình sẽ đọc từ tố tiếp theo từ luồng đầu vào và kiểm tra để đảm bảo nó là một tên hợp lệ. Nếu tên không hợp lệ thì báo lỗi. %TODO!
+    \item \textbf{Xác định kiểu dữ liệu của biến:}
+    Sau khi xác định tên biến, chương trình kiểm tra từ tố tiếp theo có phải là kí tự ':' và xác định kiểu dữ liệu được chỉ định ngay sau nó bằng cách gọi hàm \textit{parse\_ty}. Nếu kiểu dữ liệu không hợp lệ thì báo lỗi. %TODO!
+    \item \textbf{Kiểm tra, xử lý giá trị khởi tạo (nếu có) và phân loại:}
+    Sau khi xác định kiểu dữ liệu, chương trình sẽ kiểm tra từ tố tiếp theo. Nếu nó không phải là 1 dấu '=' thì chương trình xác định loại của câu lệnh khai báo là \textit{Decl} (tức chỉ khai báo mà không gán giá trị). Ngược lại nếu nó là dấu '=' thì chương trình sẽ xác định biểu thức khởi tạo ngay sau nó bằng cách gọi hàm \textit{parse\_expr} và xác định loại của câu lệnh khai báo là \textit{Init} (tức là câu lệnh khai báo có gán giá trị), nhưng nếu biểu thức này không hợp lệ thì báo lỗi. %TODO!
+    \item \textbf{Đảm bảo câu lệnh kết thúc hợp lệ:}
+    Câu lệnh khai báo kết thúc bởi một kí tự ';', do đó sau khi đã xác định xong các thành phần cơ bản của câu lệnh khai báo, chương trình sẽ phải kiểm tra để đảm bảo tồn tại kí tự ';' để kết thúc câu lệnh nếu như không tồn tại kí tự ';' thì báo lỗi. %TODO!
 \end{itemize}
 
-
-
-\textbf{Câu lệnh khai báo hàm:}
-
-\textbf{Câu lệnh khai báo lớp:}
-
-\textbf{Câu lệnh khai báo giao diện:}
-
+% Các bước trên không chỉ đảm bảo phân tích đúng cú pháp của câu lệnh khai báo biến mà còn hỗ trợ tạo cây cú pháp trung gian (AST) với thông tin chi tiết về biến được khai báo.
 
 \subsubsection{Câu lệnh điều khiển}
-\textbf{Câu lệnh khối:} Khi từ tố đọc được hiện tại là dấu mở ngoặc ngọn ('\{'), câu lệnh khối sẽ được phân tích thông qua hàm \textit{parse\_stmt\_block}:
-\begin{lstlisting}
-    pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
-        ...    
+\textbf{Câu lệnh khối:} 
 
-        if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
-            self.parse_stmt_block()
-        } 
+Cú pháp của câu lệnh khối được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:block_stmt]{\bf Chương 2}.
+
+Câu lệnh khối được bắt đầu khi từ tố đọc được hiện tại là kí tự '\{'. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_block}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+% \begin{lstlisting}
+%     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
+%         ...    
+
+%         if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
+%             self.parse_stmt_block()
+%         } 
         
-        ...
-    }
-\end{lstlisting}
-Thông qua hàm \textit{parse\_stmt\_block}, từng câu lệnh sau dấu '\{' sẽ được phân tích cho đến khi gặp từ tố đóng ngoặc nhọn '\}':
-\begin{lstlisting}
-    pub fn parse_stmt_block(&mut self) -> PResult<Box<Stmt>> {
-        ...
+%         ...
+%     }
+% \end{lstlisting}
+Thông qua hàm \textit{parse\_stmt\_block}, từng câu lệnh sau kí tự '\{' sẽ được phân tích cho đến khi gặp từ tố đóng ngoặc nhọn '\}'.
+% \begin{lstlisting}
+%     pub fn parse_stmt_block(&mut self) -> PResult<Box<Stmt>> {
+%         ...
 
-        let mut stmts = Vec::new();
-        while self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
-            let stmt = self.parse_stmt()?;
-            stmts.push(stmt);
-        }
+%         let mut stmts = Vec::new();
+%         while self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
+%             let stmt = self.parse_stmt()?;
+%             stmts.push(stmt);
+%         }
 
-        ...
-    }
-\end{lstlisting}
+%         ...
+%     }
+% \end{lstlisting}
 
-\textbf{Câu lệnh rẽ nhánh:} Khi từ tố đọc được hiện tại là từ khóa \textbf{if}, câu lệnh rẽ nhánh sẽ được phân tích thông qua hàm \textit{parse\_stmt\_if}:
-\begin{lstlisting}
-    pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
-        ...
+\textbf{Câu lệnh rẽ nhánh:} 
+
+Cú pháp của câu lệnh rẽ nhánh được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:if_stmt]{\bf Chương 2}.
+
+Câu lệnh rẽ nhánh được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{if}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_if}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+% \begin{lstlisting}
+%     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
+%         ...
         
-        if self.token.is_keyword(Keyword::If) {
-            self.parse_stmt_if()
-        } 
+%         if self.token.is_keyword(Keyword::If) {
+%             self.parse_stmt_if()
+%         } 
         
-        ...
-    }
-\end{lstlisting}
-Sau khi đoán nhận từ khóa \textbf{if}, các bước tiếp theo sẽ được thực hiện lần lượt:
+%         ...
+%     }
+% \end{lstlisting}
+Cụ thể hàm \textit{parse\_stmt\_if} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh rẽ nhánh như sau:
 \begin{itemize}
-    \item Phân tích biểu thức điều kiện nhánh \textbf{if}:
-\begin{lstlisting}
-    pub fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
-        ...
-
-        let condition = self.parse_expr()?;
-
-        ...
-    }
-\end{lstlisting}
-    \item Phân tích câu lệnh khối của nhánh \textbf{if}:
-\begin{lstlisting}
-    pub fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
-        ...
-
-        // Parse the block for the `if` statement.
-        let if_block = self.parse_stmt_block()?;
-
-        ...
-    }
-\end{lstlisting}
-    \item Phân tích tiếp câu lệnh nhánh \textbf{else} nếu có:
-\begin{lstlisting}
-    pub fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
-        ...
-
-        // Optionally parse an `else` block.
-        let else_block = if self.token.is_keyword(Keyword::Else) {
-            self.advance(); // Eat token after `else`
-            if self.token.is_keyword(Keyword::If) {
-                let else_block = self.parse_stmt_if()?;
-                Some(else_block)
-            } else if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
-                let else_block = self.parse_stmt_block()?;
-                Some(else_block)
-            } else {
-                return Err("Expected 'if' or '{'".into());
-            }
-        } else {
-            None
-        };
-
-        ...
-    }
-\end{lstlisting}
+    \item Phân tích biểu thức điều kiện: 
+    Sau khi nhận diện từ khóa \kw{if}, chương trình tiến hành phân tích cú pháp biểu thức điều kiện bằng cách gọi hàm \textit{parse\_expr}. Nếu biểu thức điều kiện không hợp hệ thì báo lỗi. %TODO!
+    \item Phân tích câu lệnh khối của nhánh \kw{if}:
+    Sau khi phân tích biểu thức điều kiện, chương trình gọi hàm \textit{parse\_stmt\_block} để phân tích cú pháp câu lệnh khối được bao bởi cặp kí tự '\{' và '\}'.
+    \item Xử lí tùy chọn nhánh \kw{else} nếu có:
+    Sau khi phân tích câu lệnh khối của nhánh \kw{if}, nếu từ tố tiếp theo là từ khóa \kw{else} thì chương trình sẽ tiếp tục kiểm tra từ tố tiếp theo sau nó. Nếu từ tố theo sau từ khóa \kw{else} là từ khóa \kw{if} thì chương trình sẽ gọi đệ quy hàm \textit{parse\_stmt\_if} để phân tích nhánh \kw{else if}. Nếu từ tố theo sau từ khóa \kw{else} là kí tự '\{' thì chương trình sẽ gọi hàm \textit{parse\_stmt\_block} để phân tích câu lệnh khối của nhánh \kw{else}. Nếu từ tố theo sau từ khóa \kw{else} là các từ tố khác thì báo lỗi. %TODO!
 
 \end{itemize}
 
-\textbf{Câu lệnh lặp biểu thức điều kiện:} Khi từ tố đọc được hiện tại là từ khóa \textbf{while}, câu lệnh lặp biểu thức điều kiện sẽ được phân tích thông qua hàm \\\textit{parse\_stmt\_while}:
-\begin{lstlisting}
-    pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
-        ...    
+\textbf{Câu lệnh lặp biểu thức điều kiện:}
 
-        if self.token.is_keyword(Keyword::While) {
-            self.parse_stmt_while()
-        } 
-        
-        ...
-    }
-\end{lstlisting}
-Sau khi đoán nhận từ khóa \textbf{while}, các bước tiếp theo sẽ được thực hiện lần lượt:
+Cú pháp của câu lệnh lặp biểu thức điều kiện được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:while_stmt]{\bf Chương 2}.
+
+Câu lệnh lặp biểu thức điều kiện được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{while}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_while}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+
+Cụ thể hàm \textit{parse\_stmt\_while} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh lặp biểu thức điều kiện như sau:
 \begin{itemize}
     \item Phân tích biểu thức điều kiện:
-\begin{lstlisting}
-    pub fn parse_stmt_while(&mut self) -> PResult<Box<Stmt>> {
-        ...
-
-        let condition = self.parse_expr()?;
-
-        ...
-    }
-\end{lstlisting}
+    Sau khi nhận diện từ khóa \kw{while}, chương trình tiến hành phân tích biểu thức điều kiện bằng cách gọi hàm \\\textit{parse\_expr}. Nếu biểu thức điều kiện không hợp lệ thì báo lỗi. %TODO!
     \item Phân tích câu lệnh khối:
-\begin{lstlisting}
-    pub fn parse_stmt_while(&mut self) -> PResult<Box<Stmt>> {
-        ...
-
-        let block = self.parse_stmt_block()?;
-
-        ...
-    }
-\end{lstlisting}
+    Sau khi phân tích biểu thức điều kiện, chương trình gọi hàm \textit{parse\_stmt\_block} để phân tích cú pháp câu lệnh khối được bao bởi cặp kí tự '\{' và '\}'.%TODO!
 \end{itemize}
 
-\textbf{Câu lệnh lặp trình lặp:} Khi từ tố đọc được hiện tại là từ khóa \textbf{for}, câu lệnh lặp trình lặp sẽ được phân tích thông qua hàm \textit{parse\_stmt\_for}:
-\begin{lstlisting}
-    pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
-        ...
-    
-        if self.token.is_keyword(Keyword::For) {
-            self.parse_stmt_for()
-        } 
-        
-        ...
-    }
-\end{lstlisting}
-Sau khi đoán nhận từ khóa \textbf{for}, các bước tiếp theo sẽ được thực hiện lần lượt:
+\textbf{Câu lệnh lặp trình lặp:} 
+
+Cú pháp của câu lệnh lặp trình lặp được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:while_stmt]{\bf Chương 2}.
+
+Câu lệnh lặp trình lặp được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{for}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_for}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+
+Cụ thể hàm \textit{parse\_stmt\_for} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh lặp trình lặp như sau:
+
 \begin{itemize}
     \item Phân tích tên biến sử dụng cho trình lặp:
-\begin{lstlisting}
-    pub fn parse_stmt_for(&mut self) -> PResult<Box<Stmt>> {
-        ...
-
-        if !self.token.is_ident() {
-            return Err("Expected identifier".into());
-        }
-        let ident = self.token.ident().unwrap().0;
-
-        ...
-    }
-\end{lstlisting}
-    \item Kiểm tra từ tố sau tên biến có phải từ khóa \textbf{in} không:
-\begin{lstlisting}
-    pub fn parse_stmt_for(&mut self) -> PResult<Box<Stmt>> {
-        ...
-
-        if !self.token.is_keyword(Keyword::In) {
-            return Err("Expected 'in'".into());
-        }
-
-        ...
-    }
-\end{lstlisting}
-    \item Phân tích biểu thức điều kiện:
-\begin{lstlisting}
-    pub fn parse_stmt_for(&mut self) -> PResult<Box<Stmt>> {
-        ...
-        let expr = self.parse_expr()?;
-
-        ...
-    }
-\end{lstlisting}
+    Sau khi nhận diện từ khóa for, chương trình tiến hành đọc từ tố tiếp theo từ luồng đầu vào và kiểm tra để đảm bảo nó là một tên hợp lệ. Nếu tên không hợp lệ thì báo lỗi. %TODO!
+    \item Xác định từ khóa \kw{in}:
+    Sau khi xác định tên biến lặp, chương trình tiến hành kiểm tra từ tố tiếp theo có phải là từ khóa \kw{in} hay không. Nếu không phải từ khóa \kw{in} thì báo lỗi. %TODO!
+    \item Phân tích biểu thức trình lặp:
+    Sau khi xác định được từ khóa \kw{in}, chương trình tiến hành gọi hàm \textit{parse\_expr} để phân tích biểu thức đại diện cho tập hợp các giá trị mà biến lặp sẽ duyệt qua. Nếu biểu thức này không hợp lệ thì báo lỗi. %TODO!
     \item Phân tích câu lệnh khối:
-\begin{lstlisting}
-    pub fn parse_stmt_for(&mut self) -> PResult<Box<Stmt>> {
-        ...
-        let block = self.parse_stmt_block()?;
-
-        ...
-    }
-\end{lstlisting}
+    Sau khi phân tích biểu thức điều kiện, chương trình gọi hàm \textit{parse\_stmt\_block} để phân tích cú pháp câu lệnh khối được bao bởi cặp kí tự '\{' và '\}'.
 \end{itemize}
 
 \subsubsection{Câu lệnh biểu thức:} 
-Khi từ tố đọc được hiện tại có thể bắt đầu một biểu thức, câu lệnh biểu thức sẽ được phân tích thông qua hàm \textit{parse\_stmt\_expr}:
-\begin{lstlisting}
-    pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
-        ...
-    
-        if self.token.can_begin_expr() {
-            self.parse_stmt_expr()
-        }
-        
-        ...
-    }
-\end{lstlisting}
-Hàm \textit{parse\_stmt\_expr} sẽ phân tích câu lệnh biểu thức thông qua 1 hàm khác là \textit{parse\_expr} sẽ được trình bày ở phần \textbf{\textit{Biểu thức}}:
-\begin{lstlisting}
-    pub fn parse_stmt_expr(&mut self) -> PResult<Box<Stmt>> {
-        let expr = self.parse_expr()?;
-        
-        ...
-    }
-\end{lstlisting}
+Cú pháp của câu lệnh biểu thức được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:expr_stmt]{\bf Chương 2}.
+
+Câu lệnh biểu thức được bắt đầu khi từ tố đọc được hiện tại có thể bắt đầu một biểu thức. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_expr}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+
+Thông qua hàm \textit{parse\_stmt\_expr}, biểu thức sẽ được chương trình phân tích bằng cách gọi đến hàm \textit{parse\_expr}. Sau khi phân tích được biểu thức, chương trình sẽ kiểm tra từ tố tiếp theo có phải là ký tự ';', nếu không sẽ báo lỗi.
 
 \subsection{Biểu thức}
-Quá trình phân tích biểu thức sẽ được thực hiện thông qua hàm \textit{parse\_expr}:
-\begin{lstlisting}
-    pub fn parse_expr(&mut self) -> PResult<Box<Expr>> {
-        let lhs = self.()?;
-        self.parse_expr_rest(0, lhs)
-    }
-\end{lstlisting}
-Đầu tiên ta sẽ phân tích phần tiền tố của biểu thức thông qua hàm \\\textit{parse\_expr\_prefix}:
+Cú pháp của biểu thức được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:expr]{\bf Chương 2}.
+
+Quá trình phân tích biểu thức sẽ được thực hiện thông qua hàm \textit{parse\_expr}, chi tiết mã nguồn triển khai đực trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+
+Đầu tiên chương trình sẽ phân tích phần tiền tố của biểu thức thông qua hàm \\\textit{parse\_expr\_prefix}:
 \begin{itemize}
     \item Kiểm tra và trả về kiểu của tất cả các từ tố là \textbf{Not}('!') hoặc là \textbf{Minus}('-'):
-\begin{lstlisting}
-    fn parse_expr_prefix(&mut self) -> PResult<Box<Expr>> {
-        match self.token.kind {
-            TokenKind::Not => {
-                self.advance();
-                let expr = self.parse_expr_prefix()?;
-                let span = expr.span;
-                let expr = self.mk_unary(UnOp::Not, expr);
-                Ok(self.mk_expr(expr, span))
-            }
-            TokenKind::BinOp(BinOpToken::Minus) => {
-                self.advance();
-                let expr = self.parse_expr_prefix()?;
-                let span = self.token.span;
-                let expr = self.mk_unary(UnOp::Ne, expr);
-                Ok(self.mk_expr(expr, span))
-            }
-            _ => self.parse_expr_bottom(),
-        }
-    }
-\end{lstlisting}
+% \begin{lstlisting}
+%     fn parse_expr_prefix(&mut self) -> PResult<Box<Expr>> {
+%         match self.token.kind {
+%             TokenKind::Not => {
+%                 self.advance();
+%                 let expr = self.parse_expr_prefix()?;
+%                 let span = expr.span;
+%                 let expr = self.mk_unary(UnOp::Not, expr);
+%                 Ok(self.mk_expr(expr, span))
+%             }
+%             TokenKind::BinOp(BinOpToken::Minus) => {
+%                 self.advance();
+%                 let expr = self.parse_expr_prefix()?;
+%                 let span = self.token.span;
+%                 let expr = self.mk_unary(UnOp::Ne, expr);
+%                 Ok(self.mk_expr(expr, span))
+%             }
+%             _ => self.parse_expr_bottom(),
+%         }
+%     }
+% \end{lstlisting}
     \item Phân tích từ tố tiếp theo sau khi đã bỏ qua phần tiền tố thông qua hàm \textit{parse\_expr\_bottom}:
-\begin{lstlisting}
-    fn parse_expr_bottom(&mut self) -> PResult<Box<Expr>> {
-        match self.token.kind {
-            TokenKind::Literal(_) => self.parse_expr_lit(),
-            TokenKind::Ident(_, _) => self.parse_expr_var(),
-            TokenKind::OpenDelim(Delimiter::Parenthesis) => {
-                self.parse_expr_repeat(Delimiter::Parenthesis)
-            }
-            _ => Err("Unexpected token".into()),
-        }
-    }
-\end{lstlisting}
-    Nếu từ tố này là tên biến hoặc là giá trị trực tiếp thì sẽ được phân tính thông qua các hàm tương ứng, nếu đây là dấy mở ngoặc tròn ('(') thì ta sẽ bắt đầu phân tích 1 biểu thức mới. Nếu không thỏa mãn trường hợp nào sẽ cảnh báo.
+% \begin{lstlisting}
+%     fn parse_expr_bottom(&mut self) -> PResult<Box<Expr>> {
+%         match self.token.kind {
+%             TokenKind::Literal(_) => self.parse_expr_lit(),
+%             TokenKind::Ident(_, _) => self.parse_expr_var(),
+%             TokenKind::OpenDelim(Delimiter::Parenthesis) => {
+%                 self.parse_expr_repeat(Delimiter::Parenthesis)
+%             }
+%             _ => Err("Unexpected token".into()),
+%         }
+%     }
+% \end{lstlisting}
+    Nếu từ tố này là tên biến hoặc là giá trị trực tiếp thì sẽ được phân tính thông qua các hàm tương ứng, nếu đây là ký tự '(' thì chương trình sẽ bắt đầu phân tích 1 biểu thức mới. Nếu không thỏa mãn trường hợp nào sẽ báo lỗi.
 \end{itemize}
-Sau đó, ta sẽ phân tích phần còn lại của biểu thức thông qua hàm \textit{parse\_expr\_rest}:
+Sau đó, chương trình sẽ phân tích phần còn lại của biểu thức thông qua hàm \textit{parse\_expr\_rest}:
 \begin{itemize}
     \item Lấy ra toán tử hiện tại và xác định thứ tự ưu tiên:
-\begin{lstlisting}
-    fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
-        ...
+% \begin{lstlisting}
+%     fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
+%         ...
         
-        let op_assoc = AssocOp::from_token(&self.token);
-        if op_assoc.is_none() {
-            break;
-        }
-        let op_assoc = op_assoc.unwrap();
-        let prec = op_assoc.precedence();
-        if prec < min_prec {
-            break;
-        }
+%         let op_assoc = AssocOp::from_token(&self.token);
+%         if op_assoc.is_none() {
+%             break;
+%         }
+%         let op_assoc = op_assoc.unwrap();
+%         let prec = op_assoc.precedence();
+%         if prec < min_prec {
+%             break;
+%         }
 
         
-        ...
-    }
-\end{lstlisting}
+%         ...
+%     }
+% \end{lstlisting}
     \item Phân tích tiền tố toán tử tiếp theo:
-\begin{lstlisting}
-    fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
-        ...
+% \begin{lstlisting}
+%     fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
+%         ...
 
-        let mut rhs = self.parse_expr_prefix()?;
+%         let mut rhs = self.parse_expr_prefix()?;
         
-        ...
-    }
-\end{lstlisting}
+%         ...
+%     }
+% \end{lstlisting}
     \item Tính toán mức độ ưu tiên cho toán tử tiếp theo:
-\begin{lstlisting}
-    fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
-        ...
+% \begin{lstlisting}
+%     fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
+%         ...
 
-        let fixity = op_assoc.fixity();
-        let next_prec = match fixity {
-            Fixity::Left => prec + 1,
-            Fixity::Right => prec,
-        };
+%         let fixity = op_assoc.fixity();
+%         let next_prec = match fixity {
+%             Fixity::Left => prec + 1,
+%             Fixity::Right => prec,
+%         };
         
-        ...
-    }
-\end{lstlisting}
+%         ...
+%     }
+% \end{lstlisting}
     \item Phân tích toán tử tiếp theo:
-\begin{lstlisting}
-    fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
-        ...
+% \begin{lstlisting}
+%     fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
+%         ...
 
-        rhs = self.parse_expr_rest(next_prec, rhs)?;
+%         rhs = self.parse_expr_rest(next_prec, rhs)?;
         
-        ...
-    }
-\end{lstlisting}
+%         ...
+%     }
+% \end{lstlisting}
     \item Xác định kiểu của biểu thức hiện tại:
-\begin{lstlisting}
-    fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
-        ...
+% \begin{lstlisting}
+%     fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
+%         ...
         
-            lhs = match op_assoc {
-                AssocOp::Add
-                | AssocOp::Subtract
-                | AssocOp::Multiply
-                | AssocOp::Divide
-                | AssocOp::Modulus
-                | AssocOp::LAnd
-                | AssocOp::LOr
-                | AssocOp::BitXor
-                | AssocOp::BitAnd
-                | AssocOp::BitOr
-                | AssocOp::ShiftLeft
-                | AssocOp::ShiftRight
-                | AssocOp::Equal
-                | AssocOp::Less
-                | AssocOp::LessEqual
-                | AssocOp::NotEqual
-                | AssocOp::Greater
-                | AssocOp::GreaterEqual => {
-                    let ast_op = op_assoc.to_ast_binop().unwrap();
-                    let binary = self.mk_binary(span_encoding::respan(ast_op, op_span), lhs, rhs);
-                    self.mk_expr(binary, span)
-                }
-                AssocOp::Assign => self.mk_expr(ExprKind::Assign(lhs, rhs, op_span), span),
-                AssocOp::AssignOp(k) => {
-                    let aop = match k {
-                        BinOpToken::Plus => BinOpKind::Add,
-                        BinOpToken::Minus => BinOpKind::Sub,
-                        BinOpToken::Star => BinOpKind::Mul,
-                        BinOpToken::Slash => BinOpKind::Div,
-                        BinOpToken::Percent => BinOpKind::Mod,
-                        BinOpToken::Caret => BinOpKind::BitXor,
-                        BinOpToken::And => BinOpKind::BitAnd,
-                        BinOpToken::Or => BinOpKind::BitOr,
-                        BinOpToken::Shl => BinOpKind::Shl,
-                        BinOpToken::Shr => BinOpKind::Shr,
-                    };
-                    let aopexpr = self.mk_assign_op(span_encoding::respan(aop, op_span), lhs, rhs);
-                    self.mk_expr(aopexpr, span)
-                }
-            }
+%             lhs = match op_assoc {
+%                 AssocOp::Add
+%                 | AssocOp::Subtract
+%                 | AssocOp::Multiply
+%                 | AssocOp::Divide
+%                 | AssocOp::Modulus
+%                 | AssocOp::LAnd
+%                 | AssocOp::LOr
+%                 | AssocOp::BitXor
+%                 | AssocOp::BitAnd
+%                 | AssocOp::BitOr
+%                 | AssocOp::ShiftLeft
+%                 | AssocOp::ShiftRight
+%                 | AssocOp::Equal
+%                 | AssocOp::Less
+%                 | AssocOp::LessEqual
+%                 | AssocOp::NotEqual
+%                 | AssocOp::Greater
+%                 | AssocOp::GreaterEqual => {
+%                     let ast_op = op_assoc.to_ast_binop().unwrap();
+%                     let binary = self.mk_binary(span_encoding::respan(ast_op, op_span), lhs, rhs);
+%                     self.mk_expr(binary, span)
+%                 }
+%                 AssocOp::Assign => self.mk_expr(ExprKind::Assign(lhs, rhs, op_span), span),
+%                 AssocOp::AssignOp(k) => {
+%                     let aop = match k {
+%                         BinOpToken::Plus => BinOpKind::Add,
+%                         BinOpToken::Minus => BinOpKind::Sub,
+%                         BinOpToken::Star => BinOpKind::Mul,
+%                         BinOpToken::Slash => BinOpKind::Div,
+%                         BinOpToken::Percent => BinOpKind::Mod,
+%                         BinOpToken::Caret => BinOpKind::BitXor,
+%                         BinOpToken::And => BinOpKind::BitAnd,
+%                         BinOpToken::Or => BinOpKind::BitOr,
+%                         BinOpToken::Shl => BinOpKind::Shl,
+%                         BinOpToken::Shr => BinOpKind::Shr,
+%                     };
+%                     let aopexpr = self.mk_assign_op(span_encoding::respan(aop, op_span), lhs, rhs);
+%                     self.mk_expr(aopexpr, span)
+%                 }
+%             }
         
-        ...
-    }        
-\end{lstlisting}
+%         ...
+%     }        
+% \end{lstlisting}
 \end{itemize}
 
 
