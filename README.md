@@ -95,7 +95,17 @@ If you want to update Pandora, you can download the latest release and replace t
 
 #### Windows users
 
-Comming soon 🚧
+After downloading the latest release, you need to move the file to the directory where you want to store the executable file, for example, `C:\Program Files\Pandora`.
+
+Then, you need to add the directory to the PATH environment variable. You can follow the instructions [here](https://www.architectryan.com/2018/03/17/add-to-the-path-on-windows-10/).
+
+After that, you can run the following command to check if Pandora is installed:
+
+```bash
+unbox --version
+```
+
+If you see the version of Pandora, then you have successfully installed it.
 
 ## Usage
 
@@ -127,8 +137,8 @@ Some command options:
 Panodra has the following features:
 
 - Simple syntax (only 15 keywords)
-- Strongly typed
-- No implicit type conversion
+- Strongly typed (so you can always know what type a variable is)
+- No implicit type conversion (so you don't shoot yourself in the foot)
 - Very descriptive error messages (with total of 72 different error codes)
 
 ## Syntax
@@ -250,6 +260,13 @@ If you want to cast a variable to another type, you can use the `as` keyword (Pa
 set x: int = 5;
 set y: str = x as str;
 set z: float = x as str as float; // or just x as float
+```
+
+Pandora also supports raw identifiers (just like Rust).
+
+```pandora
+set r#true: int = 5;
+println(r#true as str);
 ```
 
 ### Functions
