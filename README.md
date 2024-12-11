@@ -7,6 +7,10 @@ Note: Pandora is still in development, so there may be some bugs and missing fea
 ## Table of contents
 
 - [Installation](#installation)
+  - [Method 1: Using Cargo](#method-1-using-cargo)
+  - [Method 2: Manual installation](#method-2-manual-installation)
+    - [Linux users](#linux-users)
+    - [Windows users](#windows-users)
 - [Usage](#usage)
 - [Features](#features)
 - [Syntax](#syntax)
@@ -33,15 +37,65 @@ Note: Pandora is still in development, so there may be some bugs and missing fea
 
 ## Installation
 
+### Method 1: Using Cargo
+
 You need to have Rust installed on your machine.
 
 After that, you can run the following command to install Pandora:
 
 ```bash
-cargo install pandora-interpreter@[version]
+cargo install pandora-interpreter
 ```
 
-Replace `[version]` with the version you want to install (you can find the latest version on the releases page).
+After the installation is complete, you can run the following command to check if Pandora is installed:
+
+```bash
+unbox --version
+```
+
+If you see the version of Pandora, then you have successfully installed it.
+
+Note: If you cannot run the `unbox` command, you need to add the Cargo bin directory to your PATH. For more information, you can check the [Cargo documentation](https://www.rust-lang.org/tools/install).
+
+If you want to update Pandora, you can run the following command:
+
+```bash
+cargo install pandora-interpreter
+```
+
+### Method 2: Manual installation
+
+First, you need to download the latest release from the [releases page](https://github.com/dungtl2003/pandora/releases). You can choose the appropriate version for your operating system. Then you can follow the instructions below.
+
+#### Linux users
+
+After downloading the latest release, you need to make the file executable:
+
+```bash
+chmod +x pandora-interpreter
+```
+
+Then, move the file to the `/home/[username]/.local/bin` directory: (replace `[username]` with your username)
+
+```bash
+mv pandora-interpreter /home/[username]/.local/bin/unbox
+```
+
+Restart your terminal, and you can run the following command to check if Pandora is installed:
+
+```bash
+unbox --version
+```
+
+If you see the version of Pandora, then you have successfully installed it.
+
+Note: If you cannot run the `unbox` command, it is likely that you are missing some dependencies. You can check the error message to see what dependencies you are missing.
+
+If you want to update Pandora, you can download the latest release and replace the old file with the new one.
+
+#### Windows users
+
+Comming soon 🚧
 
 ## Usage
 
@@ -65,12 +119,17 @@ Some command options:
 - `--verbose`: Print the interpretation process (useful for debugging)
 - `-h`, `--help`: Print the help message
 - `--wreck`: Activate chaos mode 💀 (if you use this mode, the file's extension must be `.unbx`). More information about chaos mode can be found [here](#chaos-mode)
+- `--latest`: Check for the latest version of Pandora
+- `--explain [error_code]`: Explain an error code
 
 ## Features
 
-- Simple syntax
+Panodra has the following features:
+
+- Simple syntax (only 15 keywords)
 - Strongly typed
 - No implicit type conversion
+- Very descriptive error messages (with total of 72 different error codes)
 
 ## Syntax
 
