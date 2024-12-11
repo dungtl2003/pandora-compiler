@@ -8,9 +8,8 @@ use miette::{Diagnostic, LabeledSpan, Report, SourceSpan};
 use std::sync::Arc;
 use thiserror::Error;
 
-// TODO: this will be fixed temporary (maybe env in future).
 pub const ERROR_CODE_URL: &str =
-    "https://github.com/dungtl2003/pandora-compiler/tree/dungtl2003/feature/error_codes";
+    "https://github.com/dungtl2003/pandora-compiler/tree/main/error_codes";
 
 #[derive(Debug, Clone)]
 pub struct ErrorHandler {
@@ -1123,38 +1122,12 @@ pub struct EmptyCharLiteral {
     pub expected_char_span: SourceSpan,
 }
 
-// ========================== PARSER ==========================
-#[derive(Error, Debug, Diagnostic)]
-#[error("{}", message)]
-pub struct ExpectedToken {
-    message: String,
-    span_msg: String,
-    #[label("{}", span_msg)]
-    span: SourceSpan,
-}
-
-#[derive(Error, Debug, Diagnostic)]
-#[error("expected statement, found `{}`", token)]
-pub struct ExpectedStatement {
-    token: String,
-    #[label("expected statement")]
-    span: SourceSpan,
-}
-
-#[derive(Error, Debug, Diagnostic)]
-#[error("{}", message)]
-pub struct ExpectedIdentifier {
-    message: String,
-
-    #[label("expected identifier")]
-    bad_token_span: SourceSpan,
-
-    #[help]
-    help_msg: Option<String>,
-}
-
 #[derive(Error, Debug, Diagnostic)]
 #[error("mismatched closing delimiter: `{delimiter}`")]
+#[diagnostic(
+    code(E0016),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct MismatchedClosingDelimiter {
     delimiter: String,
     #[label("mismatched closing delimiter")]
@@ -1165,6 +1138,10 @@ pub struct MismatchedClosingDelimiter {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("this file contains an unclosed delimiter")]
+#[diagnostic(
+    code(E0017),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct UnclosedDelimiter {
     #[label(collection, "unclosed delimiter")]
     unclosed_delimiter_spans: Vec<SourceSpan>,
@@ -1174,15 +1151,65 @@ pub struct UnclosedDelimiter {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("unexpected closing delimiter: `{delimiter}`")]
+#[diagnostic(
+    code(E0018),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct UnexpectedClosingDelimiter {
     delimiter: String,
     #[label("unexpected closing delimiter")]
     span: SourceSpan,
 }
 
+// ========================== PARSER ==========================
+#[derive(Error, Debug, Diagnostic)]
+#[error("{}", message)]
+#[diagnostic(
+    code(E0100),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
+pub struct ExpectedToken {
+    message: String,
+    span_msg: String,
+    #[label("{}", span_msg)]
+    span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("expected statement, found `{}`", token)]
+#[diagnostic(
+    code(E0101),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
+pub struct ExpectedStatement {
+    token: String,
+    #[label("expected statement")]
+    span: SourceSpan,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("{}", message)]
+#[diagnostic(
+    code(E0102),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
+pub struct ExpectedIdentifier {
+    message: String,
+
+    #[label("expected identifier")]
+    bad_token_span: SourceSpan,
+
+    #[help]
+    help_msg: Option<String>,
+}
+
 // ========================== INTERPRET ==========================
 #[derive(Error, Debug, Diagnostic)]
 #[error("expected `{{`")]
+#[diagnostic(
+    code(E0200),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct ExpectedBlockAfterCondition {
     if_symbol: String,
     #[label(
@@ -1196,6 +1223,10 @@ pub struct ExpectedBlockAfterCondition {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("the size for values of type `{}` cannot be known", ty)]
+#[diagnostic(
+    code(E0201),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct UnknownSizeArray {
     ty: String,
     #[label("doesn't have a size known")]
@@ -1204,7 +1235,11 @@ pub struct UnknownSizeArray {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("mismatched types")]
-#[diagnostic(help("consider specifying the actual array length: `{}`", found_len))]
+#[diagnostic(
+    code(E0202),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+    help("consider specifying the actual array length: `{}`", found_len)
+)]
 pub struct MismatchArrayTypeLength {
     expected_len: i64,
     found_len: i64,
@@ -1215,6 +1250,10 @@ pub struct MismatchArrayTypeLength {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("`{}` outside of a function", symbol)]
+#[diagnostic(
+    code(E0203),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct ReturnOutsideFunction {
     symbol: String,
     #[label("cannot `{}` outside of a function", symbol)]
@@ -1223,6 +1262,10 @@ pub struct ReturnOutsideFunction {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("`{}` outside of a loop", symbol)]
+#[diagnostic(
+    code(E0204),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct ContinueOutsideLoop {
     symbol: String,
     #[label("cannot `{}` outside of a loop", symbol)]
@@ -1231,6 +1274,10 @@ pub struct ContinueOutsideLoop {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("`{}` outside of a loop", symbol)]
+#[diagnostic(
+    code(E0205),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct BreakOutsideLoop {
     symbol: String,
     #[label("cannot `{}` outside of a loop", symbol)]
@@ -1238,6 +1285,10 @@ pub struct BreakOutsideLoop {
 }
 #[derive(Error, Debug, Diagnostic)]
 #[error("`{}` is not an iterator", ty)]
+#[diagnostic(
+    code(E0206),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct ExpectedIterator {
     ty: String,
     #[label("`{}` is not an iterator", ty)]
@@ -1246,12 +1297,20 @@ pub struct ExpectedIterator {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("Expected `{{`")]
+#[diagnostic(
+    code(E0207),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct ExpectedBlock {
     #[label("help: try placing this code inside a block")]
     stmt_span: SourceSpan,
 }
 #[derive(Error, Debug, Diagnostic)]
 #[error("Function with name `{}` already exists in this scope", func_name)]
+#[diagnostic(
+    code(E0208),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct FunctionAlreadyDeclaredInScope {
     func_name: String,
     #[label("first declared here")]
@@ -1265,6 +1324,10 @@ pub struct FunctionAlreadyDeclaredInScope {
     "there are multiple libraries with the same name `{}` in the same scope",
     lib_name
 )]
+#[diagnostic(
+    code(E0209),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct MultipleLibrariesInScope {
     lib_name: String,
     #[label("first added here")]
@@ -1275,7 +1338,11 @@ pub struct MultipleLibrariesInScope {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("comparison operators cannot be chained")]
-#[diagnostic(help("split the comparison into two"))]
+#[diagnostic(
+    code(E0218),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+    help("split the comparison into two")
+)]
 pub struct ComparisonOperatorsCannotBeChained {
     #[label(collection)]
     chain_op_span: Vec<SourceSpan>,
@@ -1283,6 +1350,10 @@ pub struct ComparisonOperatorsCannotBeChained {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot add `{}` to `{}`", rhs_ty, lhs_ty)]
+#[diagnostic(
+    code(E0219),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct CannotAdd {
     lhs_ty: String,
     rhs_ty: String,
@@ -1292,6 +1363,10 @@ pub struct CannotAdd {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot subtract `{}` from `{}`", rhs_ty, lhs_ty)]
+#[diagnostic(
+    code(E0220),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct CannotSubtract {
     lhs_ty: String,
     rhs_ty: String,
@@ -1301,6 +1376,10 @@ pub struct CannotSubtract {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot multiply `{}` by `{}`", lhs_ty, rhs_ty)]
+#[diagnostic(
+    code(E0221),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct CannotMultiply {
     lhs_ty: String,
     rhs_ty: String,
@@ -1310,6 +1389,10 @@ pub struct CannotMultiply {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot divide `{}` by `{}`", lhs_ty, rhs_ty)]
+#[diagnostic(
+    code(E0222),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct CannotDivide {
     lhs_ty: String,
     rhs_ty: String,
@@ -1323,6 +1406,10 @@ pub struct CannotDivide {
     lhs_ty,
     rhs_ty
 )]
+#[diagnostic(
+    code(E0223),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct CannotModulo {
     lhs_ty: String,
     rhs_ty: String,
@@ -1332,6 +1419,10 @@ pub struct CannotModulo {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("array has multiple types")]
+#[diagnostic(
+    code(E0250),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct ArrayHasMultipleTypes {
     pub first_el_ty: String,
     pub first_mismatch_ty: String,
@@ -1343,6 +1434,10 @@ pub struct ArrayHasMultipleTypes {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("can't compare `{}` with `{}`", lhs_ty, rhs_ty)]
+#[diagnostic(
+    code(E0224),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct CannotCompare {
     lhs_ty: String,
     rhs_ty: String,
@@ -1353,6 +1448,10 @@ pub struct CannotCompare {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("no implementation for `{} {} {}`", lhs_ty, op, rhs_ty)]
+#[diagnostic(
+    code(E0225),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct NoImplForOp {
     lhs_ty: String,
     rhs_ty: String,
@@ -1363,6 +1462,10 @@ pub struct NoImplForOp {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot find variable `{}` in this scope", var_name)]
+#[diagnostic(
+    code(E0226),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct CannotFindVariableInScope {
     var_name: String,
     #[label("not found in this scope")]
@@ -1371,6 +1474,10 @@ pub struct CannotFindVariableInScope {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot find type `{}` in this scope", type_name)]
+#[diagnostic(
+    code(E0227),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct CannotFindTypeInScope {
     type_name: String,
     #[label("not found in this scope")]
@@ -1379,7 +1486,11 @@ pub struct CannotFindTypeInScope {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("used binding `{}` isn't initialized", var_name)]
-#[diagnostic(help = "consider assigning a value")]
+#[diagnostic(
+    code(E0228),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+    help = "consider assigning a value"
+)]
 pub struct VarIsNotInitialized {
     var_name: String,
     #[label("binding declared here but left uninitialized")]
@@ -1390,6 +1501,10 @@ pub struct VarIsNotInitialized {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot cast `{}` as `{}`", from, to)]
+#[diagnostic(
+    code(E0229),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct CannotCast {
     from: String,
     to: String,
@@ -1399,7 +1514,10 @@ pub struct CannotCast {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("mismatched types")]
-#[diagnostic(code(E0308))]
+#[diagnostic(
+    code(E0230),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct MismatchedType {
     expected: String,
     found: String,
@@ -1409,6 +1527,10 @@ pub struct MismatchedType {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot apply unary operator `{}` to type `{}`", op, ty)]
+#[diagnostic(
+    code(E0231),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct CannotApplyUnaryOp {
     op: String,
     ty: String,
@@ -1418,6 +1540,10 @@ pub struct CannotApplyUnaryOp {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("invalid left-hand side of assignment")]
+#[diagnostic(
+    code(E0232),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct InvalidLhsAssign {
     #[label(primary)]
     assign_span: SourceSpan,
@@ -1427,6 +1553,10 @@ pub struct InvalidLhsAssign {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("Repeat count must be non-negative, found `{}`", count)]
+#[diagnostic(
+    code(E0233),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct NegRepeatCount {
     count: i64,
     #[label("expected non-negative repeat count")]
@@ -1439,6 +1569,10 @@ pub struct NegRepeatCount {
     len,
     index
 )]
+#[diagnostic(
+    code(E0234),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct IndexOutOfBounds {
     index: i64,
     len: i64,
@@ -1448,7 +1582,10 @@ pub struct IndexOutOfBounds {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot index into a value of type `{}`", ty)]
-#[diagnostic(code(E0608))]
+#[diagnostic(
+    code(E0235),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct IndexingWrongType {
     #[label(primary)]
     span: SourceSpan,
@@ -1457,6 +1594,10 @@ pub struct IndexingWrongType {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("library `{}` not found", library)]
+#[diagnostic(
+    code(E0236),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct LibraryNotFound {
     library: String,
     #[label("library not found")]
@@ -1464,16 +1605,11 @@ pub struct LibraryNotFound {
 }
 
 #[derive(Error, Debug, Diagnostic)]
-#[error("function `{}` not found in library `{}`", function, library)]
-pub struct LibraryFunctionNotFound {
-    library: String,
-    function: String,
-    #[label("function not found in library")]
-    span: SourceSpan,
-}
-
-#[derive(Error, Debug, Diagnostic)]
 #[error("invalid library path")]
+#[diagnostic(
+    code(E0237),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct InvalidLibraryPath {
     #[label("This should be an identifier")]
     span: SourceSpan,
@@ -1481,6 +1617,10 @@ pub struct InvalidLibraryPath {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("invalid function call")]
+#[diagnostic(
+    code(E0238),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct InvalidFunctionCall {
     #[label(primary)]
     span: SourceSpan,
@@ -1488,7 +1628,10 @@ pub struct InvalidFunctionCall {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot find function `{}` in this scope", function)]
-#[diagnostic(code(E0425))]
+#[diagnostic(
+    code(E0239),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct FunctionNotInScope {
     function: String,
     #[label("not found in this scope")]
@@ -1497,7 +1640,10 @@ pub struct FunctionNotInScope {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("{}", message)]
-#[diagnostic(code(E0308))]
+#[diagnostic(
+    code(E0240),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct FunctionParamMismatch {
     message: String,
     #[label("function defined here")]
@@ -1512,6 +1658,10 @@ pub struct FunctionParamMismatch {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("mismatched types")]
+#[diagnostic(
+    code(E0241),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct MismatchedFunctionReturnType {
     expected: String,
     found: String,
@@ -1523,6 +1673,10 @@ pub struct MismatchedFunctionReturnType {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("mismatched types")]
+#[diagnostic(
+    code(E0242),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct MissingFunctionReturnType {
     found: String,
     #[label("help: try adding a return type: `-> {}`", found)]
@@ -1533,6 +1687,10 @@ pub struct MissingFunctionReturnType {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("mismatched types")]
+#[diagnostic(
+    code(E0243),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct MissingReturnStatement {
     ret_kw: String,
     expected: String,
@@ -1547,6 +1705,10 @@ pub struct MissingReturnStatement {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot assign twice to immutable variable `{}`", var_name)]
+#[diagnostic(
+    code(E0244),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct MutateImmutableVariable {
     mut_kw: String,
     var_name: String,
@@ -1560,14 +1722,26 @@ pub struct MutateImmutableVariable {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("no source file specified")]
+#[diagnostic(
+    code(E0210),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct NoSourceFileSpecified();
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("could not determine source file directory")]
+#[diagnostic(
+    code(E0211),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct DirectoryNotFound();
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("external library `{}` not found", lib_name)]
+#[diagnostic(
+    code(E0212),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct ExternalLibraryNotFound {
     lib_name: String,
     #[label("library not found")]
@@ -1576,12 +1750,20 @@ pub struct ExternalLibraryNotFound {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("failed to read library file `{}`", path)]
+#[diagnostic(
+    code(E0213),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct ReadLibraryFileFailed {
     path: String,
 }
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("failed to parse library file `{}`", path)]
+#[diagnostic(
+    code(E0214),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct ParseLibraryFileFailed {
     #[label("failed to parse library file")]
     span: SourceSpan,
@@ -1590,6 +1772,10 @@ pub struct ParseLibraryFileFailed {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("only function declarations are allowed in external libraries")]
+#[diagnostic(
+    code(E0215),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct NonFunctionDeclaredInExternalLibrary {
     #[label("this library contains a non-function declaration")]
     span: SourceSpan,
@@ -1597,6 +1783,10 @@ pub struct NonFunctionDeclaredInExternalLibrary {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("invalid library name")]
+#[diagnostic(
+    code(E0216),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct InvalidLibraryName {
     #[label(primary)]
     span: SourceSpan,
@@ -1604,6 +1794,10 @@ pub struct InvalidLibraryName {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("function `{}` not found in library `{}`", func_name, lib_name)]
+#[diagnostic(
+    code(E0217),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct FunctionInLibraryNotFound {
     lib_name: String,
     func_name: String,
@@ -1613,6 +1807,10 @@ pub struct FunctionInLibraryNotFound {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot divide by zero")]
+#[diagnostic(
+    code(E0245),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct DividedByZero {
     pub divident: String,
     #[label("attempt to divide `{}` by zero", divident)]
@@ -1621,6 +1819,10 @@ pub struct DividedByZero {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("cannot calculate the remainder of `{}` divided by zero", divident)]
+#[diagnostic(
+    code(E0246),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct ModdedByZero {
     pub divident: String,
     #[label(
@@ -1632,6 +1834,10 @@ pub struct ModdedByZero {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("integer literal is too large")]
+#[diagnostic(
+    code(E0247),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct LitOutOfRange {
     pub max: String,
     #[label("note: value exceeds limit of `{}`", max)]
@@ -1640,6 +1846,10 @@ pub struct LitOutOfRange {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("Array size must be non-negative, found `{}`", size)]
+#[diagnostic(
+    code(E0249),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct NegArraySize {
     pub size: String,
     #[label("expected non-negative size")]
@@ -1648,6 +1858,10 @@ pub struct NegArraySize {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("{}", message)]
+#[diagnostic(
+    code(E0248),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct PredefinedError {
     #[label(primary)]
     pub span: SourceSpan,
