@@ -1,4 +1,5 @@
 mod ast;
+mod error_docs;
 mod error_handler;
 mod interpreter;
 #[path = "keyword.rs"]
@@ -10,12 +11,18 @@ mod span_encoding;
 mod symbol;
 mod visitor;
 
-use std::{env, fs, path::Path, process, sync::Arc};
+use std::{
+    env, fs,
+    path::Path,
+    process::{self, Command, Stdio},
+    sync::Arc,
+};
 
 use session::SourceFile;
 
 use crate::error_handler::*;
 use once_cell::sync::Lazy;
+use std::io::Write;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 // Global flag for Gen Z mode
@@ -34,28 +41,22 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() == 1 {
+        // no args
         help();
         process::exit(1);
     }
 
     // validate options
-    if let Err(e) = validate_options(args.clone()) {
-        eprintln!("Error: {}", e);
-        process::exit(1);
-    }
+    validate_options(&args);
 
     // help flag check
-    if args.contains(&String::from("--help")) || args.contains(&String::from("-h")) {
-        help();
-        process::exit(0);
-    }
+    try_help(&args);
 
     // version flag check
-    if args.contains(&String::from("--version")) || args.contains(&String::from("-v")) {
-        const VERSION: &str = env!("CARGO_PKG_VERSION");
-        println!("Pandora version {}", VERSION);
-        process::exit(0);
-    }
+    try_version(&args);
+
+    // explain flag check
+    try_explain(&args);
 
     // verbose mode flag check
     let is_verbose = args.contains(&String::from("--verbose"));
@@ -110,6 +111,113 @@ fn main() {
     interpreter::interpret(&ast, &session, is_verbose);
 }
 
+fn try_explain(args: &Vec<String>) {
+    if !args.contains(&String::from("--explain")) {
+        return;
+    }
+
+    if args.len() != 3 {
+        eprintln!("Error: explain flag must be used with an error code");
+        process::exit(1);
+    }
+
+    let code = &args[2];
+
+    let docs = error_docs::get_error_docs();
+    if !docs.contains_key(code.as_str()) {
+        eprintln!("Error: Invalid error code '{}'", code);
+        process::exit(1);
+    }
+
+    let content = docs.get(code.as_str()).unwrap();
+
+    let result = if cfg!(windows) {
+        // Use the Windows `more` command
+        Command::new("cmd")
+            .arg("/C") // Run a command
+            .arg("more") // Use `more` to display paginated output
+            .stdin(Stdio::piped()) // We'll write to `more` via its stdin
+            .spawn()
+    } else if cfg!(target_os = "linux") {
+        // Spawn the `less` command
+        Command::new("less")
+            .stdin(Stdio::piped()) // We'll write to `less` via its stdin
+            .spawn()
+    } else {
+        println!("{}", content);
+        process::exit(0);
+    };
+
+    match result {
+        Ok(mut child) => {
+            // Write the content to the child process
+            let result = child.stdin.as_mut().unwrap().write_all(content.as_bytes());
+
+            match result {
+                Ok(_) => {
+                    // Wait for the child to finish
+                    let status = child.wait();
+
+                    match status {
+                        Ok(_) => {}
+                        Err(e) => {
+                            eprintln!(
+                                "Error: Failed to wait for pager: {}, print normally instead.",
+                                e
+                            );
+                            println!("{}", content);
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!(
+                        "Error: Failed to write to pager: {}, print normally instead.",
+                        e
+                    );
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!(
+                "Error: Failed to spawn pager: {}, print normally instead.",
+                e
+            );
+            println!("{}", content);
+        }
+    }
+
+    process::exit(0);
+}
+
+fn try_version(args: &Vec<String>) {
+    if !(args.contains(&String::from("--version")) || args.contains(&String::from("-v"))) {
+        return;
+    }
+
+    if args.len() != 2 {
+        eprintln!("Error: version flag must be used alone");
+        process::exit(1);
+    }
+
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
+    println!("Pandora version {}", VERSION);
+    process::exit(0);
+}
+
+fn try_help(args: &Vec<String>) {
+    if !(args.contains(&String::from("--help")) || args.contains(&String::from("-h"))) {
+        return;
+    }
+
+    if args.len() != 2 {
+        eprintln!("Error: help flag must be used alone");
+        process::exit(1);
+    }
+
+    help();
+    process::exit(0);
+}
+
 fn help() {
     println!("");
     println!("Pandora Programming Language");
@@ -121,10 +229,11 @@ fn help() {
     println!("  --verbose          Enable verbose output");
     println!("  --help, -h         Display this help message");
     println!("  --wreck            Enable Gen Z mode ☠️☠️☠️");
+    println!("  --explain [code]   Explain the error code");
     println!("");
 }
 
-fn validate_options(args: Vec<String>) -> Result<(), String> {
+fn validate_options(args: &Vec<String>) {
     let valid_options = vec![
         "--verbose".to_string(),
         "-v".to_string(),
@@ -132,13 +241,13 @@ fn validate_options(args: Vec<String>) -> Result<(), String> {
         "-h".to_string(),
         "--version".to_string(),
         "--wreck".to_string(),
+        "--explain".to_string(),
     ];
 
     for arg in args {
         if arg.starts_with("-") && !valid_options.contains(&arg) {
-            return Err(format!("invalid option: {}", arg));
+            eprintln!("Error: Invalid option '{}'", arg);
+            process::exit(1);
         }
     }
-
-    Ok(())
 }
