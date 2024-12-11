@@ -1,0 +1,19 @@
+for in [1, 2] {
+    println(i as str);
+}
+
+during {
+    println("");
+}
+
+when true {
+    println("");
+} alt 5 {
+    println("");
+}
+
+when true {
+    println("");
+} alt when 5 {
+    println("");
+}

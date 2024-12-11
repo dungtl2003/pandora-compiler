@@ -1,0 +1,3 @@
+set x: int = 0b_______;
+set x: int = 0o_______;
+set x: int = 0h_______;

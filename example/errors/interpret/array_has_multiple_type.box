@@ -1,0 +1,3 @@
+//set arr: [int] = [true, false, 1, ""];
+
+set matrix: [[int]] = [[true, false], [true]];

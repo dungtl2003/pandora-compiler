@@ -1,4 +1,0 @@
-pub fun add<T ext Plus<T>>(self, a34: T, b: T) -> int {
-    60>>2;;;;;;;;;;
-    return 87+4;;;;;;;;
-}

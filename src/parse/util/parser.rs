@@ -1,4 +1,7 @@
-use crate::ast::{BinOpKind, BinOpToken, Token, TokenKind};
+use crate::{
+    ast::{BinOpKind, BinOpToken, Token, TokenKind},
+    kw::Keyword,
+};
 
 #[derive(PartialEq, Debug)]
 pub enum Fixity {
@@ -61,6 +64,11 @@ impl AssocOp {
     /// Creates a new AssocOP from a token
     pub fn from_token(t: &Token) -> Option<AssocOp> {
         use AssocOp::*;
+        // Special case for `as`
+        if t.is_keyword(Keyword::As) {
+            return Some(As);
+        }
+
         match t.kind {
             TokenKind::BinOpEq(k) => Some(AssignOp(k)),
             TokenKind::Eq => Some(Assign),
@@ -83,31 +91,6 @@ impl AssocOp {
             TokenKind::AndAnd => Some(LAnd),
             TokenKind::OrOr => Some(LOr),
             _ => None,
-        }
-    }
-
-    /// Creates a new AssocOp from ast::BinOpKind.
-    pub fn from_ast_binop(op: BinOpKind) -> Self {
-        use AssocOp::*;
-        match op {
-            BinOpKind::Lt => Less,
-            BinOpKind::Gt => Greater,
-            BinOpKind::Le => LessEqual,
-            BinOpKind::Ge => GreaterEqual,
-            BinOpKind::Eq => Equal,
-            BinOpKind::Ne => NotEqual,
-            BinOpKind::Mul => Multiply,
-            BinOpKind::Div => Divide,
-            BinOpKind::Mod => Modulus,
-            BinOpKind::Add => Add,
-            BinOpKind::Sub => Subtract,
-            BinOpKind::Shl => ShiftLeft,
-            BinOpKind::Shr => ShiftRight,
-            BinOpKind::BitAnd => BitAnd,
-            BinOpKind::BitXor => BitXor,
-            BinOpKind::BitOr => BitOr,
-            BinOpKind::And => LAnd,
-            BinOpKind::Or => LOr,
         }
     }
 
@@ -138,15 +121,6 @@ impl AssocOp {
             Multiply | Divide | Modulus | Add | Subtract | ShiftLeft | ShiftRight | BitAnd
             | BitXor | BitOr | Less | Greater | LessEqual | GreaterEqual | Equal | NotEqual
             | LAnd | LOr | As => Fixity::Left,
-        }
-    }
-
-    pub fn is_comparison(&self) -> bool {
-        use AssocOp::*;
-        match *self {
-            Less | Greater | LessEqual | GreaterEqual | Equal | NotEqual => true,
-            Assign | AssignOp(_) | Multiply | Divide | Modulus | Add | Subtract | ShiftLeft
-            | ShiftRight | BitAnd | BitXor | BitOr | LAnd | LOr | As => false,
         }
     }
 

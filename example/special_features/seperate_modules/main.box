@@ -1,0 +1,12 @@
+add mod1;
+add mod2;
+
+println("this is main file");
+
+mod1.f1();
+mod2.f1();
+
+mod1.f2(5);
+
+set sum: float = mod2.f2(4, 5.5);
+println("Got " + sum as str);

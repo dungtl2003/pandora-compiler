@@ -1,0 +1,3 @@
+set x: int;
+
+println("x = " + x as str);

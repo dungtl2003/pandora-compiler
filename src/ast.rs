@@ -7,8 +7,7 @@ use core::fmt;
 use std::fmt::{Display, Formatter};
 
 pub use ident::Ident;
-use strum_macros::{AsRefStr, EnumString};
-pub use tokenstream::{pprint, DelimSpan, Spacing, TokenStream, TokenTree, TokenTreeCursor};
+pub use tokenstream::{DelimSpan, Spacing, TokenStream, TokenTree, TokenTreeCursor};
 
 pub use token::{
     BinOpToken, CommentKind, Delimiter, DocStyle, IdentIsRaw, Lit, LitKind, Token, TokenKind,
@@ -17,46 +16,26 @@ pub use token::{
 use crate::span_encoding::{Span, Spanned};
 
 #[derive(Debug)]
-pub struct BindingMode(pub Mutability);
+pub struct Ast {
+    pub stmts: Vec<Box<Stmt>>,
+}
 
-impl Display for BindingMode {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
+impl Ast {
+    pub fn new(stmts: Vec<Box<Stmt>>) -> Self {
+        Ast { stmts }
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum Mutability {
-    Immutable,
-    Mutable,
-}
-
-impl Display for Mutability {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            Mutability::Immutable => write!(f, "immutable"),
-            Mutability::Mutable => write!(f, "mutable"),
-        }
-    }
-}
-
-impl BindingMode {
-    pub fn prefix_str(self) -> &'static str {
-        match self.0 {
-            Mutability::Immutable => "",
-            Mutability::Mutable => "mut ",
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct Stmt {
     pub kind: StmtKind,
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum StmtKind {
+    /// A function declaration: `fn foo() { ... }`.
+    FuncDecl(Box<Fun>),
     /// An expression statement: `expr;`.
     Expr(Box<Expr>),
     /// A block statement: `{ stmt* }`.
@@ -75,62 +54,10 @@ pub enum StmtKind {
     While(Box<Expr>, Box<Stmt>),
     /// A for loop: 'for' ident 'in' expr block_stmt
     For(Ident, Box<Expr>, Box<Stmt>),
-}
-
-/// A "Path" is essentially Pandora's notion of a name.
-///
-/// It's represented as a sequence of identifiers,
-/// along with a bunch of supporting information.
-///
-/// E.g., `std::cmp::PartialEq`.
-#[derive(Debug, Clone)]
-pub struct Path {
-    pub span: Span,
-    /// The segments in the path: the things separated by `::`.
-    /// Global paths begin with `kw::PathRoot`.
-    pub segments: Vec<PathSegment>,
-}
-
-/// A segment of a path: an identifier and a set of types.
-///
-/// E.g., `std`, `String` or `Box::<T>`.
-#[derive(Debug, Clone)]
-pub struct PathSegment {
-    /// The identifier portion of this path segment.
-    pub ident: Ident,
-    pub args: Option<Box<GenericArgs>>,
-}
-
-/// The generic arguments and associated item constraints of a path segment.
-///
-/// E.g., `<A, B>` as in `Foo<A, B>`.
-#[derive(Debug, Clone)]
-pub enum GenericArgs {
-    /// The `<A, B, C>` in `foo::bar::baz::<A, B, C>`.
-    AngleBracketed(AngleBracketedArgs),
-}
-
-/// A path like `Foo<T, E>`.
-#[derive(Debug, Clone)]
-pub struct AngleBracketedArgs {
-    /// The overall span.
-    pub span: Span,
-    /// The comma separated parts in the `<...>`.
-    pub args: Vec<AngleBracketedArg>,
-}
-
-/// Either an argument for a generic parameter or a constraint on an associated item.
-#[derive(Debug, Clone)]
-pub enum AngleBracketedArg {
-    /// A generic argument for a generic parameter.
-    Arg(GenericArg),
-}
-
-/// Concrete argument in the sequence of generic args.
-#[derive(Debug, Clone)]
-pub enum GenericArg {
-    /// `Bar` in `Foo<Bar>`.
-    Type(Box<Ty>),
+    /// An import statement: 'import' ident ';'
+    Import(Ident),
+    /// An empty statement: ';'.
+    Empty,
 }
 
 #[derive(Debug, Clone)]
@@ -139,36 +66,45 @@ pub struct Ty {
     pub span: Span,
 }
 
-#[derive(Debug, Clone)]
-pub enum TyKind {
-    /// A path (`module::module::...::Type`).
-    ///
-    /// Type parameters are stored in the `Path` itself.
-    Path(Path),
-
-    Never,
-}
-
-impl Display for TyKind {
+impl Display for Ty {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            TyKind::Never => write!(f, "void"),
-            TyKind::Path(path) => write!(f, "Path:{:?}", path.segments),
+        match &self.kind {
+            TyKind::Array(ty, expr) => match expr {
+                Some(expr) => {
+                    write!(f, "[{}; {}]", ty, expr)
+                }
+                None => {
+                    write!(f, "[{}]", ty)
+                }
+            },
+            TyKind::Named(ident) => {
+                write!(f, "{}", ident.name)
+            }
         }
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum TyKind {
+    /// An array type.
+    ///
+    /// E.g., `[int; 4]`.
+    Array(Box<Ty>, Option<Box<Expr>>),
+    /// A named type.
+    Named(Ident),
+}
+
 /// Local represents a `var` statement. e.g. `var mut <ident>:<ty> = <expr>;`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Local {
-    pub binding_mode: BindingMode,
+    pub is_mut: bool,
     pub ident: Ident,
-    pub ty: Box<Ty>,
+    pub ty: Ty,
     pub kind: LocalKind,
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LocalKind {
     /// Local declaration.
     /// Example: `let x: int;`
@@ -178,22 +114,13 @@ pub enum LocalKind {
     Init(Box<Expr>),
 }
 
-#[derive(Debug, EnumString, AsRefStr, PartialEq)]
-#[strum(serialize_all = "lowercase")] // This ensures matching with lowercase strings.
-pub enum PrimitiveTy {
-    Int,
-    Float,
-    Bool,
-    Char,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExprKind {
     /// A binary operation (e.g. `a + b`, `a * b`).
     Binary(BinOp, Box<Expr>, Box<Expr>),
@@ -208,11 +135,28 @@ pub enum ExprKind {
     ///
     /// E.g., `a += 1`.
     AssignOp(BinOp, Box<Expr>, Box<Expr>),
-    /// Variable reference, possibly containing `::` and/or type
-    /// parameters (e.g., `foo::bar::<baz>`).
-    Path(Box<Path>),
+    Identifier(Ident),
     /// A cast (e.g., `foo as float`).
-    Cast(Box<Expr>, Box<Ty>),
+    Cast(Box<Expr>, Ty),
+    /// A function call.
+    ///
+    /// The first field resolves to the function itself,
+    /// and the second field is the list of arguments.
+    FunCall(Box<Expr>, Vec<Box<Expr>>),
+    /// Library access (e.g. `foo.bar`).
+    LibAccess(Box<Expr>, Ident),
+    /// Library function call (e.g. `foo.bar()`).
+    LibFunCall(Box<Expr>, Vec<Box<Expr>>),
+    /// Array
+    Array(Vec<Box<Expr>>),
+    /// An indexing operation (e.g., `foo[2]`).
+    /// The span represents the span of the `[2]`, including brackets.
+    Index(Box<Expr>, Box<Expr>, Span),
+    /// An array literal constructed from one repeated element.
+    ///
+    /// E.g., `[1; 5]`. The left expression is the element to be
+    /// repeated; the right expression is the number of times to repeat it.
+    Repeat(Box<Expr>, Box<Expr>),
 }
 
 impl Display for Expr {
@@ -232,7 +176,7 @@ impl Display for Expr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UnOp {
     /// The `!` operator for logical inversion.
     Not,
@@ -240,7 +184,42 @@ pub enum UnOp {
     Ne,
 }
 
+impl Display for UnOp {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            UnOp::Not => write!(f, "!"),
+            UnOp::Ne => write!(f, "-"),
+        }
+    }
+}
+
 pub type BinOp = Spanned<BinOpKind>;
+
+impl BinOp {
+    pub fn to_string(&self) -> String {
+        (match self.node {
+            BinOpKind::Add => "+",
+            BinOpKind::Sub => "-",
+            BinOpKind::Mul => "*",
+            BinOpKind::Div => "/",
+            BinOpKind::Mod => "%",
+            BinOpKind::Eq => "==",
+            BinOpKind::Ne => "!=",
+            BinOpKind::Lt => "<",
+            BinOpKind::Le => "<=",
+            BinOpKind::Gt => ">",
+            BinOpKind::Ge => ">=",
+            BinOpKind::And => "&&",
+            BinOpKind::Or => "||",
+            BinOpKind::BitAnd => "&",
+            BinOpKind::BitOr => "|",
+            BinOpKind::BitXor => "^",
+            BinOpKind::Shl => "<<",
+            BinOpKind::Shr => ">>",
+        })
+        .to_string()
+    }
+}
 
 impl Display for BinOp {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -248,7 +227,7 @@ impl Display for BinOp {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinOpKind {
     /// The `+` operator (addition).
     Add,
@@ -288,171 +267,60 @@ pub enum BinOpKind {
     Shr,
 }
 
-#[derive(Debug)]
-pub struct Visibility {
-    pub kind: VisibilityKind,
-    pub span: Span,
+impl Display for BinOpKind {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_str())
+    }
 }
 
-#[derive(Debug)]
-pub enum VisibilityKind {
-    Public,
-}
-
-#[derive(Debug)]
-pub struct Item {
-    pub span: Span,
-    pub kind: ItemKind,
-    pub vis: Option<Visibility>,
-    /// The name of the item.
-    pub ident: Ident,
-}
-
-#[derive(Debug)]
-pub enum ItemKind {
-    /// E.g. `import foo;`, `import foo::bar` or `import foo::bar as baz`.
-    Import(ImportTree),
-
-    /// E.g. `class Foo { ... }`.
-    Class(Box<Class>),
-
-    /// E.g. `fn foo() { ... }`.
-    Fun(Box<Fun>),
-
-    /// E.g. `interface Foo { ... }`.
-    Interface(Box<Interface>),
-}
-
-#[derive(Debug)]
-pub struct Interface {
-    pub generics: Vec<GenericParam>,
-    pub ext_clause: Option<ExtClause>,
-    pub body: InterfaceBody,
-}
-
-#[derive(Debug)]
-pub struct InterfaceBody {
-    pub methods: Vec<Item>,
+impl BinOpKind {
+    pub fn to_str(&self) -> &str {
+        match self {
+            BinOpKind::Add => "+",
+            BinOpKind::Sub => "-",
+            BinOpKind::Mul => "*",
+            BinOpKind::Div => "/",
+            BinOpKind::Mod => "%",
+            BinOpKind::Eq => "==",
+            BinOpKind::Ne => "!=",
+            BinOpKind::Lt => "<",
+            BinOpKind::Le => "<=",
+            BinOpKind::Gt => ">",
+            BinOpKind::Ge => ">=",
+            BinOpKind::And => "&&",
+            BinOpKind::Or => "||",
+            BinOpKind::BitAnd => "&",
+            BinOpKind::BitOr => "|",
+            BinOpKind::BitXor => "^",
+            BinOpKind::Shl => "<<",
+            BinOpKind::Shr => ">>",
+        }
+    }
 }
 
 /// A function definition.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Fun {
-    pub generics: Vec<GenericParam>,
     pub sig: FunSig,
-    pub body: Option<Stmt>,
+    pub body: Box<Stmt>,
 }
 
 /// The signature of a function.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunSig {
-    pub inputs: (Option<SelfParam>, Vec<FunParam>),
-    pub output: FunRetTy,
+    pub name: Ident,
+    pub inputs: Vec<FunParam>,
+    pub output: Option<Ty>,
 
-    pub span: Span,
-}
-
-#[derive(Debug)]
-pub struct SelfParam {
-    pub kind: SelfKind,
     pub span: Span,
 }
 
 /// A parameter in a function header.
 /// E.g., `bar: usize` as in `fn foo(bar: usize)`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FunParam {
-    pub ty: Box<Ty>,
+    pub ty: Ty,
     pub ident: Ident,
+    pub is_mut: bool,
     pub span: Span,
-}
-
-#[derive(Debug)]
-pub enum FunRetTy {
-    /// Returns type is not specified.
-    ///
-    /// Functions default to `void`.
-    /// Span points to where return type would be inserted.
-    Default(Span),
-    /// Everything else.
-    Ty(Box<Ty>),
-}
-
-#[derive(Debug)]
-pub struct Class {
-    pub generics: Vec<GenericParam>,
-    pub ext_clause: Option<ExtClause>,
-    pub impl_clause: Option<ImplClause>,
-    pub body: ClassBody,
-}
-
-#[derive(Debug)]
-pub struct ClassBody {
-    pub fields: Vec<ClassField>,
-    pub methods: Vec<Item>,
-}
-
-#[derive(Debug)]
-pub struct ClassField {
-    pub vis: Option<Visibility>,
-    pub kind: ClassFieldKind,
-}
-
-#[derive(Debug)]
-pub enum ClassFieldKind {
-    Const(Ident, Box<Ty>, Box<Expr>),
-    Var(Ident, Box<Ty>),
-}
-
-#[derive(Debug)]
-pub struct ExtClause {
-    pub span: Span,
-    pub ty: Box<Ty>,
-}
-
-#[derive(Debug)]
-pub struct ImplClause {
-    pub span: Span,
-    pub tys: Vec<Box<Ty>>,
-}
-
-/// Represents type and const parameters attached to a declaration of
-/// a function, enum, etc.
-#[derive(Clone, Debug)]
-pub struct Generics {
-    pub params: Vec<GenericParam>,
-    pub span: Span,
-}
-
-#[derive(Clone, Debug)]
-pub struct GenericParam {
-    pub ident: Ident,
-    pub bounds: Vec<Ty>,
-}
-
-#[derive(Debug)]
-pub struct ImportTree {
-    pub prefix: Path,
-    pub kind: ImportTreeKind,
-    pub span: Span,
-}
-
-#[derive(Debug)]
-pub enum ImportTreeKind {
-    /// `import foo::bar` or `import foo::bar as baz`
-    Simple(Option<Ident>),
-
-    /// `import foo::*`
-    Glob,
-}
-
-/// Alternative representation for `Arg`s describing `self` parameter of methods.
-///
-/// E.g., `&mut self` as in `fn foo(&mut self)`.
-#[derive(Clone, Debug)]
-pub enum SelfKind {
-    /// `self`, `mut self`
-    Value(Mutability),
-    /// `self: TYPE`, `mut self: TYPE`
-    Explicit(Box<Ty>, Mutability),
 }

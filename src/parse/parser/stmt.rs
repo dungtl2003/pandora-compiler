@@ -1,175 +1,272 @@
-use crate::ast::Delimiter;
+use super::{PResult, Parser, TokenType};
+use crate::ast::{Delimiter, Fun, FunParam, FunSig};
+use crate::kw;
+use crate::parse::errors::PError;
 use crate::{
-    ast::{BindingMode, Local, LocalKind, Mutability, Stmt, StmtKind, TokenKind},
+    ast::{Local, LocalKind, Stmt, StmtKind, TokenKind},
     kw::Keyword,
 };
 
-// use crate::interner::Interner;
-use super::{PResult, Parser};
-
-// block_statement = { statement* }
-// statement = block_statement
-//             | declaration_statement
-//             | expression_statement
-//             | if_statement
-//             | loop_statement
-//
-//
-// loop_statement = predicate_loop_statement
-//                 | iterator_loop_statement
-//
-// predicate_loop_statement = 'while' expression block_statement
-// iterator_loop_statement = 'for' identifier 'in' expression block_statement
-//
-//
-// expression_statement = expression ';'
-// expression = assignment_expression
-//              | binary_expression
-//              | unary_expression
-//              | literal
-//
-//
-// declaration_statement = declaration
-// declaration = variable_declaration
-//               | function_declaration
-//               | class_declaration
-//               | enum_declaration
-//               | interface_declaration
-//
-//
-// variable_declaration = 'var' 'mut'? identifier: type_specifier ('=' expression)? ';'
-// type_specifier = path
-// path = segment ('::' segment)*
-// segment = identifier ('<' generic_args '>')?
-// generic_args = angle_bracketed_args
-// angle_bracketed_args = '<' angle_bracketed_arg (',' angle_bracketed_arg)* '>'
-// angle_bracketed_arg = generic_arg
-// generic_arg = type_specifier
-
-impl Parser<'_> {
+impl Parser {
+    // Remember to update ast::token::can_begin_expr as well when adding new statements.
     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
-        if self.token.is_keyword(Keyword::Var) {
+        if self.token.is_keyword(Keyword::Set) {
             self.parse_stmt_var_decl()
-        } else if self.token.is_keyword(Keyword::If) {
+        } else if self.token.is_keyword(Keyword::When) {
             self.parse_stmt_if()
-        } else if self.token.can_begin_expr() {
-            self.parse_stmt_expr()
         } else if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
             self.parse_stmt_block()
-        } else if self.token.is_keyword(Keyword::While) {
+        } else if self.token.is_keyword(Keyword::During) {
             self.parse_stmt_while()
         } else if self.token.is_keyword(Keyword::For) {
             self.parse_stmt_for()
-        } else if self.token.is_keyword(Keyword::Return) {
+        } else if self.token.is_keyword(Keyword::Yeet) {
             self.parse_stmt_return()
+        } else if self.token.kind == TokenKind::Semicolon {
+            self.parse_stmt_empty()
+        } else if self.token.is_keyword(Keyword::Fun) {
+            self.parse_stmt_func_decl()
+        } else if self.token.is_keyword(Keyword::Add) {
+            self.parse_stmt_import()
+        } else if self.token.is_keyword(Keyword::Br) {
+            self.parse_stmt_break()
+        } else if self.token.is_keyword(Keyword::Skip) {
+            self.parse_stmt_continue()
+        } else if self.token.can_begin_expr() {
+            self.parse_stmt_expr()
         } else {
-            unreachable!();
+            let err = PError::ExpectedStatement {
+                token: TokenType::Token(self.token.kind),
+                span: self.token.span,
+            };
+
+            return Err(vec![err]);
         }
     }
 
-    pub fn parse_stmt_return(&mut self) -> PResult<Box<Stmt>>{
+    fn parse_stmt_continue(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::Skip) {
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Skip))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
+        }
+
+        let span = self.token.span;
+        self.advance(); // Eat token after "skip"
+
+        self.expect(TokenKind::Semicolon)?;
+        let span = span.to(self.token.span);
+        self.advance();
+
+        Ok(Box::new(Stmt {
+            kind: StmtKind::Continue,
+            span,
+        }))
+    }
+
+    fn parse_stmt_break(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::Br) {
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Br))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
+        }
+
+        let span = self.token.span;
+        self.advance(); // Eat token after "exit"
+
+        self.expect(TokenKind::Semicolon)?;
+        let span = span.to(self.token.span);
+        self.advance();
+
+        Ok(Box::new(Stmt {
+            kind: StmtKind::Break,
+            span,
+        }))
+    }
+
+    fn parse_stmt_import(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::Add) {
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Add))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
+        }
+
         let start_span = self.token.span;
-        let kind = if self.look_ahead(1,|tok|tok.can_begin_expr()){
-            self.advance(); // Eat token after "return"
+        self.advance(); // Eat "import"
+
+        let path = self.parse_ident()?;
+        self.expect(TokenKind::Semicolon)?;
+        let span = start_span.to(self.token.span);
+        self.advance();
+
+        let kind = StmtKind::Import(path);
+        let stmt = Box::new(Stmt { kind, span });
+
+        Ok(stmt)
+    }
+
+    fn parse_stmt_func_decl(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::Fun) {
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Fun))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
+        }
+        let start_span = self.token.span;
+        self.advance(); // Eat "fn"
+
+        let sig = self.parse_stmt_func_sig()?;
+        let body = self.parse_stmt()?;
+
+        let end_span = self.prev_token.span;
+        let span = start_span.to(end_span);
+        let kind = StmtKind::FuncDecl(Box::new(Fun { sig, body }));
+        let stmt = Box::new(Stmt { kind, span });
+
+        Ok(stmt)
+    }
+
+    fn parse_stmt_return(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::Yeet) {
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Yeet))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
+        }
+
+        let start_span = self.token.span;
+        self.advance();
+        let kind = if self.token.can_begin_expr() {
             let expr = self.parse_expr()?;
-            self.advance(); // Eat token after ';'
+            self.expect(TokenKind::Semicolon)?;
+            self.advance();
             StmtKind::Return(Some(expr))
-        } else if self.look_ahead(1,|tok|tok.kind == TokenKind::Semicolon) {
-            self.advance(); // Eat token after "return" <=> ';'
-            self.advance(); // Eat token after ';'
-            StmtKind::Return(None)
         } else {
-            return Err("Expected an expr or ';'".into())
+            self.expect(TokenKind::Semicolon)?;
+            self.advance();
+            StmtKind::Return(None)
         };
-        self.pass_semicolon();
-        Ok(Box::new(
-            Stmt{
-                kind,
-                span:start_span.to(self.prev_token.span),
-            }
-        ))
+
+        Ok(Box::new(Stmt {
+            kind,
+            span: start_span.to(self.prev_token.span),
+        }))
     }
 
     /// predicate_loop_statement = 'while' expression block_statement
-    pub fn parse_stmt_while(&mut self) -> PResult<Box<Stmt>> {
-        if !self.token.is_keyword(Keyword::While) {
-            return Err("Expected 'while'".into());
+    fn parse_stmt_while(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::During) {
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::During))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let start_span = self.token.span;
         self.advance();
 
         let condition = self.parse_expr()?;
-        let block = self.parse_stmt_block()?;
+        let block = self.parse_stmt()?;
         let end_span = self.prev_token.span;
         let span = start_span.to(end_span);
         let kind = StmtKind::While(condition, block);
         let stmt = Box::new(Stmt { kind, span });
 
-        self.pass_semicolon();
-
         Ok(stmt)
     }
 
     /// iterator_loop_statement = 'for' identifier 'in' expression block_statement
-    pub fn parse_stmt_for(&mut self) -> PResult<Box<Stmt>> {
+    fn parse_stmt_for(&mut self) -> PResult<Box<Stmt>> {
         if !self.token.is_keyword(Keyword::For) {
-            return Err("Expected 'for'".into());
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::For))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let start_span = self.token.span;
 
         self.advance();
-        if !self.token.is_ident() {
-            return Err("Expected identifier".into());
-        }
-        let ident = self.token.ident().unwrap().0;
+        let ident = self.parse_ident()?;
 
-        self.advance();
         if !self.token.is_keyword(Keyword::In) {
-            return Err("Expected 'in'".into());
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::In))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         self.advance();
         let expr = self.parse_expr()?;
-        let block = self.parse_stmt_block()?;
+        let block = self.parse_stmt()?;
         let end_span = self.prev_token.span;
         let span = start_span.to(end_span);
         let kind = StmtKind::For(ident, expr, block);
         let stmt = Box::new(Stmt { kind, span });
 
-        self.pass_semicolon();
-
         Ok(stmt)
     }
 
     /// if_statement = 'if' expression block_statement ('else' (block_statement | if_statement))?
-    pub fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
-        if !self.token.is_keyword(Keyword::If) {
-            return Err(format!("Expected 'if', found {:?}", self.token).into());
+    fn parse_stmt_if(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::When) {
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::When))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let start_span = self.token.span;
-
         self.advance(); // Eat token after "if"
                         // Parse the condition expression.
         let condition = self.parse_expr()?;
-
         // Parse the block for the `if` statement.
-        let if_block = self.parse_stmt_block()?;
+        let if_block = self.parse_stmt()?;
 
         // Optionally parse an `else` block.
-        let else_block = if self.token.is_keyword(Keyword::Else) {
+        let else_block = if self.token.is_keyword(Keyword::Alt) {
             self.advance(); // Eat token after `else`
-            if self.token.is_keyword(Keyword::If) {
-                let else_block = self.parse_stmt_if()?;
-                Some(else_block)
-            } else if self.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
-                let else_block = self.parse_stmt_block()?;
-                Some(else_block)
-            } else {
-                return Err("Expected 'if' or '{'".into());
-            }
+            let else_block = self.parse_stmt()?;
+            Some(else_block)
         } else {
             None
         };
@@ -179,23 +276,32 @@ impl Parser<'_> {
         let kind = StmtKind::If(condition, if_block, else_block);
         let stmt = Box::new(Stmt { kind, span });
 
-        self.pass_semicolon();
-
         Ok(stmt)
     }
 
     /// block_statement = '{' statement* '}'
     pub fn parse_stmt_block(&mut self) -> PResult<Box<Stmt>> {
-        if self.token.kind != TokenKind::OpenDelim(Delimiter::Brace) {
-            return Err(format!("Expected '{{' in block statement, found {:?}", self.token).into());
-        }
-
+        self.expect(TokenKind::OpenDelim(Delimiter::Brace))?;
         let start = self.token.span;
-        self.advance(); // Eat token after '{'
+        self.advance();
 
         let mut stmts = Vec::new();
+        let mut errors: Vec<PError> = Vec::new();
         while self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
-            let stmt = self.parse_stmt()?;
+            let result = self.parse_stmt();
+
+            if let Err(mut err) = result {
+                errors.append(&mut err);
+
+                // recover may eat the closing brace, so we need to check again
+                if self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
+                    self.recover();
+                }
+
+                continue;
+            }
+
+            let stmt = result.unwrap();
             stmts.push(stmt);
         }
 
@@ -204,11 +310,14 @@ impl Parser<'_> {
         let kind = StmtKind::Block(stmts);
         let stmt = Box::new(Stmt { kind, span });
 
-        self.advance(); // Eat token after '}'
+        self.expect(TokenKind::CloseDelim(Delimiter::Brace))?;
+        self.advance();
 
-        self.pass_semicolon();
-
-        Ok(stmt)
+        if errors.is_empty() {
+            Ok(stmt)
+        } else {
+            Err(errors)
+        }
     }
 
     /// expression_statement = expression ';'
@@ -220,42 +329,38 @@ impl Parser<'_> {
             span,
         });
 
-        if self.token.kind != TokenKind::Semicolon {
-            return Err("Expected ';'".into());
-        }
-        self.advance(); // Eat token after ';'
-
-        self.pass_semicolon();
+        self.expect(TokenKind::Semicolon)?;
+        self.advance();
 
         Ok(stmt)
     }
 
     /// variable_declaration = 'var' 'mut'? identifier: type_specifier ('=' expression)? ';'
-    pub fn parse_stmt_var_decl(&mut self) -> PResult<Box<Stmt>> {
-        if !self.token.is_keyword(Keyword::Var) {
-            return Err("Expected 'var'".into());
+    fn parse_stmt_var_decl(&mut self) -> PResult<Box<Stmt>> {
+        if !self.token.is_keyword(Keyword::Set) {
+            let err = PError::ExpectedToken {
+                expected: vec![TokenType::Keyword(kw::to_symbol(Keyword::Set))],
+                found: TokenType::Token(self.token.kind),
+                span: self.token.span,
+                prev_span: self.prev_token.span,
+            };
+
+            return Err(vec![err]);
         }
 
         let start = self.token.span;
-        let binding_mode = if self.is_keyword_ahead(&[Keyword::Mut]) {
+        self.advance(); // 'set'
+
+        let is_mut = if self.token.is_keyword(Keyword::Mut) {
             self.advance(); // 'mut'
-            BindingMode(Mutability::Mutable)
+            true
         } else {
-            BindingMode(Mutability::Immutable)
+            false
         };
 
-        if !self.is_ident_ahead() {
-            return Err("Expected identifier".into());
-        }
-        self.advance(); // identifier
-        let ident = self.token.ident().unwrap().0;
-
-        if !self.look_ahead(1, |tok| tok.kind == TokenKind::Colon) {
-            return Err("Expected ':'".into());
-        }
+        let ident = self.parse_ident()?;
+        self.expect(TokenKind::Colon)?;
         self.advance(); // ':'
-
-        self.advance(); // type
         let ty = self.parse_ty()?;
 
         let init = if self.token.kind == TokenKind::Eq {
@@ -265,17 +370,19 @@ impl Parser<'_> {
             None
         };
 
-        if self.token.kind != TokenKind::Semicolon {
-            return Err("Expected ';'".into());
-        }
+        self.expect(TokenKind::Semicolon)?;
+        let span = start.to(self.token.span);
+
+        self.advance();
+
         let kind = if let Some(init) = init {
             LocalKind::Init(init)
         } else {
             LocalKind::Decl
         };
-        let span = start.to(self.token.span);
+
         let local = Local {
-            binding_mode,
+            is_mut,
             ident,
             ty,
             kind,
@@ -284,16 +391,81 @@ impl Parser<'_> {
         let kind = StmtKind::Var(Box::new(local));
         let stmt = Box::new(Stmt { kind, span });
 
-        self.advance();
-
-        self.pass_semicolon();
-
         Ok(stmt)
     }
 
-    pub fn pass_semicolon(&mut self) {
-        while self.token.kind == TokenKind::Semicolon {
-            self.advance();
+    pub fn parse_stmt_empty(&mut self) -> PResult<Box<Stmt>> {
+        self.expect(TokenKind::Semicolon)?;
+
+        let span = self.token.span;
+        self.advance();
+        Ok(Box::new(Stmt {
+            kind: StmtKind::Empty,
+            span,
+        }))
+    }
+
+    fn parse_stmt_func_sig(&mut self) -> PResult<FunSig> {
+        let start = self.token.span;
+        let name = self.parse_ident()?;
+
+        self.expect(TokenKind::OpenDelim(Delimiter::Parenthesis))?;
+        self.advance();
+
+        let mut inputs: Vec<FunParam> = Vec::new();
+        loop {
+            if self.token.is_close_delim(Delimiter::Parenthesis) {
+                break;
+            }
+
+            let start = self.token.span;
+
+            let is_mut = if self.token.is_keyword(Keyword::Mut) {
+                self.advance(); // Eat 'mut'
+                true
+            } else {
+                false
+            };
+
+            let ident = self.parse_ident()?;
+
+            self.expect(TokenKind::Colon)?;
+            self.advance(); // Eat ':'
+
+            let ty = self.parse_ty()?;
+            let end = self.prev_token.span;
+            inputs.push(FunParam {
+                ident,
+                ty,
+                is_mut,
+                span: start.to(end),
+            });
+
+            if self.token.kind != TokenKind::Comma {
+                break;
+            }
+
+            self.advance(); // Eat ','
         }
+
+        self.expect(TokenKind::CloseDelim(Delimiter::Parenthesis))?;
+        self.advance(); // Eat ')'
+
+        let output = if self.token.kind == TokenKind::RArrow {
+            self.advance(); // Eat '->'
+            Some(self.parse_ty()?)
+        } else {
+            None
+        };
+
+        let end = self.prev_token.span;
+        let span = start.to(end);
+
+        Ok(FunSig {
+            name,
+            inputs,
+            output,
+            span,
+        })
     }
 }

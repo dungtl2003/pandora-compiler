@@ -1,0 +1,9 @@
+doit fib(n: int) -> int {
+    fr n < 1 {
+        bounce 1;
+    }
+
+    bounce fib(n - 1) + fib(n - 2);
+}
+
+println("fib(8) = " + fib(8) vibecheck str);

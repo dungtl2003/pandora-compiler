@@ -1,0 +1,11 @@
+set x: int = 1_000_000;
+println(x as str);
+
+set x: int = 0b1011_0100; // it can work with other bases
+println(x as str);
+
+set x: int = 1___100__________; // you can use underscores whenever you want
+println(x as str);
+
+set x: float = 1______0.4_______4321E_______4_____; // ofcourse with float also (but the first letter after dot must be a number)
+println(x as str);

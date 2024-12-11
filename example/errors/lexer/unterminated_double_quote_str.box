@@ -1,0 +1,11 @@
+set a: str = "normal";
+
+set b: str = "this is unterminate
+
+{
+    // block comment for example
+    set c: int = 5 + 4;
+}
+
+set in: str = input();
+

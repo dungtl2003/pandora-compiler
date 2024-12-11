@@ -1,0 +1,14 @@
+fun 🫢() {
+    println("hello");
+}
+
+
+
+
+println("do something");
+
+🫢();
+
+println("do something else");
+fun 🫢() {}
+fun a() {}
