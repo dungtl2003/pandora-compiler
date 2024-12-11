@@ -6,15 +6,13 @@
 
     NON\_KEYWORD\_IDENTIFIER -> IDENTIFIER\_OR\_KEYWORD
 
-    \hspace*{0pt}\hfill\textbf{\textit{(without keyword)}}
+    \hspace*{0pt}\hfill{\small \textit{(without keyword)}}
 
     RAW\_IDENTIFIER -> \w{r}\w{\#}IDENTIFIER\_OR\_KEYWORD
 
     IDENTIFIER\_OR\_KEYWORD -> ID\_START ID\_CONTINUE*
 
-    \hspace{6.8cm}| \w{\_}ID\_CONTINUE*
-
-    ID\_START -> XID\_Start | EMOJI\_SYMBOL
+    ID\_START -> \w{\_} | XID\_Start | EMOJI\_SYMBOL
 
     ID\_CONTINUE -> XID\_Continue | EMOJI\_SYMBOL
     \end{rg}

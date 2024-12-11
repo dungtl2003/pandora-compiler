@@ -1,9 +1,5 @@
 \subsection{Từ tố (\textit{token})}
-    Những từ tố đơn giản được định nghĩa bằng cách đưa trực tiếp mẫu của
-nó (như các định nghĩa về từ khoá, dấu toán học, ...). Những từ tố phức tạp
-hơn sẽ được định nghĩa bằng biểu thức chính quy như tên, xâu, số và chú thích.
-Phần phân tích từ vựng (lexical analyzer) phải có khả năng phân tích chương trình nguồn
-và đưa ra được các từ tố như sau:
+    Những từ tố đơn giản được định nghĩa bằng cách đưa trực tiếp mẫu của nó (như các định nghĩa về từ khoá, dấu toán học, ...). Những từ tố phức tạp hơn sẽ được định nghĩa bằng biểu thức chính quy như tên, xâu, số và chú thích. Phần phân tích từ vựng (lexical analyzer) phải có khả năng phân tích chương trình nguồn và đưa ra được các từ tố như sau:
 
 \input{chapters/chapter-2/section-3/table-of-symbols.tex}
 
@@ -31,54 +27,56 @@ và đưa ra được các từ tố như sau:
     \end{itemize}
 \noindent Pandora là một ngôn ngữ "dạng tự do", có nghĩa là tất cả các dạng khoảng trắng chỉ dùng để phân tách các từ tố trong ngữ pháp và không có ý nghĩa ngữ nghĩa.
 
-    Tên \textbf{\textit{identifier}} trong Pandora được phân làm 2 loại: \textbf{non keyword identifier} hoặc \textbf{raw identifier}. \textbf{non keyword identifier} được tạo thành từ tập các kí tự nêu trên và không được là từ khóa (keyword). Trong khi đó, \textbf{raw identifier} có thể là tên hoặc từ khóa (có \textbf{r\#} ở phía trước để phân biệt với tên thường hay từ khóa), cụ thể như sau:
+Tên \textbf{\textit{identifier}} trong Pandora được phân làm hai loại: \textbf{non-keyword identifier} hoặc \textbf{raw identifier}. \textbf{non-keyword identifier} được tạo thành từ tập các kí tự nêu trên và không được là từ khóa (\textbf{keyword}). Trong khi đó, \textbf{raw identifier} có thể là tên hoặc từ khóa (có \textbf{r\#} ở phía trước để phân biệt với tên thường hay từ khóa), cụ thể như sau:
 
     \regexidentifier
 
-\noindent Trong đó \textbf{XID\_Start} và \textbf{XID\_Continue} là các thuộc tính của ký tự trong Unicode liên quan đến tên (định danh). Chúng thường được sử dụng để xác định liệu một ký tự có thể là phần đầu hoặc phần thân của 1 định danh trong các ngôn ngữ lập trình hay không. Ngoài ra, 1 tên còn có thể chứa các biểu tượng cảm xúc (\textbf{EMOJI\_SYMBOL}).
+\noindent Trong đó \textbf{XID\_Start} và \textbf{XID\_Continue} là các thuộc tính của ký tự trong Unicode liên quan đến tên (định danh). Chúng thường được sử dụng để xác định liệu một ký tự có thể là phần đầu hoặc phần thân của một định danh trong các ngôn ngữ lập trình hay không. Ngoài ra, một tên còn có thể chứa các biểu tượng cảm xúc (\textbf{EMOJI\_SYMBOL}).
 
-    1 ký tự chữ (\textbf{character}) là 1 ký tự Unicode đơn được đặt trong 2 ký tự ' (dấu nháy đơn - U+0027), ngoại trừ chính U+0027, ký tự này phải được thoát bằng ký tự U+005C trước đó (\textbackslash), cụ thể như sau:
+Một ký tự chữ (\textbf{character}) là một ký tự Unicode đơn được đặt trong hai ký tự \textbf{'} (dấu nháy đơn - U+0027), ngoại trừ chính U+0027, ký tự này phải được thoát bằng ký tự U+005C trước đó (\textbf{\textbackslash}), cụ thể như sau:
 
     \regexcharliteral
 
-    Chuỗi ký tự (\textbf{string literal}) là một chuỗi gồm bất kỳ ký tự Unicode nào được đặt trong hai ký tự U+0022 (dấu ngoặc kép), ngoại trừ chính U+0022, ký tự này phải được thoát bằng ký tự U+005C trước đó (\textbackslash). Chuỗi ký tự cho phép có các line-breaks (cho phép ngắt dòng, được biểu thị bởi ký tự U+000A). Khi ký tự U+005C không thoát (\textbackslash) xuất hiện ngay trước ngắt dòng, ngắt dòng sẽ không xuất hiện trong xâu được biểu diễn trong từ tố, cụ thể như sau:
+    Chuỗi ký tự (\textbf{string literal}) là một chuỗi gồm bất kỳ ký tự Unicode nào được đặt trong hai ký tự U+0022 (\textbf{"} - dấu ngoặc kép), ngoại trừ chính U+0022, ký tự này phải được thoát bằng ký tự U+005C trước đó (\textbf{\textbackslash}). Chuỗi ký tự cho phép có các line-breaks (cho phép ngắt dòng, được biểu thị bởi ký tự U+000A). Khi ký tự U+005C không thoát (\textbf{\textbackslash}) xuất hiện ngay trước ngắt dòng, ngắt dòng sẽ không xuất hiện trong xâu được biểu diễn trong từ tố, cụ thể như sau:
 
     \regexstringliteral
 
-    Ta có thể thấy, các ký tự chữ hoặc các xâu có thể chứa 1 hoặc 1 vài loại \textbf{escape} (thoát ký tự). Một escape bắt đầu bằng U+005C (\textbackslash) và tiếp tục bằng một trong các dạng sau:
+    Ta có thể thấy, các ký tự chữ hoặc các xâu có thể chứa một hoặc một vài loại \textbf{escape} (thoát ký tự). Một escape bắt đầu bằng U+005C (\textbf{\textbackslash}) và tiếp tục bằng một trong các dạng sau:
 
     \begin{itemize}
-    \item{\textbf{Whitespace escape} (thoát khoảng trắng) là 1 trong các ký tự U+006E (n), U+0072 (r) hoặc U+0074 (t), biểu thị các giá trị Unicode U+000A (LF), U+000D (CR) hoặc U+ 0009 (HT) tương ứng}
-    \item{\textbf{Null escape} (thoát null) là ký tự U+0030 (0) và biểu thị giá trị Unicode U+0000 (NUL)}
-    \item{\textbf{Backslash escape} (thoát gạch chéo ngược) là ký tự U+005C (\textbackslash) phải được thoát để biểu thị chính nó}
+    \item{\textbf{Whitespace escape} (thoát khoảng trắng) là một trong các ký tự U+006E (\textbf{n}), U+0072 (\textbf{r}) hoặc U+0074 (\textbf{t}), biểu thị các giá trị Unicode U+000A (\textbf{LF}), U+000D (\textbf{CR}) hoặc U+0009 (\textbf{HT}) tương ứng}
+    \item{\textbf{Null escape} (thoát null) là ký tự U+0030 (\textbf{0}) và biểu thị giá trị Unicode U+0000 (\textbf{NUL})}
+    \item{\textbf{Backslash escape} (thoát gạch chéo ngược) là ký tự U+005C (\textbf{\textbackslash}) phải được thoát để biểu thị chính nó}
     \end{itemize}
 
-    Chuỗi ký tự thô (\textbf{raw string literal}) không xử lý bất kỳ escape nào. Chúng bắt đầu bằng ký tự U+0072 (r), theo sau là ít hơn 256 ký tự U+0023 (\#) và ký tự U+0022 (dấu nháy kép). Raw string có thể chứa chuỗi bất kì các ký tự nào trong Unicode. Nó chỉ được kết thúc bởi một ký tự U+0022 (dấu nháy kép) khác, theo sau là các ký tự U+0023 (\#) có số lượng giống với các ký tự U+0023 (\#) đứng trước ký tự U+0022 (dấu nháy kép) mở đầu. Tất cả các ký tự Unicode đều có trong phần thân raw string thể hiện chính chúng, các ký tự U+0022 (dấu nháy kép) (trừ khi được theo sau bởi ít nhất nhiều ký tự U+0023 (\#) như đã được sử dụng để bắt đầu raw string) hoặc U+005C (\textbackslash) không có ý nghĩa gì đặc biệt. Cụ thể như sau:
+    Chuỗi ký tự thô (\textbf{raw string literal}) không xử lý bất kỳ escape nào. Chúng bắt đầu bằng ký tự U+0072 (\textbf{r}), theo sau là ít hơn 256 ký tự U+0023 (\textbf{\#}) và ký tự U+0022 (\textbf{"} - dấu nháy kép). Raw string có thể chứa chuỗi bất kì các ký tự nào trong Unicode. Nó chỉ được kết thúc bởi một ký tự U+0022 (\textbf{"} - dấu nháy kép) khác, theo sau là các ký tự U+0023 (\textbf{\#}) có số lượng giống với các ký tự U+0023 (\textbf{\#}) đứng trước ký tự U+0022 (\textbf{"} - dấu nháy kép) mở đầu. Tất cả các ký tự Unicode đều có trong phần thân raw string thể hiện chính chúng, các ký tự U+0022 (\textbf{"} - dấu nháy kép) (trừ khi được theo sau bởi ít nhất nhiều ký tự U+0023 (\textbf{\#}) như đã được sử dụng để bắt đầu raw string) hoặc U+005C (\textbf{\textbackslash}) không có ý nghĩa gì đặc biệt. Cụ thể như sau:
 
     \regexrawstringliteral
+
+    Trong đó, cần lưu ý rằng \textbf{non-greedy behavior} (hành vi không tham lam) được sử dụng để xác định phần thân raw string. Điều này có nghĩa là phần thân raw string sẽ kết thúc ngay khi có thể, không cần phải chờ đến khi có thể kết thúc chuỗi raw string.
 
     Một hằng số nguyên (\textbf{integer literal}) có một trong bốn dạng sau:
 
     \begin{itemize}
-        \item{Một hằng thập phân bắt đầu bằng một chữ số thập phân và tiếp tục bằng bất kỳ hỗn hợp nào của các chữ số thập phân và dấu gạch dưới}
-        \item{Một hằng thập lục phân bắt đầu bằng chuỗi ký tự U+0030 U+0078 (0x) và tiếp tục dưới dạng bất kỳ hỗn hợp nào (có ít nhất một chữ số) gồm các chữ số thập lục phân và dấu gạch dưới}
-        \item{Một chữ bát phân bắt đầu bằng chuỗi ký tự U+0030 U+006F (0o) và tiếp tục dưới dạng bất kỳ hỗn hợp nào (có ít nhất một chữ số) gồm các chữ số bát phân và dấu gạch dưới}
-        \item{Một chữ số nhị phân bắt đầu bằng chuỗi ký tự U+0030 U+0062 (0b) và tiếp tục dưới dạng bất kỳ hỗn hợp nào (có ít nhất một chữ số) gồm các chữ số nhị phân và dấu gạch dưới}
+        \item{Một hằng \textbf{thập phân} bắt đầu bằng một chữ số thập phân và tiếp tục bằng bất kỳ hỗn hợp nào của các chữ số thập phân và dấu gạch dưới U+005F (\textbf{\_})}
+        \item{Một hằng \textbf{thập lục phân} bắt đầu bằng chuỗi ký tự U+0030 U+0068 (\textbf{0h}) hoặc chuỗi ký tự U+0030 U+0048 (\textbf{0H}) và tiếp tục dưới dạng bất kỳ hỗn hợp nào (có ít nhất một chữ số) gồm các chữ số thập lục phân và dấu gạch dưới U+005F (\textbf{\_})}
+        \item{Một chữ bát phân bắt đầu bằng chuỗi ký tự U+0030 U+006F (\textbf{0o}) hoặc chuỗi ký tự U+0030 U+004F (\textbf{0O}) và tiếp tục dưới dạng bất kỳ hỗn hợp nào (có ít nhất một chữ số) gồm các chữ số bát phân và dấu gạch dưới U+005F (\textbf{\_})}
+        \item{Một chữ số nhị phân bắt đầu bằng chuỗi ký tự U+0030 U+0062 (\textbf{0b}) hoặc chuỗi ký tự U+0030 U+0042 (\textbf{0B})và tiếp tục dưới dạng bất kỳ hỗn hợp nào (có ít nhất một chữ số) gồm các chữ số nhị phân và dấu gạch dưới U+005F (\textbf{\_})}
     \end{itemize}
 
     \regexintegerliteral
 
     Một hằng số thực (\textbf{float literal}) có một trong hai dạng:
     \begin{itemize}
-        \item{Một số thập phân theo sau là ký tự dấu chấm U+002E (.). Theo sau có thể là một số thập phân khác (sau số thập phân đó có thể có số mũ}
+        \item{Một số thập phân theo sau là ký tự dấu chấm U+002E (\textbf{.}). Theo sau có thể là một số thập phân khác (sau số thập phân đó có thể có số mũ)}
         \item{Một số thập phân theo sau là số mũ}
     \end{itemize}
 
     \regexfloatliteral
 
-    Chú thích không phải tài liệu (\textbf{non-doc comment}) có thể là dòng (//) hoặc là khối (/* ... */). Pandora có hỗ trợ các chú thích khối lồng nhau. Các chú thích kiểu này được hiểu là một dạng khoảng trắng.
+    Chú thích không phải tài liệu (\textbf{non-doc comment}) có thể là dòng (\textbf{//}) hoặc là khối (\textbf{/* ... */}). Pandora có hỗ trợ các chú thích khối lồng nhau. Các chú thích kiểu này được hiểu là một dạng khoảng trắng.
 
-    Chú thích tài liệu (\textbf{doc comment}) được chia làm 2 loại chính: chú thích tài liệu ngoài (\textbf{outer doc comment}) và chú thích tài liệu trong (\textbf{inner doc comment}). Chú thích tài liệu dòng bên ngoài sẽ bắt đầu bằng //@, còn khối bên ngoài sẽ có dạng /*@ ... */. Trong khi đó, chú thích tài liệu dòng bên trong là //!, khối bên trong có dạng /*! ... */.
+    Chú thích tài liệu (\textbf{doc comment}) được chia làm hai loại chính: chú thích tài liệu ngoài (\textbf{outer doc comment}) và chú thích tài liệu trong (\textbf{inner doc comment}). Chú thích tài liệu dòng bên ngoài sẽ bắt đầu bằng chuỗi ký tự U+002F U+002F U+0040 (\textbf{//@}), còn khối bên ngoài sẽ có dạng U+002F U+002A U+0040 ... U+002A U+002F (\textbf{/*@ ... */}). Trong khi đó, chú thích tài liệu dòng bên trong là U+002F U+002F U+0021 (\textbf{//!}), khối bên trong có dạng U+002F U+002A U+0021 ... U+002A U+002F (\textbf{/*! ... */}). Việc có thêm loại chú thích này giúp Pandora hỗ trợ việc tạo tài liệu API tự động một cách dễ dàng.
 
     Các chú thích được biểu diễn như sau:
 

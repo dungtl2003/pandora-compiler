@@ -8,9 +8,9 @@
 
 \newcommand{\regexblockcomment}{%
     \begin{rg}
-    BLOCK\_COMMENT -> \w{/}\w{*}([\w{@}\w{!}]
+    BLOCK\_COMMENT -> 
 
-    \hspace{4.5cm}| BLOCK\_COMMENT\_OR\_DOC)
+    \hspace{3.15cm}\w{/}\w{*}([\w{@}\w{!}] | BLOCK\_COMMENT\_OR\_DOC)
 
     \hspace{4cm}(BLOCK\_COMMENT\_OR\_DOC | \rnot(\w{*}\w{/}))*\w{*}\w{/}
 

@@ -14,7 +14,7 @@
     \begin{rg}
     STRING\_LITERAL -> 
 
-    \hspace{-0.75cm}\w{"}([\w{"}\w{\textbackslash}] | QUOTE\_ESC | ASCII\_ESC | STRING\_CONTINUE)*\w{"}
+    \hspace{-0.9cm}\w{"}([\rnot\w{"}\w{\textbackslash}] | QUOTE\_ESC | ASCII\_ESC | STRING\_CONTINUE)*\w{"}
 
     STRING\_CONTINUE -> \w{\textbackslash}\w{\textbackslash n}
     \end{rg}
@@ -24,7 +24,9 @@
     \begin{rg}
     RAW\_STRING\_LITERAL -> \w{r}RAW\_STRING\_CONTENT
 
-    RAW\_STRING\_CONTENT -> \w{"}.*\w{"} | \w{\#}RAW\_STRING\_CONTENT\w{\#}
+    RAW\_STRING\_CONTENT -> \w{"}.*{\footnotesize$^ \textit{(non-greedy)}$}\w{"}
+
+    \hspace{5.85cm}| \w{\#}RAW\_STRING\_CONTENT\w{\#}
     \end{rg}
 }
 
@@ -40,11 +42,11 @@
 
     DEC\_LITERAL -> DEC\_DIGIT(DEC\_DIGIT | \w{\_})*
 
-    BIN\_LITERAL -> \w{0}\w{b}BIN\_DIGIT(BIN\_DIGIT | \w{\_})*
+    BIN\_LITERAL -> \w{0}[\w{b}\w{B}]BIN\_DIGIT(BIN\_DIGIT | \w{\_})*
 
-    OCT\_LITERAL -> \w{0}\w{o}OCT\_DIGIT(OCT\_DIGIT | \w{\_})*
+    OCT\_LITERAL -> \w{0}[\w{o}\w{O}]OCT\_DIGIT(OCT\_DIGIT | \w{\_})*
 
-    HEX\_LITERAL -> \w{0}\w{h}HEX\_DIGIT(HEX\_DIGIT | \w{\_})*
+    HEX\_LITERAL -> \w{0}[\w{h}\w{H}]HEX\_DIGIT(HEX\_DIGIT | \w{\_})*
 
     DEC\_DIGIT -> \w{0} | \w{1} | ... | \w{9}
 
