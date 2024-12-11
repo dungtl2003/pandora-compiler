@@ -55,6 +55,9 @@ fn main() {
     // version flag check
     try_version(&args);
 
+    // latest version check
+    try_latest(&args);
+
     // explain flag check
     try_explain(&args);
 
@@ -109,6 +112,38 @@ fn main() {
 
     // interpret
     interpreter::interpret(&ast, &session, is_verbose);
+}
+
+fn try_latest(args: &Vec<String>) {
+    if !args.contains(&String::from("--latest")) {
+        return;
+    }
+
+    if args.len() != 2 {
+        eprintln!("Error: latest flag must be used alone");
+        process::exit(1);
+    }
+
+    let current_version = env!("CARGO_PKG_VERSION");
+    let result = check_latest::check_max!();
+
+    match result {
+        Ok(Some(latest_version)) => {
+            println!(
+                "New version available: {} (current: {}), run `cargo install pandora` to update",
+                latest_version, current_version
+            );
+            process::exit(0);
+        }
+        Ok(None) => {
+            println!("You are using the latest version of Pandora.");
+            process::exit(0);
+        }
+        Err(e) => {
+            eprintln!("Failed to check for updates: {}", e);
+            process::exit(1);
+        }
+    }
 }
 
 fn try_explain(args: &Vec<String>) {
@@ -226,6 +261,7 @@ fn help() {
     println!("Usage: unbox <file.box> [--verbose | -v]");
     println!("Options:");
     println!("  --version, -v      Display version information");
+    println!("  --latest           Check for the latest version");
     println!("  --verbose          Enable verbose output");
     println!("  --help, -h         Display this help message");
     println!("  --wreck            Enable Gen Z mode ☠️☠️☠️");
@@ -236,12 +272,13 @@ fn help() {
 fn validate_options(args: &Vec<String>) {
     let valid_options = vec![
         "--verbose".to_string(),
-        "-v".to_string(),
         "--help".to_string(),
         "-h".to_string(),
         "--version".to_string(),
+        "-v".to_string(),
         "--wreck".to_string(),
         "--explain".to_string(),
+        "--latest".to_string(),
     ];
 
     for arg in args {

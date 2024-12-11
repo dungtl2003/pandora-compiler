@@ -12,6 +12,7 @@ name = "unbox"        # The custom command name
 path = "src/main.rs"  # Path to the binary source file
 
 [dependencies]
+check-latest = "1.0.2"
 emojis = "0.6.4"
 english-numbers = "0.3.3"
 miette = { version = "7.2.0", features = ["fancy"] }
