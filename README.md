@@ -269,6 +269,13 @@ set r#true: int = 5;
 println(r#true as str);
 ```
 
+You can also use emojis as variable names (just for fun).
+
+```pandora
+set 🍕: int = 5;
+println(🍕 as str);
+```
+
 ### Functions
 
 Functions are declared using the `fun` keyword.
