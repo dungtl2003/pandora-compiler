@@ -10,7 +10,7 @@ use thiserror::Error;
 
 // TODO: this will be fixed temporary (maybe env in future).
 pub const ERROR_CODE_URL: &str =
-    "https://github.com/dungtl2003/pandora-compiler/tree/dungtl2003/feature/src/error_codes.md";
+    "https://github.com/dungtl2003/pandora-compiler/tree/dungtl2003/feature/error_codes";
 
 #[derive(Debug, Clone)]
 pub struct ErrorHandler {
@@ -941,6 +941,10 @@ impl ErrorHandler {
 // ========================== LEXER ==========================
 #[derive(Error, Debug, Diagnostic)]
 #[error("unterminated double quote string")]
+#[diagnostic(
+    code(E0001),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap())
+)]
 pub struct UnterminatedDoubleQuoteString {
     #[label(primary)]
     pub span: SourceSpan,
@@ -948,6 +952,10 @@ pub struct UnterminatedDoubleQuoteString {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("invalid digit for a base {base} literal")]
+#[diagnostic(
+    code(E0003),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap())
+)]
 pub struct InvalidDigitLiteral {
     pub base: u32,
     #[label]
@@ -956,6 +964,10 @@ pub struct InvalidDigitLiteral {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("expected at least one digit in exponent")]
+#[diagnostic(
+    code(E0004),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap())
+)]
 pub struct EmptyExponentFloat {
     #[label]
     pub span: SourceSpan,
@@ -963,6 +975,10 @@ pub struct EmptyExponentFloat {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("{base} float literal is not supported")]
+#[diagnostic(
+    code(E0005),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap())
+)]
 pub struct FloatLiteralUnsupportedBase {
     pub base: String,
     #[label]
@@ -972,8 +988,8 @@ pub struct FloatLiteralUnsupportedBase {
 #[derive(Error, Debug, Diagnostic)]
 #[error("unterminated character literal")]
 #[diagnostic(
-    code(E0762),
-    url("{}#{}", ERROR_CODE_URL, self.code().unwrap())
+    code(E0006),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap())
 )]
 pub struct UnterminatedCharLiteral {
     #[label("needs a closing `'`")]
@@ -982,6 +998,10 @@ pub struct UnterminatedCharLiteral {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("no valid digits found for number")]
+#[diagnostic(
+    code(E0002),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap())
+)]
 pub struct NoDigitsLiteral {
     #[label]
     pub span: SourceSpan,
@@ -989,6 +1009,10 @@ pub struct NoDigitsLiteral {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("too many `#` symbols: raw strings may be delimited by up to 255 `#` symbols, but found {found}")]
+#[diagnostic(
+    code(E0007),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap())
+)]
 pub struct RawStrTooManyHashes {
     pub found: u32,
     #[label]
@@ -997,6 +1021,10 @@ pub struct RawStrTooManyHashes {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("found invalid character; only `#` is allowed in raw string delimitation: {bad_char}")]
+#[diagnostic(
+    code(E0008),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap())
+)]
 pub struct RawStrInvalidStarter {
     pub bad_char: char,
     #[label]
@@ -1006,8 +1034,8 @@ pub struct RawStrInvalidStarter {
 #[derive(Error, Debug, Diagnostic)]
 #[error("unterminated raw string")]
 #[diagnostic(
-    code(E0748),
-    url("{}#{}", ERROR_CODE_URL, self.code().unwrap()),
+    code(E0009),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
     help("this raw string should be terminated with `\"{}`", "#".repeat(*expected as usize)),
 )]
 pub struct RawStrUnterminated {
@@ -1020,6 +1048,10 @@ pub struct RawStrUnterminated {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("{msg}")]
+#[diagnostic(
+    code(E0010),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct UnterminatedBlockComment {
     pub msg: String,
     #[label("...as last nested comment started here, maybe you want to close this instead?")]
@@ -1032,6 +1064,10 @@ pub struct UnterminatedBlockComment {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("unknown symbol '{sym}'")]
+#[diagnostic(
+    code(E0011),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct UnknownSymbol {
     pub sym: String,
     #[label]
@@ -1041,6 +1077,8 @@ pub struct UnknownSymbol {
 #[derive(Error, Debug, Diagnostic)]
 #[error("unknown character escape: `{bad_char}`")]
 #[diagnostic(
+    code(E0012),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
     help("if you meant to write a literal backslash (perhaps escaping in a regular expression), consider a raw string literal"),
 )]
 pub struct UnknownCharEscape {
@@ -1052,6 +1090,10 @@ pub struct UnknownCharEscape {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("character constant must be escaped: `{escape_char}`")]
+#[diagnostic(
+    code(E0013),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct EscapeOnlyChar {
     pub escape_char: String,
     #[label("help: escape the character: `{}`", escape_char)]
@@ -1060,7 +1102,11 @@ pub struct EscapeOnlyChar {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("character literal may only contain one codepoint")]
-#[diagnostic(help("if you meant to write a string literal, use double quotes"))]
+#[diagnostic(
+    code(E0014),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+    help("if you meant to write a string literal, use double quotes")
+)]
 pub struct MoreThanOneCharLiteral {
     #[label]
     pub span: SourceSpan,
@@ -1068,6 +1114,10 @@ pub struct MoreThanOneCharLiteral {
 
 #[derive(Error, Debug, Diagnostic)]
 #[error("empty character literal")]
+#[diagnostic(
+    code(E0015),
+    url("{}/{}.md", ERROR_CODE_URL, self.code().unwrap()),
+)]
 pub struct EmptyCharLiteral {
     #[label("empty character literal")]
     pub expected_char_span: SourceSpan,
