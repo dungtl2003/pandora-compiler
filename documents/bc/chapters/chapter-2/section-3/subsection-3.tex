@@ -1,79 +1,288 @@
-\subsection{Vật phẩm (\textit{Item})}
+\subsection{Biểu thức (\textit{Expression})}
+\label{ch2:expr}
 
-\regexitem
+Biểu thức là một thành phần quan trọng trong ngôn ngữ lập trình Pandora. Một biểu thức là một giá trị hoặc bất cứ thứ gì thực thi và kết thúc là một giá trị. Biểu thức có thể là một hằng, một biến, một lời gọi hàm hay một phép toán giữa các biểu thức khác. Biểu thức có thể được sử dụng trong nhiều ngữ cảnh khác nhau như gán giá trị cho biến, truyền tham số cho hàm, điều kiện, vòng lặp, ... Trong ngôn ngữ lập trình Pandora, ta sẽ có các loại biểu thức sau:
 
-Vật phẩm là một thành phần cơ bản của ngôn ngữ Pandora. Mỗi vật phẩm sẽ được định nghĩa bởi một cú pháp cụ thể. Các vật phẩm được xác định hoàn toàn tại thời điểm biên dịch, thường không thay đổi trong quá trình thực thi và có thể nằm trong bộ nhớ chỉ đọc.
+\regexexpr
 
-\subsubsection{Vật phẩm hàm (\textit{Function item})}          
+Độ ưu tiên của các toán tử và biểu thức Pandora được sắp xếp như sau, từ cao đến thấp. 
 
-\regexfunitem
+\begin{longtable}{| l | l |}
+    \caption{Bảng mức độ ưu tiên toán tử / biểu thức} \\
+\hline
+\textbf{\textit{Operator/Expression}} & \textbf{\textit{Associativity}} \\
+\hline
+Library access & \\
+\hline
+Function calls & \\
+\hline
+\w{$!$} \w{$-$} (unary) & \\
+\hline
+\w{$*$} \w{$/$} \w{$\%$} & left to right \\
+\hline
+\w{$+$} \w{$-$} & left to right \\
+\hline
+\w{$<<$} \w{$>>$} & left to right \\
+\hline
+\w{$\&$} & left to right \\
+\hline
+\w{$\wedge$} & left to right \\
+\hline
+\w{$|$} & left to right \\
+\hline
+\w{$==$} \w{$!=$} \w{$<$} \w{$>$} \w{$<=$} \w{$>=$} & left to right \\
+\hline
+\w{$\&\&$} & left to right \\
+\hline
+\w{$|\,|$} & left to right \\
+\hline
+\w{$=$} \w{$+=$} \w{$-=$} \w{$*=$} \w{$/=$} \w{$\%=$} \w{$<<=$} \w{$>>=$} \w{$\&=$} \w{$\wedge=$} \w{$|=$} & right to left \\
+\hline
+\end{longtable}
 
-1 hàm bao gồm tên hàm, danh sách tham số, kiểu trả về và thân hàm. Ngoại trừ tên ra, các thành phần còn lại có thể bị bỏ qua. Hàm có thể định nghĩa trong một module hoặc một class. Các hàm có thể khai báo 1 tập hợp các biến đầu vào dưới dạng tham số, qua đó nơi gọi hàm có thể truyền giá trị vào hàm, và loại giá trị trả về của hàm sẽ được trả về nơi gọi khi hoàn thành. Trong trường hợp hàm không trả về giá trị, kiểu trả về sẽ là \kw{void}.
+\subsubsection{Biểu thức hằng (\textit{Literal expression})}
 
+    Biểu thức hằng là một biểu thức mà giá trị của nó không thay đổi trong suốt quá trình thực thi chương trình. Biểu thức hằng có thể là một hằng số nguyên, hằng số thực, hằng số chuỗi hoặc hằng số boolean. Biểu thức hằng chỉ chứa đúng một từ tố.
+
+\regexlitexpr
+
+\noindent\textbf{Biểu thức hằng kí tự (\textit{Character literal expression})}
+
+    Một biểu thức hằng kí tự bao gồm một từ tố kí tự (character literal). Kiểu của biểu thức là kiểu kí tự (\textbf{char}) nguyên thủy. Biểu thức hằng kí tự bắt đầu và kết thúc bằng dấu nháy đơn '\textbf{\textbf{'}}' (U+0027). Kí tự trong biểu thức hằng kí tự có thể là ký tự Unicode đơn hoặc ký tự thoát (escape character). 
+
+\noindent Ví dụ về biểu thức hằng kí tự:
 \begin{lstlisting}[]
-fun add<T ext Plus<T>>(a: T, b: T) -> T {
-    return a + b;
-}
+'a';
+'\n';
+'\\';
+'\'';
+'"';
+'\0';
 \end{lstlisting}
 
-\subsubsection{Vật phẩm lớp (\textit{Class item})}
+\noindent\textbf{Biểu thức hằng chuỗi (\textit{String literal expression})}
 
-\regexclassitem
+    Một biểu thức hằng chuỗi có thể là một từ tố chuỗi thường (string literal) hoặc một từ tố chuỗi thô (raw string literal). Kiểu của biểu thức là kiểu chuỗi (\textbf{str}). Nếu từ tố là chuỗi thô, nó bắt đầu bằng ký tự '\textbf{r}' (U+0072), tiếp theo đó có thể là một loạt kí tự '\textbf{\#}' (U+0023), rồi đến cặp dấu nháy kép '\textbf{"}' (U+0022). Chuỗi thô có thể chứa bất kỳ ký tự nào trong Unicode. Nếu từ tố là chuỗi thường, nó bắt đầu và kết thúc bằng dấu nháy kép '\textbf{"}' (U+0022). Chuỗi thường có thể chứa bất kỳ ký tự nào trong Unicode, trừ ký tự dấu nháy kép (U+0022) và ký tự thoát (U+005C).
 
-1 lớp bao gồm tên lớp, danh sách thuộc tính, danh sách phương thức, tên lớp cha và danh sách các giao diện. Ngoại trừ tên ra, các thành phần còn lại có thể bị bỏ qua. Lớp là một cấu trúc dữ liệu mà trong đó chứa các thuộc tính và phương thức. Các lớp có thể kế thừa từ một hoặc nhiều lớp cha, và có thể được kế thừa bởi một hoặc nhiều lớp con. Các lớp con có thể mở rộng hoặc ghi đè các phương thức của lớp cha. Ví dụ:
-
+\noindent Ví dụ về biểu thức hằng chuỗi:
 \begin{lstlisting}[]
-class Number impl Compare<Number> + Plus<Number> {
-    pub var value: int;
-
-    pub fun init(value: int) {
-        self.value = value;
-    }
-
-    pub fun compare(self, other: Number) -> int {
-        return self.value - other.value;
-    }
-
-    pub fun plus(self, other: Number) -> Number {
-        return Number(self.value + other.value);
-    }
-
-}
-
-fun main() {
-    var a: Number = new Number(5);
-    var b: Number = new Number(3);
-    var c: Number = a + b;
-    println(c.value);
-}
+"Hello, world!";
+"Hello, \"world\"!";
+r#"Hello, "world"!"#;
+r##"Hello, ###"world"#!"##;
 \end{lstlisting}
 
-\subsubsection{Vật phẩm giao diện (\textit{Interface item})}
+\noindent\textbf{Biểu thức hằng số nguyên (\textit{Integer literal expression})}
 
-\regexinterfaceitem
+    Một biểu thức hằng số nguyên bao gồm một từ tố hằng số nguyên (integer literal). Kiểu của biểu thức là kiểu số nguyên (\textbf{int}) nguyên thủy. Hằng số nguyên có thể là hệ thập phân, hệ thập lục phân, hệ bát phân hoặc hệ nhị phân. Hệ thập phân bắt đầu bằng một chữ số thập phân, hệ thập lục phân bắt đầu bằng chuỗi U+0030 U+0068 (\textbf{0h}) hoặc U+0030 U+0048 (\textbf{0H}), hệ bát phân bắt đầu bằng chuỗi U+0030 U+006F (\textbf{0o}) hoặc U+0030 U+004F (\textbf{0O}), hệ nhị phân bắt đầu bằng chuỗi U+0030 U+0062 (\textbf{0b}) hoặc U+0030 U+0042 (\textbf{0B}). Các hệ cơ số có thể chứa dấu gạch dưới U+005F (\textbf{\_}) để phân cách các chữ số.
 
-1 giao diện bao gồm tên giao diện, danh sách phương thức và danh sách giao diện mà giao diện này kế thừa. Ngoại trừ tên ra, các thành phần còn lại có thể bị bỏ qua. Giao diện là một cấu trúc dữ liệu mà trong đó chứa các phương thức. Các lớp có thể triển khai một hoặc nhiều giao diện, và mỗi giao diện có thể được triển khai bởi một hoặc nhiều lớp. Các phương thức trong giao diện không có thân hàm, chỉ có tên, kiểu trả về và danh sách tham số. Các lớp triển khai giao diện phải cài đặt tất cả các phương thức trong giao diện đó. Mặc định, các phương thức trong giao diện là \kw{pub}.
-
-\subsubsection{Vật phẩm khai báo nhập (\textit{Import declaration item})}
-
-\regeximportitem
-
-1 khai báo nhập bao gồm tên và danh sách đường dẫn. Ngoại trừ tên ra, các thành phần còn lại có thể bị bỏ qua. Khai báo nhập được sử dụng để chèn nội dung của một module vào module hiện tại. Các module khác nhau có thể chứa các hàm, lớp, giao diện, biến và hằng số khác nhau. Khi một module được nhập vào module hiện tại, các thành phần trong module đó sẽ trở nên khả dụng trong module hiện tại.
-
-\subsubsection{Vật phẩm bí danh loại (\textit{Type alias item})}
-
-\subsubsection{Vật phẩm liệt kê (\textit{Enumeration item})}
-
-\subsubsection{Danh sách tham số chung (\textit{Generic params})}
-
-\regexgenparams
-
-Danh sách tham số chung cho phép chúng ta khai báo một hoặc nhiều tham số chung cho một vật phẩm. Tham số chung được sử dụng để tạo ra các vật phẩm có thể hoạt động với nhiều kiểu dữ liệu khác nhau. Ví dụ:
-
+\noindent Ví dụ về biểu thức hằng số nguyên:
 \begin{lstlisting}[]
-    fun swap<T>(a: T, b: T) {
-        var temp: T = a;
-        a = b;
-        b = temp;
-    }
+123_456_789;
+0h1_A;
+0o17;
+0B1010;
+\end{lstlisting}
+
+\noindent\textbf{Biểu thức hằng số thực (\textit{Float literal expression})}
+
+    Một biểu thức hằng số thực bao gồm một từ tố hằng số thực (float literal). Kiểu của biểu thức là kiểu số thực (\textbf{float}) nguyên thủy. Hằng số thực có thể là số thực hoặc số thực với số mũ. Số thực bắt đầu bằng một số thực, số thực với số mũ bắt đầu bằng số thực theo sau là ký tự '\textbf{e}' hoặc '\textbf{E}' (U+0065 hoặc U+0045) và tiếp theo là một số nguyên. Cả hai loại hằng số thực đều có thể chứa dấu gạch dưới U+005F (\textbf{\_}) để phân cách các chữ số (riêng ký tự đầu tiên sau dấu chấm không thể là dấu gạch dưới).
+
+\noindent Ví dụ về biểu thức hằng số thực:
+\begin{lstlisting}[]
+3.14;
+124.25_3;
+1_000_000.0;
+1__.;
+0.0e0;
+3.0e3__;
+124.3_e__2__;
+1_000_000.0+e32;
+1__.0_-E-2;
+\end{lstlisting}
+
+\noindent\textbf{Biểu thức hằng số boolean (\textit{Boolean literal expression})}
+
+    Một biểu thức hằng số boolean bao gồm từ khóa \kw{true} hoặc \kw{false}. Kiểu của biểu thức là kiểu boolean (\textbf{boolean}) nguyên thủy.
+
+\subsubsection{Biểu thức toán tử (\textit{Operator expression})}
+
+    Biểu thức toán tử là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của các biểu thức con và toán tử. Biểu thức toán tử có thể là một biểu thức phủ định, biểu thức toán tử số học hoặc logic, biểu thức so sánh, biểu thức gán hoặc biểu thức boolean lười biếng hoặc biểu thức ép kiểu. Biểu thức toán tử có thể chứa nhiều biểu thức con và một toán tử. Các biểu thức con sẽ được thực hiện trước khi thực hiện biểu thức toán tử. Các toán tử sẽ được thực hiện theo thứ tự ưu tiên. Biểu thức toán tử có thể được biểu diễn bằng biểu thức chính quy sau:
+
+\regexopexpr
+
+\noindent\textbf{Biểu thức phủ định (\textit{Negation expression})}
+
+    Biểu thức phủ định là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của biểu thức con và toán tử phủ định. Biểu thức phủ định có thể là phủ định số học hoặc phủ định logic. Phủ định số học bắt đầu bằng ký tự '\textbf{-}' (U+002D), phủ định logic bắt đầu bằng ký tự '\textbf{!}' (U+0021). Ta lưu ý rằng phủ định số học chỉ áp dụng cho biểu thức số học, phủ định logic chỉ áp dụng cho biểu thức logic. Các số thực có dấu sẽ được biểu diễn bằng cách sử dụng mã bù hai.
+
+\regexneexpr
+
+\noindent Ví dụ về biểu thức phủ định:
+\begin{lstlisting}[]
+-5;
+--5;
+!true;
+!!true;
+\end{lstlisting}
+
+\noindent\textbf{Biểu thức toán tử số học hoặc logic (\textit{Arithmetic or logical expression})}
+
+    Biểu thức toán tử số học hoặc logic là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của các biểu thức con và toán tử số học hoặc logic. Biểu thức toán tử số học hoặc logic có thể là phép cộng, phép trừ, phép nhân, phép chia, phép chia lấy dư, phép AND, phép OR hoặc phép XOR. Các phép toán số học hoặc logic sẽ được thực hiện theo thứ tự ưu tiên. Biểu thức toán tử số học hoặc logic có thể được biểu diễn bằng biểu thức chính quy sau:
+
+\regexarithlogicexpr
+
+\noindent Ví dụ về biểu thức toán tử số học hoặc logic:
+\begin{lstlisting}[]
+5 + 3;
+5.5 - 3.2;
+5 * 3;
+5.2 / 3.3;
+5.4 % 3.1;
+5 & 3;
+5 | 3;
+5 ^ 3;
+5 << 3;
+5 >> 3;
+\end{lstlisting}
+
+\noindent\textbf{Biểu thức so sánh (\textit{Comparison expression})}
+
+    Biểu thức so sánh là một biểu thức mà giá trị của nó luôn là từ khóa boolean \kw{true} hoặc \kw{false}. Biểu thức so sánh có thể là phép so sánh bằng, phép so sánh khác, phép so sánh nhỏ hơn, phép so sánh lớn hơn, phép so sánh nhỏ hơn hoặc bằng, phép so sánh lớn hơn hoặc bằng. Các phép so sánh sẽ trả về giá trị boolean. Cần lưu ý rằng ta không được phép thực hiện nhiều phép so sánh liên tiếp nhau. Chẳng hạn, \texttt{a < b < c} sẽ báo lỗi, ta cần phải viết thành \texttt{a < b \&\& b < c}. Ngoài ra, Pandora cũng sẽ không hỗ trợ so sánh giữa hai kiểu boolean như một số ngôn ngữ lập trình khác. Biểu thức so sánh có thể được biểu diễn bằng biểu thức chính quy sau:
+
+\regexcompexpr
+
+\noindent Ví dụ về biểu thức so sánh:
+\begin{lstlisting}[]
+5 == 3;
+5 != 3;
+5 < 3;
+5 > 3;
+5 <= 3;
+5 >= 3;
+// true > false; // Not supported
+\end{lstlisting}
+
+\noindent\textbf{Biểu thức gán (\textit{Assign expression})}
+
+    Biểu thức gán là một biểu thức mà giá trị của nó luôn là \textbf{\textit{unit}}, với mục đích gán giá trị cho biến ở bên trái. Biểu thức gán bắt đầu bằng một biểu thức trái (biểu thức có thể gán giá trị) và tiếp theo là toán tử gán. Biểu thức gán có thể được biểu diễn bằng biểu thức chính quy sau:
+
+\regexassignexpr
+
+\noindent Ví dụ về biểu thức gán:
+\begin{lstlisting}[]
+a = 5;
+b = a + 3;
+\end{lstlisting}
+
+\noindent\textbf{Biểu thức gán phức tạp (\textit{Compound assignment expression})}
+
+    Biểu thức gán phức tạp là một biểu thức mà giá trị của nó luôn là \textbf{\textit{unit}}, kết hợp giữa biểu thức gán và biểu thức toán tử. Biểu thức gán phức tạp có thể là phép cộng gán, phép trừ gán, phép nhân gán, phép chia gán, phép chia lấy dư gán, phép AND gán, phép OR gán, phép XOR gán, phép dịch trái gán hoặc phép dịch phải gán. Biểu thức gán phức tạp bắt đầu bằng một biểu thức trái (biểu thức có thể gán giá trị), tiếp theo là toán tử gán phức tạp và cuối cùng là biểu thức phải. Biểu thức gán phức tạp có thể được biểu diễn bằng biểu thức chính quy sau: 
+
+\regexcompoundassignexpr
+
+\noindent Ví dụ về biểu thức gán phức tạp:
+\begin{lstlisting}[]
+a += 5;
+b -= 3;
+c *= 2;
+d /= 4;
+e %= 3;
+f &= 5;
+g |= 3;
+h ^= 6;
+i <<= 2;
+j >>= 3;
+\end{lstlisting}
+
+\noindent\textbf{Biểu thức boolean lười biếng (\textit{Lazy boolean expression})}
+
+    Biểu thức boolean lười biếng là một biểu thức mà giá trị của nó luôn là từ khóa boolean \kw{true} hoặc \kw{false}. Biểu thức boolean lười biếng có thể là phép AND hoặc phép OR. Gọi là lười biếng vì nó chỉ thực hiện phép toán cần thiết để xác định giá trị của biểu thức.
+
+\regexlazyboolexpr
+
+\noindent Ví dụ về biểu thức boolean lười biếng:
+\begin{lstlisting}[]
+true && false;
+true || false;
+5 < 3 && 3 > 2;
+\end{lstlisting}
+
+\subsubsection{Biểu thức nhóm (\textit{Grouped expression})}
+
+    Biểu thức nhóm là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của biểu thức con. Biểu thức nhóm bắt đầu và kết thúc bằng cặp ngoặc tròn U+0028 và U+0029 ('\textbf{(}' và '\textbf{)}'). Biểu thức nhóm có thể chứa bất kỳ biểu thức nào. Biểu thức nhóm có thể được biểu diễn bằng biểu thức chính quy sau:
+
+\regexgroupexpr
+
+\noindent Ví dụ về biểu thức nhóm:
+\begin{lstlisting}[]
+(5 + 3) * 2;
+\end{lstlisting}
+
+\subsubsection{Biểu thức lời gọi hàm (\textit{Function call expression})}
+
+    Biểu thức lời gọi hàm là một biểu thức mà giá trị của nó phụ thuộc vào giá trị trả về của hàm được gọi. Biểu thức lời gọi hàm bắt đầu bằng tên hàm, tiếp theo là cặp ngoặc tròn U+0028 và U+0029 ('\textbf{(}' và '\textbf{)}') chứa danh sách tham số truyền vào hàm. Danh sách tham số truyền vào hàm được phân cách bởi dấu phẩy '\textbf{,}' (U+002C).Biểu thức lời gọi hàm có thể được biểu diễn bằng biểu thức chính quy sau:
+
+\regexfuncallexpr
+
+\noindent Ví dụ về biểu thức lời gọi hàm:
+\begin{lstlisting}[]
+println("Hello, world!");
+add(5, 3);
+\end{lstlisting}
+
+\subsubsection{Biểu thức lời gọi hàm thư viện (\textit{Library call expression})}
+
+Biểu thức lời gọi hàm thư viện là một biểu thức mà giá trị của nó phụ thuộc vào giá trị trả về của hàm thư viện được gọi. Biểu thức lời gọi hàm thư viện bắt đầu bằng tên thư viện, tiếp theo là dấu chấm U+002E ('\textbf{.}') và tên hàm, sau đó là cặp ngoặc tròn U+0028 và U+0029 ('\textbf{(}' và '\textbf{)}') chứa danh sách tham số truyền vào hàm. Danh sách tham số truyền vào hàm được phân cách bởi dấu phẩy '\textbf{,}' (U+002C). Biểu thức lời gọi hàm thư viện có thể được biểu diễn bằng biểu thức chính quy sau:
+
+\regexlibfuncallexpr
+
+\noindent Ví dụ về biểu thức lời gọi hàm thư viện:
+\begin{lstlisting}[]
+std.println("Hello, world!");
+math.add(5, 3);
+mylib.myfunc();
+\end{lstlisting}
+
+\subsubsection{Biểu thức định danh (\textit{Identifier expression})}
+
+    Biểu thức định danh là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của biến được định danh. Biểu thức định danh bắt đầu bằng tên biến. Biểu thức định danh có thể được biểu diễn bằng biểu thức chính quy sau:
+
+\regexidentexpr
+
+\noindent Ví dụ về biểu thức định danh:
+\begin{lstlisting}[]
+a;
+b;
+\end{lstlisting}
+
+\subsubsection{Biểu thức mảng (\textit{Array expression})}
+\label{ch2:arrayexpr}
+
+    Biểu thức mảng là một biểu thức có giá trị là một mảng. Biểu thức mảng sẽ có hai dạng:
+
+\begin{itemize}
+    \item Dạng đầu tiên là dạng liệt kê mọi giá trị trong mảng. Cú pháp của dạng này là một danh sách các biểu thức có kiểu thống nhất, được phân cách bởi dấu phẩy '\textbf{,}' (U+002C) và đặt trong cặp dấu ngoặc vuông U+005B và U+005D ('\textbf{[}' và '\textbf{]}'). Dạng này sẽ tạo ra một mảng với các phần tử là giá trị của các biểu thức trong danh sách theo thứ tự mà chúng được liệt kê.  
+    \item Cú pháp của dạng thứ hai là hai biểu thức được phân cách bởi dấu chấm phẩy '\textbf{;}' (U+003B) và đặt trong cặp dấu ngoặc vuông U+005B và U+005D ('\textbf{[}' và '\textbf{]}'). Biểu thức trước dấu chấm phẩy được gọi là toán hạng lặp, biểu thức sau dấu chấm phẩy được gọi là toán hạng độ dài. Biểu thức mảng ở dạng này tạo ra một mảng có độ dài là giá trị của toán hạng độ dài, mỗi phần tử trong mảng có giá trị là giá trị của toán hạng lặp. Phần toán hạng độ dài phải là một biểu thức số nguyên không âm.
+\end{itemize}
+
+    Biểu thức mảng có thể được biểu diễn bằng biểu thức chính quy sau:
+
+\regexarrayexpr
+
+\noindent Ví dụ về biểu thức mảng:
+\begin{lstlisting}[]
+[1, 2, 3, 4, 5];
+[5; 5]; // equivalent to [5, 5, 5, 5, 5]
+\end{lstlisting}
+
+\subsubsection{Biểu thức chỉ số (\textit{Index expression})}
+
+    Biểu thức chỉ số là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của mảng và chỉ số. Biểu thức chỉ số bắt đầu bằng một biểu thức mảng, tiếp theo là dấu ngoặc vuông U+005B và U+005D ('\textbf{[}' và '\textbf{]}') chứa biểu thức chỉ số. Biểu thức chỉ số có thể được biểu diễn bằng biểu thức chính quy sau:
+
+\regexindexexpr
+
+\noindent Ví dụ về biểu thức chỉ số:
+\begin{lstlisting}[]
+arr[0];
+arr[1 + 2];
 \end{lstlisting}

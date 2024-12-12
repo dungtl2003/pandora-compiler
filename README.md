@@ -72,13 +72,13 @@ First, you need to download the latest release from the [releases page](https://
 After downloading the latest release, you need to make the file executable:
 
 ```bash
-chmod +x pandora-interpreter
+chmod +x unbox
 ```
 
 Then, move the file to the `/home/[username]/.local/bin` directory: (replace `[username]` with your username)
 
 ```bash
-mv pandora-interpreter /home/[username]/.local/bin/unbox
+mv unbox /home/[username]/.local/bin/unbox
 ```
 
 Restart your terminal, and you can run the following command to check if Pandora is installed:
@@ -392,7 +392,7 @@ List of standard library functions:
 
 ## Chaos mode
 
-Chaos mode is a mode that allows you to run Pandora programs with some tweaks. All keywords will be replaced with gen-z slang. To enable this mode, firstly, in the command line, you need to add the `--wreck` flag. Secondly, the file extension must be `.unbxx` (instead of `.box`), and the library file extension must be `.unbxx` (instead of `.boxx`). Below is the list of keywords that will be replaced:
+Chaos mode is a mode that allows you to run Pandora programs with some tweaks. All keywords will be replaced with gen-z slang. To enable this mode, firstly, in the command line, you need to add the `--wreck` flag. Secondly, the file extension must be `.unbx` (instead of `.box`), and the library file extension must be `.unbxx` (instead of `.boxx`). Below is the list of keywords that will be replaced:
 
 | Pandora | Chaos mode |
 | --- | --- |

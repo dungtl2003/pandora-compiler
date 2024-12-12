@@ -6,9 +6,11 @@
 
     \hspace{3.2cm}| BLOCK\_STATEMENT
 
-    \hspace{3.2cm}| IF\_STATEMENT
+    \hspace{3.2cm}| CONTROL\_STATEMENT
 
-    \hspace{3.2cm}| LOOP\_STATEMENT
+    \hspace{3.2cm}| IMPORT\_STATEMENT
+
+    \hspace{3.2cm}| EMPTY\_STATEMENT
     \end{rg}
 }
 
@@ -16,15 +18,31 @@
     \begin{rg}
     DECLARATION\_STATEMENT -> VARIABLE\_DECL\_STATEMENT
 
-    \hspace{6.75cm}| CONSTANT\_DECL\_STATEMENT
+    \hspace{6.75cm}| FUNCTION\_DECL\_STATEMENT
     \end{rg}
 }
 
 \newcommand{\regexvardeclstmt}{
     \begin{rg}
-    VARIABLE\_DECL\_STATEMENT -> \w{var} \w{mut}?
+    VARIABLE\_DECL\_STATEMENT -> \w{set} \w{mut}?
 
     \hspace{2.75cm}IDENTIFIER\w{:} TYPE (\w{=}EXPRESSION)?\w{;}
+    \end{rg}
+}
+
+\newcommand{\regexfuncdeclstmt}{
+    \begin{rg}
+    FUNCTION\_DECL\_STATEMENT -> \w{fun} IDENTIFIER
+
+    \hspace{3.5cm}\w{(}FUNC\_PARAMS?\w{)} FUNC\_RET\_TYPE?
+
+    \hspace{3.5cm}(BLOCK\_STATEMENT | \w{;})
+
+    FUNC\_PARAMS -> FUNC\_PARAM (\w{,} FUNC\_PARAM)*\w{,}?
+
+    FUNC\_PARAM -> \w{mut}? IDENTIFIER\w{:} TYPE
+
+    FUNC\_RET\_TYPE -> \w{-}\w{>} TYPE
     \end{rg}
 }
 
@@ -42,11 +60,25 @@
     \end{rg}
 }
 
+\newcommand{\regexctrlstmt}{
+    \begin{rg}
+    CONTROL\_STATEMENT -> IF\_STATEMENT
+
+    \hspace{5.6cm}| LOOP\_STATEMENT
+
+    \hspace{5.6cm}| RETURN\_STATEMENT
+
+    \hspace{5.6cm}| BREAK\_STATEMENT
+
+    \hspace{5.6cm}| CONTINUE\_STATEMENT
+    \end{rg}
+}
+
 \newcommand{\regexifstmt}{
     \begin{rg}
-    IF\_STATEMENT -> \w{if} EXPRESSION BLOCK\_STATEMENT
+    IF\_STATEMENT -> \w{when} EXPRESSION BLOCK\_STATEMENT
 
-    \hspace{3cm}(\w{else} (BLOCK\_STATEMENT | IF\_STATEMENT))?
+    \hspace{3cm}(\w{alt} (BLOCK\_STATEMENT | IF\_STATEMENT))?
     \end{rg}
 }
 
@@ -60,7 +92,7 @@
 
 \newcommand{\regexpredloopstmt}{
     \begin{rg}
-    PRED\_LOOP\_STATEMENT -> \w{while} EXPRESSION 
+    PRED\_LOOP\_STATEMENT -> \w{during} EXPRESSION 
 
     \hspace{6.8cm}BLOCK\_STATEMENT
     \end{rg}
@@ -74,8 +106,38 @@
     \end{rg}
 }
 
+\newcommand{\regexreturnstmt}{
+    \begin{rg}
+    RETURN\_STATEMENT -> \w{yeet} EXPRESSION?\w{;}
+    \end{rg}
+}
+
+\newcommand{\regexbreakstmt}{
+    \begin{rg}
+    BREAK\_STATEMENT -> \w{br}\w{;}
+    \end{rg}
+}
+
+\newcommand{\regexcontinuestmt}{
+    \begin{rg}
+    CONTINUE\_STATEMENT -> \w{skip}\w{;}
+    \end{rg}
+}
+
 \newcommand{\regexexprstmt}{
     \begin{rg}
     EXPRESSION\_STATEMENT -> EXPRESSION\w{;}
+    \end{rg}
+}
+
+\newcommand{\regeximportstmt}{
+    \begin{rg}
+    IMPORT\_STATEMENT -> \w{add} IDENTIFIER\w{;}
+    \end{rg}
+}
+
+\newcommand{\regexemptystmt}{
+    \begin{rg}
+    EMPTY\_STATEMENT -> \w{;}
     \end{rg}
 }

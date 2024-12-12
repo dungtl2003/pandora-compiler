@@ -2,13 +2,19 @@
     \begin{rg}
     EXPRESSION -> LITERAL\_EXPRESSION
 
-    \hspace{4.5cm}| OPERATOR\_EXPRESSION
+    \hspace{3.55cm}| OPERATOR\_EXPRESSION
 
-    \hspace{4.5cm}| GROUPED\_EXPRESSION
+    \hspace{3.55cm}| GROUPED\_EXPRESSION
 
-    \hspace{4.5cm}| FUNCTION\_CALL\_EXPRESSION
+    \hspace{3.55cm}| FUNCTION\_CALL\_EXPRESSION
 
-    \hspace{4.5cm}| METHOD\_CALL\_EXPRESSION
+    \hspace{3.55cm}| LIBRARY\_FUNCTION\_CALL\_EXPRESSION
+
+    \hspace{3.55cm}| IDENTIFIER\_EXPRESSION
+
+    \hspace{3.55cm}| ARRAY\_EXPRESSION
+
+    \hspace{3.55cm}| INDEX\_EXPRESSION
     \end{rg}
 }
 
@@ -25,16 +31,16 @@
     \hspace{4.5cm}| COMPOUND\_ASSIGNMENT\_EXPRESSION
 
     \hspace{4.5cm}| LAZY\_BOOLEAN\_EXPRESSION
+
+    \hspace{4.5cm}| TYPE\_CAST\_EXPRESSION
     \end{rg}
 }
 
 \newcommand{\regexlitexpr}{
     \begin{rg}
-    LITERAL\_EXPRESSION -> STRING\_LITERAL
+    LITERAL\_EXPRESSION -> CHAR\_LITERAL
 
-    \hspace{5.9cm}| RAW\_STRING\_LITERAL
-
-    \hspace{5.9cm}| CHAR\_LITERAL
+    \hspace{5.9cm}| STRING\_LITERAL
 
     \hspace{5.9cm}| INTEGER\_LITERAL
 
@@ -136,7 +142,7 @@
 
     \hspace{6cm}EXPRESSION \w{$\&\&$} EXPRESSION
 
-    \hspace{5.4cm}| EXPRESSION \w{$||$} EXPRESSION
+    \hspace{5.4cm}| EXPRESSION \w{$|\,|$} EXPRESSION
     \end{rg}
 }
 
@@ -159,5 +165,35 @@
     \hspace{5.4cm}EXPRESSION \w{(}CALL\_PARAMS?\w{)}
 
     CALL\_PARAMS -> EXPRESSION (\w{,} EXPRESSION)*\w{,}?
+    \end{rg}
+}
+
+\newcommand{\regexlibfuncallexpr}{
+    \begin{rg}
+    LIBRARY\_FUNCTION\_CALL\_EXPRESSION -> 
+
+    \hspace{3.5cm}EXPRESSION\w{.}EXPRESSION \w{(}CALL\_PARAMS?\w{)}
+    \end{rg}
+}
+
+\newcommand{\regexidentexpr}{
+    \begin{rg}
+    IDENTIFIER\_EXPRESSION -> IDENTIFIER
+    \end{rg}
+}
+
+\newcommand{\regexarrayexpr}{
+    \begin{rg}
+    ARRAY\_EXPRESSION -> \w{[} ARRAY\_ELEMENTS? \w{]}
+
+    ARRAY\_ELEMENTS -> EXPRESSION (\w{,} EXPRESSION)*\w{,}?
+
+    \hspace{4.7cm}| EXPRESSION \w{;} EXPRESSION
+    \end{rg}
+}
+
+\newcommand{\regexindexexpr}{
+    \begin{rg}
+    INDEX\_EXPRESSION -> EXPRESSION \w{[} EXPRESSION \w{]}
     \end{rg}
 }

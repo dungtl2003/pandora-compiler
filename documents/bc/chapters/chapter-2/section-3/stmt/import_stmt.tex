@@ -1,0 +1,18 @@
+\subsubsection{Câu lệnh nhập (\textit{Import statement})}
+
+Câu lệnh nhập là câu lệnh dùng để bổ sung một module vào chương trình. Câu lệnh nhập bắt đầu bằng từ khóa \kw{add}, sau đó là tên module cần nhập. Câu lệnh nhập được mô tả bởi biểu thức chính quy sau:
+
+\regeximportstmt
+
+\noindent Ví dụ về câu lệnh nhập:
+\begin{lstlisting}[]
+add std;
+{
+    add math;
+    std.println("Hello, world!");
+    math.sqrt(4);
+}
+
+std.println("Hello, world!");
+// math.sqrt(4); // error, module math is not imported in this scope
+\end{lstlisting}

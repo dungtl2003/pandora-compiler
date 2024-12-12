@@ -1,129 +1,31 @@
-\subsection{Biểu thức (\textit{Expression})}
-\label{ch2:expr}
-\regexexpr
+\subsection{Kiểu dữ liệu (\textit{Type})}
 
-Biểu thức là một thành phần quan trọng trong ngôn ngữ lập trình Pandora. Một biểu thức là một giá trị hoặc bất cứ thứ gì thực thi và kết thúc là một giá trị. Biểu thức có thể là một hằng số, một biến, một lời gọi hàm hay một phép toán giữa các biểu thức khác. Biểu thức có thể được sử dụng trong nhiều ngữ cảnh khác nhau như gán giá trị cho biến, truyền tham số cho hàm, điều kiện, vòng lặp, ...
+    Tất cả các biến trong Pandora đều có kiểu dữ liệu. Kiểu dữ liệu xác định loại dữ liệu mà biến đó có thể chứa. Kiểu dữ liệu cũng xác định các phép toán mà biến đó có thể thực hiện. Trong Pandora chỉ có 7 kiểu dữ liệu: kiểu số nguyên, kiểu số thực, kiểu ký tự, kiểu logic, kiểu chuỗi, kiểu tuple và kiểu mảng.
 
-Độ ưu tiên của các toán tử và biểu thức Pandora được sắp xếp như sau, từ mạnh đến yếu. 
+\subsubsection{Kiểu số nguyên}
 
-\begin{longtable}{| l | l |}
-    \caption{Bảng mức độ ưu tiên toán tử / biểu thức} \\
-\hline
-\textbf{\textit{Operator/Expression}} & \textbf{\textit{Associativity}} \\
-\hline
-Method calls & \\
-\hline
-Function calls & \\
-\hline
-\w{$-$}(unary) \w{$*$} \w{$!$} & \\
-\hline
-\w{$*$} \w{$/$} \w{$\%$} & left to right \\
-\hline
-\w{$+$} \w{$-$} & left to right \\
-\hline
-\w{$<<$} \w{$>>$} & left to right \\
-\hline
-\w{$\&$} & left to right \\
-\hline
-\w{$\wedge$} & left to right \\
-\hline
-\w{$|$} & left to right \\
-\hline
-\w{$==$} \w{$!=$} \w{$<$} \w{$>$} \w{$<=$} \w{$>=$} & left to right \\
-\hline
-\w{$\&\&$} & left to right \\
-\hline
-\w{$||$} & left to right \\
-\hline
-\w{$=$} \w{$+=$} \w{$-=$} \w{$*=$} \w{$/=$} \w{$\%=$} \w{$<<=$} \w{$>>=$} \w{$\&=$} \w{$\wedge=$} \w{$|=$} & right to left \\
-\hline
-\end{longtable}
+    Những biến nào có kiểu dữ liệu là số nguyên thì có thể chứa các giá trị số nguyên. Trong Pandora, kiểu số nguyên được ký hiệu là \textit{int}. Kiểu số nguyên có thể chứa các giá trị từ $-2^{31}+1$ đến $2^{31}-1$.
 
-\subsubsection{Biểu thức hằng (\textit{Literal expression})}
+\subsubsection{Kiểu số thực}
 
-\regexlitexpr
+    Những biến nào có kiểu dữ liệu là số thực thì có thể chứaa các giá trị số thực. Trong Pandora, kiểu số thực được ký hiệu là \textit{float}. Ta lưu ý rằng những biến có kiểu số thực không thể chứa các giá trị số nguyên. Ví dụ, nếu ta muốn gán giá trị $5$ cho một biến có kiểu số thực, ta phải gán giá trị $5.0$.
 
-Biểu thức hằng là một biểu thức mà giá trị của nó không thay đổi trong suốt quá trình thực thi chương trình. Biểu thức hằng có thể là một hằng số nguyên, hằng số thực, hằng số chuỗi hoặc hằng số boolean. Biểu thức hằng chỉ chứa đúng 1 từ tố.
+\subsubsection{Kiểu ký tự}
 
-\noindent\textbf{Biểu thức hằng kí tự (\textit{Character literal expression})}
+    Những biến nào có kiểu dữ liệu là ký tự thì có thể chứa các giá trị ký tự. Trong Pandora, kiểu ký tự được ký hiệu là \textit{char}. Giá trị của loại ký tự được biểu thị dưới dạng ký tự Unicode.
 
-1 biểu thức hằng kí tự bao gồm 1 từ tố kí tự (character literal). Kiểu của biểu thức là kiểu kí tự (char) nguyên thủy. Biểu thức hằng kí tự bắt đầu và kết thúc bằng dấu nháy đơn '\textbf{'}' (U+0027). Kí tự trong biểu thức hằng kí tự có thể là ký tự Unicode đơn hoặc ký tự thoát (escape character). 
+\subsubsection{Kiểu logic}
 
-\noindent\textbf{Biểu thức hằng chuỗi (\textit{String literal expression})}
+    Những biến nào có kiểu dữ liệu là logic thì có thể chứa giá trị \textit{true} hoặc \textit{false}. Trong Pandora, kiểu logic được ký hiệu là \textit{bool}.
 
-1 biểu thức hằng chuỗi có thể là 1 từ tố chuỗi (string literal) hoặc 1 từ tố chuỗi thô (raw string literal). Kiểu của biểu thức là kiểu chuỗi (String). Nếu từ tố là chuỗi thô, nó bắt đầu bằng ký tự '\textbf{r}', tiếp theo đó có thể là 1 loạt kí tự '\textbf{\#}', rồi đến cặp dấu nháy kép '\textbf{"}' (U+0022). Chuỗi thô có thể chứa bất kỳ ký tự nào trong Unicode. Nếu từ tố là chuỗi, nó bắt đầu và kết thúc bằng dấu nháy kép '\textbf{"}' (U+0022). Chuỗi có thể chứa bất kỳ ký tự nào trong Unicode, trừ ký tự dấu nháy kép (U+0022) và ký tự thoát (U+005C).
+\subsubsection{Kiểu chuỗi}
 
-\noindent\textbf{Biểu thức hằng số nguyên (\textit{Integer literal expression})}
+    Những biến nào có kiểu dữ liệu là chuỗi thì có thể chứa chuỗi các ký tự. Trong Pandora, kiểu chuỗi được ký hiệu là \textit{str}.
 
-1 biểu thức hằng số nguyên bao gồm 1 từ tố hằng số nguyên (integer literal). Kiểu của biểu thức là kiểu số nguyên (int) nguyên thủy. Hằng số nguyên có thể là hệ thập phân, hệ thập lục phân, hệ bát phân hoặc hệ nhị phân. Hệ thập phân bắt đầu bằng 1 chữ số thập phân, hệ thập lục phân bắt đầu bằng chuỗi '\textbf{0h}', hệ bát phân bắt đầu bằng chuỗi '\textbf{0o}' và hệ nhị phân bắt đầu bằng chuỗi '\textbf{0b}'.
+\subsubsection{Kiểu tuple}
 
-\noindent\textbf{Biểu thức hằng số thực (\textit{Float literal expression})}
+    Những biến nào có kiểu dữ liệu là tuple thì có thể chứa một bộ giá trị. Trong Pandora, kiểu tuple được ký hiệu là \textit{tuple}. Một tuple có thể chứa nhiều giá trị khác nhau, và mỗi giá trị trong tuple có thể có kiểu dữ liệu khác nhau. Một tuple được tạo ra bằng cách đặt các giá trị cần chứa trong cặp dấu ngoặc đơn U+0028 ('\textbf{(}') và U+0029 ('\textbf{)}'), cách nhau bởi dấu phẩy U+002C ('\textbf{,}'). Ví dụ, \textbf{(1, true, "hello")} là một tuple chứa 3 giá trị là số nguyên 1, logic \textit{true} và chuỗi "hello". Tuy nhiên, do đang trong quá trình phát triển, Pandora chỉ hỗ trợ đúng một tuple duy nhất là tuple không có phần tử nào, hay còn gọi là \textit{unit}, và được dùng làm giá trị trả về của hàm không có giá trị trả về.
 
-1 biểu thức hằng số thực bao gồm 1 từ tố hằng số thực (float literal). Kiểu của biểu thức là kiểu số thực (float) nguyên thủy. Hằng số thực có thể là số thực hoặc số thực với số mũ. Số thực bắt đầu bằng 1 số thực, số thực với số mũ bắt đầu bằng số thực theo sau là ký tự '\textbf{e}' hoặc '\textbf{E}' và tiếp theo là số nguyên. Số thực có thể có dấu chấm để phân cách phần nguyên và phần thập phân (nếu có thì phần thập phân phải trước phần mũ). 
+\subsubsection{Kiểu mảng}
 
-\noindent\textbf{Biểu thức hằng số boolean (\textit{Boolean literal expression})}
-
-1 biểu thức hằng số boolean bao gồm từ khóa \kw{true} hoặc \kw{false}. Kiểu của biểu thức là kiểu boolean (boolean) nguyên thủy.
-
-\subsubsection{Biểu thức toán tử (\textit{Operator expression})}
-
-\regexopexpr
-
-Biểu thức toán tử là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của các biểu thức con và toán tử. Biểu thức toán tử có thể là một biểu thức phủ định, biểu thức toán tử số học hoặc logic, biểu thức so sánh, biểu thức gán hoặc biểu thức boolean lười biếng. Biểu thức toán tử có thể chứa nhiều từ tố.
-
-\noindent\textbf{Biểu thức phủ định (\textit{Negation expression})}
-
-\regexneexpr
-
-Biểu thức phủ định là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của biểu thức con và toán tử phủ định. Biểu thức phủ định có thể là phủ định số học hoặc phủ định logic. Phủ định số học bắt đầu bằng ký tự '\textbf{-}' (U+002D), phủ định logic bắt đầu bằng ký tự '\textbf{!}' (U+0021). Ta lưu ý rằng phủ định số học chỉ áp dụng cho biểu thức số học, phủ định logic chỉ áp dụng cho biểu thức logic. Các số thực có dấu sẽ được biểu diễn bằng cách sử dụng mã bù 2.
-
-\noindent\textbf{Biểu thức toán tử số học hoặc logic (\textit{Arithmetic or logical expression})}
-
-\regexarithlogicexpr
-
-Biểu thức toán tử số học hoặc logic là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của các biểu thức con và toán tử số học hoặc logic. Biểu thức toán tử số học hoặc logic có thể là phép cộng, phép trừ, phép nhân, phép chia, phép chia lấy dư, phép AND, phép OR hoặc phép XOR. Các phép toán số học hoặc logic sẽ được thực hiện theo thứ tự ưu tiên. Ta cần lưu ý rằng:
-
-\begin{itemize}
-    \item{Phép chia lấy dư chỉ áp dụng cho số nguyên}
-    \item{Phép AND, OR, XOR chỉ áp dụng cho số nguyên}
-    \item{Phép chia giữa 2 số nguyên sẽ trả về kết quả là số nguyên (phần nguyên)}
-    \item{Phép chia cho 0 sẽ sinh ra lỗi}           
-\end{itemize}
-
-\noindent\textbf{Biểu thức so sánh (\textit{Comparison expression})}
-
-\regexcompexpr
-
-Biểu thức so sánh là một biểu thức mà giá trị của nó luôn là từ khóa boolean \kw{true} hoặc \kw{false}. Biểu thức so sánh có thể là phép so sánh bằng, phép so sánh khác, phép so sánh nhỏ hơn, phép so sánh lớn hơn, phép so sánh nhỏ hơn hoặc bằng, phép so sánh lớn hơn hoặc bằng. Các phép so sánh sẽ trả về giá trị boolean. Cần thiết phải có cặp ngoặc tròn khi thực hiện các phép so sánh liền kề nhau. Ví dụ, \textit{a < b < c} sẽ sinh ra lỗi, cần phải sửa thành \textit{(a < b) < c}.
-
-\noindent\textbf{Biểu thức gán (\textit{Assign expression})}
-
-\regexassignexpr
-
-Biểu thức gán là một biểu thức mà giá trị của nó luôn là từ khóa \kw{void}, với mục đích gán giá trị cho biến ở bên trái.
-
-\noindent\textbf{Biểu thức gán phức tạp (\textit{Compound assignment expression})}
-
-\regexcompoundassignexpr
-
-Biểu thức gán phức tạp là một biểu thức mà giá trị của nó luôn là từ khóa \kw{void}, kết hợp giữa biểu thức gán và biểu thức toán tử. Biểu thức gán phức tạp có thể là phép cộng gán, phép trừ gán, phép nhân gán, phép chia gán, phép chia lấy dư gán, phép AND gán, phép OR gán hoặc phép XOR gán.
-
-\noindent\textbf{Biểu thức boolean lười biếng (\textit{Lazy boolean expression})}
-
-\regexlazyboolexpr
-
-Biểu thức boolean lười biếng là một biểu thức mà giá trị của nó luôn là từ khóa boolean \kw{true} hoặc \kw{false}. Biểu thức boolean lười biếng có thể là phép AND hoặc phép OR. Gọi là lười biếng vì nó chỉ thực hiện phép toán cần thiết để xác định giá trị của biểu thức.
-
-\subsubsection{Biểu thức nhóm (\textit{Grouped expression})}
-
-\regexgroupexpr
-
-Biểu thức nhóm là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của biểu thức con. Biểu thức nhóm bắt đầu và kết thúc bằng cặp ngoặc tròn (U+0028 và U+0029). Biểu thức nhóm giúp thay đổi thứ tự thực hiện của các phép toán.
-
-\subsubsection{Biểu thức lời gọi hàm (\textit{Function call expression})}
-
-\regexfuncallexpr
-
-Biểu thức lời gọi hàm là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của hàm được gọi và các tham số truyền vào hàm. Biểu thức lời gọi hàm bắt đầu bằng tên hàm, tiếp theo là cặp ngoặc tròn (U+0028 và U+0029) chứa danh sách tham số truyền vào hàm. Danh sách tham số truyền vào hàm được phân cách bởi dấu phẩy (U+002C).
-
-\subsection{Biểu thức lời gọi phương thức (\textit{Method call expression})}
+    Những biến nào có kiểu dữ liệu là mảng thì có thể chứa một dãy các giá trị. Trong Pandora, kiểu mảng được ký hiệu là \textit{array}. Một mảng có thể chứa nhiều giá trị cùng kiểu dữ liệu. Một mảng có thể được tạo ra thông qua biểu thức mảng (chi tiết ở phần \textbf{\ref{ch2:arrayexpr}}).

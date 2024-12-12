@@ -16,32 +16,6 @@
     \end{rg}
 }
 
-\newcommand{\regexfunitem}{
-    \begin{rg}
-    FUNCTION\_ITEM -> \w{fun} IDENTIFIER  GENERIC\_PARAMS?
-
-    \hspace{3.5cm}\w{(}FUNC\_PARAMS?\w{)} FUNC\_RET\_TYPE?
-    
-    \hspace{3.5cm}(BLOCK\_STATEMENT | \w{;})
-
-    FUNC\_PARAMS -> SELF\_PARAM\w{,}?
-
-    \hspace{3.5cm}| (SELF\_PARAM\w{,})? 
-
-    \hspace{3.5cm}FUNC\_PARAM (\w{,} FUNC\_PARAM)*\w{,}?
-
-    FUNC\_PARAM -> IDENTIFIER\w{:} TYPE
-
-    FUNC\_RET\_TYPE -> \w{->} TYPE
-
-    SELF\_PARAM -> SHORT\_HAND\_SELF | TYPED\_SELF
-
-    SHORT\_HAND\_SELF -> \w{mut}? \w{self}
-
-    TYPED\_SELF -> \w{mut}? \w{self}\w{:} TYPE
-    \end{rg}
-}
-
 \newcommand{\regexclassitem}{
     \begin{rg}
     CLASS\_ITEM -> \w{class} IDENTIFIER GENERIC\_PARAMS?

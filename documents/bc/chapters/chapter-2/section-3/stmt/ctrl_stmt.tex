@@ -1,31 +1,116 @@
 \subsubsection{Câu lệnh điều khiển (\textit{Control flow statement})}
 
-\noindent\textbf{\label{ch2:block_stmt}Câu lệnh khối (\textit{Block statement})}
+    Câu lệnh điều khiển là câu lệnh dùng để kiểm soát luồng thực thi của chương trình. Câu lệnh điều khiển bao gồm các câu lệnh rẽ nhánh và lặp. Câu lệnh điều khiển được sử dụng để thực hiện các công việc như kiểm tra điều kiện, lặp lại một nhóm câu lệnh nào đó, thoát khỏi vòng lặp, ... Câu lệnh điều khiển được mô tả bởi biểu thức chính quy sau:
 
-\regexblockstmt
-
-Câu lệnh khối là một nhóm các câu lệnh được đặt trong dấu ngoặc nhọn '\textbf{\{ \}}'. Câu lệnh khối được sử dụng để nhóm các câu lệnh lại với nhau. Câu lệnh khối có thể chứa một hoặc nhiều câu lệnh bên trong, cũng có thể không chứa lệnh nào. Câu lệnh khối thường được sử dụng trong các câu lệnh điều khiển như câu lệnh rẽ nhánh hoặc câu lệnh lặp. Đôi khi, chúng cũng được dùng độc lập để giới hạn phạm vi của biến.
+\regexctrlstmt
 
 \noindent\textbf{\label{ch2:if_stmt}Câu lệnh rẽ nhánh (\textit{If statement})}
 
+    Câu lệnh rẽ nhánh là câu lệnh dùng để kiểm tra một biểu thức điều kiện. Nếu biểu thức điều kiện đúng, chương trình sẽ thực thi một nhóm câu lệnh nào đó. Nếu biểu thức điều kiện sai, chương trình sẽ thực thi một nhóm câu lệnh khác. Câu lệnh rẽ nhánh bắt đầu bằng từ khóa \kw{when}, sau đó là biểu thức điều kiện cần kiểm tra. Nếu biểu thức điều kiện đúng, chương trình sẽ thực thi câu lệnh nằm trong dấu ngoặc nhọn U+007B U+007D (\textbf{\{ \}}) ngay sau. Nếu biểu thức điều kiện sai, chương trình sẽ thực thi câu lệnh nằm trong dấu ngoặc nhọn ngay sau từ khóa \kw{alt}. Câu lệnh rẽ nhánh có thể không chứa câu lệnh nào ở một trong hai nhánh. Biểu thức điều kiện bắt buộc phải là một biểu thức trả về giá trị đúng sai (boolean). Câu lệnh rẽ nhánh không bắt buộc phải có nhánh \kw{alt}. Câu lệnh rẽ nhánh được mô tả bởi biểu thức chính quy sau:
+
 \regexifstmt
 
-Câu lệnh rẽ nhánh là câu lệnh dùng để kiểm tra một điều kiện nào đó. Nếu điều kiện đó đúng, chương trình sẽ thực thi một nhóm câu lệnh nào đó. Nếu điều kiện đó sai, chương trình sẽ thực thi một nhóm câu lệnh khác. Câu lệnh rẽ nhánh bắt đầu bằng từ khóa \kw{if}, sau đó là điều kiện cần kiểm tra. Nếu điều kiện đúng, chương trình sẽ thực thi câu lệnh nằm trong dấu ngoặc nhọn '\textbf{\{ \}}' ngay sau. Nếu điều kiện sai, chương trình sẽ thực thi câu lệnh ngay sau từ khóa \kw{else}. Câu lệnh rẽ nhánh có thể không có phần \kw{else}. Biểu thức điều kiện bắt buộc phải là một biểu thức trả về giá trị đúng sai (boolean).
+\noindent Ví dụ về câu lệnh rẽ nhánh:
+\begin{lstlisting}[]
+when a > b {
+    println("a is greater than b");
+} alt when a < b {
+    println("a is less than b");
+} alt {
+    println("a is equal to b");
+}
+\end{lstlisting}
 
 \noindent\textbf{Câu lệnh lặp (\textit{Loop statement})}
 
-\regexloopstmt
-
 Câu lệnh lặp là câu lệnh dùng để lặp lại một nhóm câu lệnh nào đó nhiều lần.
+
+\regexloopstmt
 
 \noindent\textbf{\label{ch2:while_stmt}Câu lệnh lặp biểu thức điều kiện (\textit{Predicate loop statement})}
 
+    Câu lệnh lặp biểu thức điều kiện là câu lệnh dùng để lặp lại một nhóm câu lệnh nào đó nhiều lần dựa trên một biểu thức điều kiện. Câu lệnh lặp biểu thức điều kiện bắt đầu bằng từ khóa \kw{during}, sau đó là biểu thức điều kiện cần kiểm tra. Nếu biểu thức điều kiện đúng, chương trình sẽ thực thi câu lệnh nằm trong dấu ngoặc nhọn U+007B U+007D (\textbf{\{ \}}) ngay sau. Nếu biểu thức điều kiện sai, chương trình sẽ thoát khỏi vòng lặp. Biểu thức điều kiện bắt buộc phải là một biểu thức trả về giá trị đúng sai (boolean). Câu lệnh lặp biểu thức điều kiện được mô tả bởi biểu thức chính quy sau:
+
 \regexpredloopstmt
 
-Câu lệnh lặp biểu thức điều kiện là câu lệnh dùng để lặp lại một nhóm câu lệnh nào đó nhiều lần dựa trên một biểu thức điều kiện. Câu lệnh lặp biểu thức điều kiện bắt đầu bằng từ khóa \kw{while}, sau đó là biểu thức điều kiện cần kiểm tra. Nếu biểu thức điều kiện đúng, chương trình sẽ thực thi câu lệnh nằm trong dấu ngoặc nhọn '\textbf{\{ \}}' ngay sau. Sau đó, chương trình sẽ kiểm tra lại biểu thức điều kiện. Nếu biểu thức điều kiện sai, chương trình sẽ thoát khỏi vòng lặp. Biểu thức điều kiện bắt buộc phải là một biểu thức trả về giá trị đúng sai (boolean).
+\noindent Ví dụ về câu lệnh lặp biểu thức điều kiện:
+\begin{lstlisting}[]
+set mut a: int = 0;
+during a < 10 {
+    println(a as str);
+    a += 1;
+}
+\end{lstlisting}
 
 \noindent\textbf{\label{ch2:for_stmt}Câu lệnh lặp trình lặp (\textit{Iterator loop statement})}
 
+    Câu lệnh lặp trình lặp là câu lệnh dùng để lặp qua một tập hợp các phần tử nào đó. Câu lệnh lặp trình lặp bắt đầu bằng từ khóa \kw{for}, sau đó là biến lặp, từ khóa \kw{in} và tập hợp cần lặp qua. Biến lặp sẽ lấy giá trị của từng phần tử trong tập hợp. Câu lệnh lặp trình lặp có thể chứa một hoặc nhiều câu lệnh bên trong. Biểu thức tập hợp bắt buộc phải là một biểu thức trả về một đối tượng có thể lặp qua (iterable). Câu lệnh lặp trình lặp được mô tả bởi biểu thức chính quy sau:
+
 \regexiterloopstmt
 
-Câu lệnh lặp trình lặp là câu lệnh dùng để lặp qua một tập hợp các phần tử nào đó. Câu lệnh lặp trình lặp bắt đầu bằng từ khóa \kw{for}, sau đó là biến lặp, từ khóa \kw{in} và tập hợp cần lặp qua. Biến lặp sẽ lấy giá trị của từng phần tử trong tập hợp. Câu lệnh lặp trình lặp có thể chứa một hoặc nhiều câu lệnh bên trong. Biểu thức tập hợp bắt buộc phải là một biểu thức trả về một đối tượng có thể lặp qua (iterable).
+\noindent Ví dụ về câu lệnh lặp trình lặp:
+\begin{lstlisting}[]
+set arr: [int] = [1, 2, 3, 4, 5];
+for i in arr {
+    println(i as str);
+}
+
+set str: str = "hello";
+for c in str {
+    println(c as str);
+}
+\end{lstlisting}
+
+\noindent\textbf{Câu lệnh trả về (\textit{Return statement})}
+
+    Câu lệnh trả về là câu lệnh dùng để trả về một giá trị từ một hàm. Câu lệnh trả về bắt đầu bằng từ khóa \kw{yeet}, sau đó có thể là giá trị cần trả về. Câu lệnh này chỉ có thể xuất hiện trong hàm. Câu lệnh trả về được mô tả bởi biểu thức chính quy sau:
+
+\regexreturnstmt
+
+\noindent Ví dụ về câu lệnh trả về:
+\begin{lstlisting}[]
+fun add(a: int, b: int) -> int {
+    yeet a + b;
+}
+
+fun hello(name: str) {
+    println("Hello, " + name);
+    yeet;
+}
+\end{lstlisting}
+
+\noindent\textbf{Câu lệnh thoát khỏi vòng lặp (\textit{Break statement})}
+
+    Câu lệnh thoát khỏi vòng lặp là câu lệnh dùng để thoát khỏi vòng lặp hiện tại. Câu lệnh thoát khỏi vòng lặp bắt đầu bằng từ khóa \kw{br}. Câu lệnh này chỉ có thể xuất hiện trong vòng lặp. Câu lệnh thoát khỏi vòng lặp được mô tả bởi biểu thức chính quy sau:
+
+\regexbreakstmt
+
+\noindent Ví dụ về câu lệnh thoát khỏi vòng lặp:
+\begin{lstlisting}[]
+set mut a: int = 0;
+during a < 10 {
+    println(a as str);
+    a += 1;
+    when a == 5 {
+        br;
+    }
+}
+\end{lstlisting}
+
+\noindent\textbf{Câu lệnh tiếp tục vòng lặp (\textit{Continue statement})}
+
+    Câu lệnh tiếp tục vòng lặp là câu lệnh dùng để bỏ qua phần còn lại của vòng lặp hiện tại và tiếp tục với vòng lặp tiếp theo. Câu lệnh tiếp tục vòng lặp bắt đầu bằng từ khóa \kw{skip}. Câu lệnh này chỉ có thể xuất hiện trong vòng lặp. Câu lệnh tiếp tục vòng lặp được mô tả bởi biểu thức chính quy sau:
+
+\regexcontinuestmt
+
+\noindent Ví dụ về câu lệnh tiếp tục vòng lặp:
+\begin{lstlisting}[]
+set mut a: int = 0;
+during a < 10 {
+    a += 1;
+    when a % 2 == 0 {
+        skip;
+    }
+    println(a as str);
+}
+\end{lstlisting}

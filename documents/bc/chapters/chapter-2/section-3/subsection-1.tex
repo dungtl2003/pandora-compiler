@@ -27,19 +27,39 @@
     \end{itemize}
 \noindent Pandora là một ngôn ngữ "dạng tự do", có nghĩa là tất cả các dạng khoảng trắng chỉ dùng để phân tách các từ tố trong ngữ pháp và không có ý nghĩa ngữ nghĩa.
 
-Tên \textbf{\textit{identifier}} trong Pandora được phân làm hai loại: \textbf{non-keyword identifier} hoặc \textbf{raw identifier}. \textbf{non-keyword identifier} được tạo thành từ tập các kí tự nêu trên và không được là từ khóa (\textbf{keyword}). Trong khi đó, \textbf{raw identifier} có thể là tên hoặc từ khóa (có \textbf{r\#} ở phía trước để phân biệt với tên thường hay từ khóa), cụ thể như sau:
+    Tên \textbf{\textit{identifier}} trong Pandora được phân làm hai loại: \textbf{non-keyword identifier} hoặc \textbf{raw identifier}. \textbf{non-keyword identifier} được tạo thành từ tập các kí tự nêu trên và không được là từ khóa (\textbf{keyword}). Trong khi đó, \textbf{raw identifier} có thể là tên hoặc từ khóa (có \textbf{r\#} ở phía trước để phân biệt với tên thường hay từ khóa), cụ thể như sau:
 
     \regexidentifier
 
 \noindent Trong đó \textbf{XID\_Start} và \textbf{XID\_Continue} là các thuộc tính của ký tự trong Unicode liên quan đến tên (định danh). Chúng thường được sử dụng để xác định liệu một ký tự có thể là phần đầu hoặc phần thân của một định danh trong các ngôn ngữ lập trình hay không. Ngoài ra, một tên còn có thể chứa các biểu tượng cảm xúc (\textbf{EMOJI\_SYMBOL}).
 
-Một ký tự chữ (\textbf{character}) là một ký tự Unicode đơn được đặt trong hai ký tự \textbf{'} (dấu nháy đơn - U+0027), ngoại trừ chính U+0027, ký tự này phải được thoát bằng ký tự U+005C trước đó (\textbf{\textbackslash}), cụ thể như sau:
+\noindent Ví dụ về các identifier và raw identifier:
+\begin{lstlisting}[]
+abc, _true, a1, a_b // identifier
+r#abc, r#true, r#a1, r#a_b // raw identifier
+\end{lstlisting}
+
+    Một ký tự chữ (\textbf{character}) là một ký tự Unicode đơn được đặt trong hai ký tự \textbf{'} (dấu nháy đơn - U+0027), ngoại trừ chính U+0027, ký tự này phải được thoát bằng ký tự U+005C trước đó (\textbf{\textbackslash}), cụ thể như sau:
 
     \regexcharliteral
+
+\noindent Ví dụ về các ký tự chữ:
+\begin{lstlisting}[]
+'a', 'b', 'c', '1', '2', '3', '!', '\'', '\"', '(', ')', '_', '+', '-', '=', '{', '}', '[', ']', '|', '\\', ':', ';', '"', '<', '>', ',', '.', '?', '/', ' ', '\t', '\n', '\r'
+\end{lstlisting}
 
     Chuỗi ký tự (\textbf{string literal}) là một chuỗi gồm bất kỳ ký tự Unicode nào được đặt trong hai ký tự U+0022 (\textbf{"} - dấu ngoặc kép), ngoại trừ chính U+0022, ký tự này phải được thoát bằng ký tự U+005C trước đó (\textbf{\textbackslash}). Chuỗi ký tự cho phép có các line-breaks (cho phép ngắt dòng, được biểu thị bởi ký tự U+000A). Khi ký tự U+005C không thoát (\textbf{\textbackslash}) xuất hiện ngay trước ngắt dòng, ngắt dòng sẽ không xuất hiện trong xâu được biểu diễn trong từ tố, cụ thể như sau:
 
     \regexstringliteral
+
+\noindent Ví dụ về các chuỗi ký tự:
+\begin{lstlisting}[]
+"abc", "a b c", "a\nb\nc", "a\"b\"c", "a\\b\\c", "a\tb\tc", "a\rb\rc"
+// special case (this will be like "ab")
+"a\
+
+    b"
+\end{lstlisting}
 
     Ta có thể thấy, các ký tự chữ hoặc các xâu có thể chứa một hoặc một vài loại \textbf{escape} (thoát ký tự). Một escape bắt đầu bằng U+005C (\textbf{\textbackslash}) và tiếp tục bằng một trong các dạng sau:
 
@@ -53,7 +73,12 @@ Một ký tự chữ (\textbf{character}) là một ký tự Unicode đơn đư�
 
     \regexrawstringliteral
 
-    Trong đó, cần lưu ý rằng \textbf{non-greedy behavior} (hành vi không tham lam) được sử dụng để xác định phần thân raw string. Điều này có nghĩa là phần thân raw string sẽ kết thúc ngay khi có thể, không cần phải chờ đến khi có thể kết thúc chuỗi raw string.
+\noindent Trong đó, cần lưu ý rằng \textbf{non-greedy behavior} (hành vi không tham lam) được sử dụng để xác định phần thân raw string. Điều này có nghĩa là phần thân raw string sẽ kết thúc ngay khi có thể, không cần phải chờ đến khi có thể kết thúc chuỗi raw string.
+
+\noindent Ví dụ về các chuỗi ký tự thô:
+\begin{lstlisting}[]
+r"abc", r"a\b\c", r#"a"b"c"#, r#"a###"b"c"#
+\end{lstlisting}
 
     Một hằng số nguyên (\textbf{integer literal}) có một trong bốn dạng sau:
 
@@ -66,6 +91,14 @@ Một ký tự chữ (\textbf{character}) là một ký tự Unicode đơn đư�
 
     \regexintegerliteral
 
+\noindent Ví dụ về các hằng số nguyên:
+\begin{lstlisting}[]
+0, 3, 124, 1_000_000, 1__ // decimal
+0h0, 0h3, 0H1_24, 0H1_000_000, 0h___1__ // hexadecimal
+0o0, 0o3, 0O1_24, 0O1_000_000, 0o___1__ // octal
+0b0, 0b1, 0B1_24, 0B1_000_000, 0b___1__ // binary
+\end{lstlisting}
+
     Một hằng số thực (\textbf{float literal}) có một trong hai dạng:
     \begin{itemize}
         \item{Một số thập phân theo sau là ký tự dấu chấm U+002E (\textbf{.}). Theo sau có thể là một số thập phân khác (sau số thập phân đó có thể có số mũ)}
@@ -73,6 +106,12 @@ Một ký tự chữ (\textbf{character}) là một ký tự Unicode đơn đư�
     \end{itemize}
 
     \regexfloatliteral
+    
+\noindent Ví dụ về các hằng số thực:
+\begin{lstlisting}[]
+0.0, 3.14, 124.25_3, 1_000_000.0, 1__.0, 0.0e0, 3.0e3__, 
+124.3_e__2__, 1_000_000.0+e32, 1__.0_-E-2
+\end{lstlisting}
 
     Chú thích không phải tài liệu (\textbf{non-doc comment}) có thể là dòng (\textbf{//}) hoặc là khối (\textbf{/* ... */}). Pandora có hỗ trợ các chú thích khối lồng nhau. Các chú thích kiểu này được hiểu là một dạng khoảng trắng.
 
@@ -85,4 +124,21 @@ Một ký tự chữ (\textbf{character}) là một ký tự Unicode đơn đư�
     \regexblockcomment
 
     \regexdoc
+
+\noindent Ví dụ về các chú thích:
+\begin{lstlisting}[]
+// this is a line comment
+
+/* this is 
+a block comment
+/* this is a nested
+block comment */ */
+
+//@ this is an outer doc comment
+
+/*! this is an 
+inner doc comment 
+/*@ this is a nested 
+outer doc comment */ */
+\end{lstlisting}
 
