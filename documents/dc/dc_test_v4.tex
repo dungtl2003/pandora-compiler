@@ -50,7 +50,7 @@
     \noindent
     \hspace{-10pt}
     \begin{tabular}{ m{3.5cm} m{10cm}}
-        \textbf{Tên chuyên đề: }\newline & Xây dựng trình biên dịch cho ngôn ngữ lập trình Pandora sử dụng ngôn ngữ Rust
+        \textbf{Tên chuyên đề: }\newline & Xây dựng trình thông dịch cho ngôn ngữ lập trình Pandora sử dụng ngôn ngữ Rust
     \end{tabular}
 
     \noindent
@@ -69,52 +69,41 @@
 
 
     \begin{mucluc}
-        \item TỔNG QUAN VỀ NGÔN NGỮ VÀ COMPILER
+        \item TỔNG QUAN VỀ TRÌNH THÔNG DỊCH
         \begin{mucluc}
-            \item Giới thiệu về ngôn ngữ Pandora
-            \item Khái niệm và vai trò của compiler
+            \item Khái niệm và vai trò của trình thông dịch
             \begin{mucluc}
-                \item Khái niệm compiler
-                \item Vai trò của compiler
+                \item Khái niệm trình thông dịch
+                \item Vai trò của trình thông dịch
             \end{mucluc}
+            \item Kiến trúc của trình thông dịch
+            \begin{mucluc}
+                \item Phân tích từ vựng
+                \item Phân tích cú pháp
+                \item Phân tích ngữ nghĩa và thực thi
+                % \item Quản lý bảng ký hiệu
+                \item Xử lí lỗi
+            \end{mucluc}
+        \end{mucluc}
+        \item TỔNG QUAN VỀ NGÔN NGỮ LẬP TRÌNH
+        \begin{mucluc}
             \item Giới thiệu về ngôn ngữ Rust
-            \item Mục tiêu của đề tài
+            \item Giới thiệu về ngôn ngữ Pandora
+            \item Định nghĩa ngôn ngữ Pandora
         \end{mucluc}
-        \item ĐỊNH NGHĨA NGÔN NGỮ PANDORA
-        \begin{mucluc}
-            \item Từ tố
-            \item Câu lệnh
-            \item Biểu thức
-            \item Đường dẫn
-            \item Kiểu dữ liệu
-        \end{mucluc}
-        \item KIẾN TRÚC TỔNG QUAN VỀ COMPILER
-        \begin{mucluc}
-            \item Phân tích từ vựng
-            \item Phân tích cú pháp
-            \item Phân tích ngữ nghĩa
-            \item Sinh mã trung gian
-            \item Tối ưu mã
-            \item Sinh mã
-            \item Quản lý bảng ký hiệu
-            \item Xử lí lỗi
-        \end{mucluc}
-        \item QUÁ TRÌNH XÂY DỰNG COMPILER SỬ DỤNG NGÔN NGỮ RUST
+        \item QUÁ TRÌNH XÂY DỰNG TRÌNH THÔNG DỊCH SỬ DỤNG NGÔN NGỮ RUST
         \begin{mucluc}
             \item Thiết lập môi trường phát triển
-            \item Xây dựng bảng kí hiệu
-            \item Xây dựng bộ phân tích từ vựng (Lexer)
-            \item Xây dựng bộ phân tích cú pháp (Parser)
-            \item Xây dựng bộ phân tích ngữ nghĩa
-            \item Sinh mã
-            \item Xây dựng bộ xử lí lỗi
+            \item Xây dựng bộ phân tích từ vựng %(Lexer)
+            \item Xây dựng bộ phân tích cú pháp %(Parser)
+            \item Xây dựng bộ phân tích ngữ nghĩa và thực thi %(Semantic analyzer and Evaluator)
         \end{mucluc}
         \item TRIỂN KHAI THỰC NGHIỆM VÀ ĐÁNH GIÁ
         \begin{mucluc}
-            \item Triển khai biên dịch chương trình in “Hello, world”
+            \item Triển khai thông dịch chương trình in “Hello, world!”
             \begin{mucluc}
-                \item Quá trình biên dịch chương trình 
-                \item Kết quả biên dịch chương trình
+                \item Quá trình thông dịch chương trình 
+                \item Kết quả thực thi chương trình
             \end{mucluc}
             \item Triển khai với những ví dụ khác
             \item Đánh giá

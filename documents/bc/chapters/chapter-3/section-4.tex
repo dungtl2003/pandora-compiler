@@ -1,14 +1,18 @@
 \section{Xây dựng bộ phân tích cú pháp}
-Giai đoạn phân tích cú pháp là bước tiếp theo sau khi mã nguồn đã được chuyển đổi thành các token bởi bộ phân tích từ vựng. Mục tiêu của giai đoạn này là xây dựng cây cú pháp trừu tượng (AST) để biểu diễn cấu trúc logic của mã nguồn, tạo nền tảng cho các giai đoạn phân tích ngữ nghĩa và sinh mã sau này. 
-% Việc xây dựng bộ phân tích cú pháp đòi hỏi một quy trình rõ ràng nhằm đảm bảo chương trình có thể nhận diện đúng cú pháp và xử lý chính xác các câu lệnh phức tạp.
+Giai đoạn phân tích cú pháp là bước tiếp theo sau khi mã nguồn đã được chuyển đổi thành các token bởi bộ phân tích từ vựng. Mục tiêu của giai đoạn này là xây dựng cây cú pháp trừu tượng (AST) để biểu diễn cấu trúc logic của mã nguồn, tạo nền tảng cho các giai đoạn phân tích ngữ nghĩa và thực thi sau này. 
 
-Trong ngôn ngữ Pandora, các loại câu lệnh như khai báo biến, biểu thức, câu lệnh điều khiển, và các cấu trúc phức tạp khác đóng vai trò quan trọng trong việc xây dựng logic của chương trình. Việc triển khai bộ phân tích cú pháp cho các câu lệnh này là một phần thiết yếu trong việc xây dựng compiler, giúp đảm bảo rằng tất cả các cấu trúc cú pháp được phân tích và xử lý đúng cách. Phần này sẽ giới thiệu cách thức parser hoạt động khi phân tích các loại câu lệnh khác nhau, cùng với việc cung cấp mã nguồn triển khai cụ thể và giải thích chi tiết.
+Việc xây dựng bộ phân tích cú pháp đòi hỏi một quy trình rõ ràng nhằm đảm bảo chương trình có thể nhận diện đúng cú pháp và xử lý chính xác các câu lệnh phức tạp.
+
+Trong ngôn ngữ Pandora, các loại câu lệnh như khai báo biến, biểu thức, câu lệnh điều khiển, và các cấu trúc phức tạp khác đóng vai trò quan trọng trong việc xây dựng logic của chương trình. Việc triển khai bộ phân tích cú pháp cho các câu lệnh này là một phần thiết yếu trong việc xây dựng trình thông dịch, giúp đảm bảo rằng tất cả các cấu trúc cú pháp được phân tích và xử lý đúng cách. Phần này sẽ giới thiệu cách thức bộ phân tích cú pháp hoạt động khi phân tích các loại câu lệnh khác nhau, cùng với việc giải thích chi tiết các mã nguồn triển khai được cung cấp tại phần phụ lục.
 
 \subsection{Câu lệnh}
 Quá trình phân tích cú pháp bắt đầu bằng việc nhận diện loại câu lệnh hiện tại. Điều này được thực hiện thông qua token tiếp theo trong luồng đầu vào và được xử lý bởi hàm parse\_stmt. Hàm này có nhiệm vụ phân loại câu lệnh dựa trên từ tố đầu tiên, từ đó chuyển hướng quá trình phân tích đến hàm phù hợp cho từng loại câu lệnh (ví dụ: khai báo biến, câu lệnh điều kiện, vòng lặp, v.v.).
 
-Chi tiết mã nguồn của hàm \textit{parse\_stmt} sẽ được trình bày tại \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}. 
+Chi tiết mã nguồn của hàm \textit{parse\_stmt} sẽ được trình bày tại \hyperref[ap1:stmt]{\bf Phụ lục 1}. % Mục 1.xx todo!
+
+
 \subsubsection{Câu lệnh khai báo}
+
 \textbf{Câu lệnh khai báo biến:}
 
 Cú pháp của câu lệnh khai báo biến được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:decl_var_stmt]{\bf Chương 2}.
@@ -30,14 +34,27 @@ Cụ thể hàm \textit{parse\_stmt\_var\_decl} chịu trách nhiệm triển kh
     Câu lệnh khai báo kết thúc bởi một kí tự ';', do đó sau khi đã xác định xong các thành phần cơ bản của câu lệnh khai báo, chương trình sẽ phải kiểm tra để đảm bảo tồn tại kí tự ';' để kết thúc câu lệnh nếu như không tồn tại kí tự ';' thì báo lỗi. %TODO!
 \end{itemize}
 
-% Các bước trên không chỉ đảm bảo phân tích đúng cú pháp của câu lệnh khai báo biến mà còn hỗ trợ tạo cây cú pháp trung gian (AST) với thông tin chi tiết về biến được khai báo.
+
+\textbf{Câu lệnh khai báo hàm:}
+
+Cú pháp của câu lệnh khai báo biến được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:decl_var_stmt]{\bf Chương 2}.
+
+Câu lệnh khai báo hàm được bắt đầu khi từ tố hiện tại là từ khóa \kw{fun}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_func\_decl}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmtdeclfun]{\bf Phụ lục 1}. % Mục 1.xx todo!
+
+Cụ thể hàm \textit{parse\_stmt\_func\_decl} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh khai báo hàm như sau:
+
+\begin{itemize}
+    \item Sau khi nhận diện từ khóa \kw{fun}, chương trình bắt đầu phân tích phần "signal" bao gồm tên hàm, tham số truyền vào và kiểu dữ liệu trả về của hàm bằng cách gọi hàm \textit{parse\_stmt\_func\_sig}.
+    \item Sau khi xác định được phần "signal", chương trình sẽ phân tích câu lệnh phần thân hàm bằng cách gọi hàm \textit{parse\_stmt}.
+\end{itemize}
 
 \subsubsection{Câu lệnh điều khiển}
-\textbf{Câu lệnh khối:} 
+
+\textbf{Câu lệnh khối:}
 
 Cú pháp của câu lệnh khối được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:block_stmt]{\bf Chương 2}.
 
-Câu lệnh khối được bắt đầu khi từ tố đọc được hiện tại là kí tự '\{'. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_block}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+Câu lệnh khối được bắt đầu khi từ tố đọc được hiện tại là kí tự `\{'. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_block}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmtblock]{\bf Phụ lục 1}. % , Mục 1.xx todo!
 % \begin{lstlisting}
 %     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
 %         ...    
@@ -49,7 +66,7 @@ Câu lệnh khối được bắt đầu khi từ tố đọc được hiện t�
 %         ...
 %     }
 % \end{lstlisting}
-Thông qua hàm \textit{parse\_stmt\_block}, từng câu lệnh sau kí tự '\{' sẽ được phân tích cho đến khi gặp từ tố đóng ngoặc nhọn '\}'.
+Thông qua hàm \textit{parse\_stmt\_block}, từng câu lệnh sau kí tự `\{' sẽ được phân tích cho đến khi gặp từ tố đóng ngoặc nhọn `\}'.
 % \begin{lstlisting}
 %     pub fn parse_stmt_block(&mut self) -> PResult<Box<Stmt>> {
 %         ...
@@ -68,7 +85,7 @@ Thông qua hàm \textit{parse\_stmt\_block}, từng câu lệnh sau kí tự '\{
 
 Cú pháp của câu lệnh rẽ nhánh được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:if_stmt]{\bf Chương 2}.
 
-Câu lệnh rẽ nhánh được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{if}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_if}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+Câu lệnh rẽ nhánh được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{when}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_if}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmtwhen]{\bf Phụ lục 1}. %Mục 1.xx todo!
 % \begin{lstlisting}
 %     pub fn parse_stmt(&mut self) -> PResult<Box<Stmt>> {
 %         ...
@@ -83,11 +100,11 @@ Câu lệnh rẽ nhánh được bắt đầu khi từ tố đọc được hi�
 Cụ thể hàm \textit{parse\_stmt\_if} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh rẽ nhánh như sau:
 \begin{itemize}
     \item Phân tích biểu thức điều kiện: 
-    Sau khi nhận diện từ khóa \kw{if}, chương trình tiến hành phân tích cú pháp biểu thức điều kiện bằng cách gọi hàm \textit{parse\_expr}. Nếu biểu thức điều kiện không hợp hệ thì báo lỗi. %TODO!
-    \item Phân tích câu lệnh khối của nhánh \kw{if}:
-    Sau khi phân tích biểu thức điều kiện, chương trình gọi hàm \textit{parse\_stmt\_block} để phân tích cú pháp câu lệnh khối được bao bởi cặp kí tự '\{' và '\}'.
-    \item Xử lí tùy chọn nhánh \kw{else} nếu có:
-    Sau khi phân tích câu lệnh khối của nhánh \kw{if}, nếu từ tố tiếp theo là từ khóa \kw{else} thì chương trình sẽ tiếp tục kiểm tra từ tố tiếp theo sau nó. Nếu từ tố theo sau từ khóa \kw{else} là từ khóa \kw{if} thì chương trình sẽ gọi đệ quy hàm \textit{parse\_stmt\_if} để phân tích nhánh \kw{else if}. Nếu từ tố theo sau từ khóa \kw{else} là kí tự '\{' thì chương trình sẽ gọi hàm \textit{parse\_stmt\_block} để phân tích câu lệnh khối của nhánh \kw{else}. Nếu từ tố theo sau từ khóa \kw{else} là các từ tố khác thì báo lỗi. %TODO!
+    Sau khi nhận diện từ khóa \kw{when}, chương trình tiến hành phân tích cú pháp biểu thức điều kiện bằng cách gọi hàm \textit{parse\_expr}. Nếu biểu thức điều kiện không hợp hệ thì báo lỗi.
+    \item Phân tích câu lệnh của nhánh \kw{when}:
+    Sau khi phân tích biểu thức điều kiện, chương trình gọi hàm \textit{parse\_stmt} để phân tích cú pháp câu lệnh khối được bao bởi cặp kí tự `\{' và `\}'.
+    \item Xử lí tùy chọn nhánh \kw{alt} nếu có:
+    Sau khi phân tích câu lệnh của nhánh \kw{when}, nếu từ tố tiếp theo là từ khóa \kw{alt} thì chương trình sẽ tiếp tục phân tích cú pháp câu lệnh tiếp theo bằng cách gọi hàm \textit{parse\_stmt}.
 
 \end{itemize}
 
@@ -95,46 +112,102 @@ Cụ thể hàm \textit{parse\_stmt\_if} chịu trách nhiệm triển khai các
 
 Cú pháp của câu lệnh lặp biểu thức điều kiện được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:while_stmt]{\bf Chương 2}.
 
-Câu lệnh lặp biểu thức điều kiện được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{while}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_while}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+Câu lệnh lặp biểu thức điều kiện được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{during}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_while}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmtduring]{\bf Phụ lục 1}. % , Mục 1.xx todo!
 
 Cụ thể hàm \textit{parse\_stmt\_while} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh lặp biểu thức điều kiện như sau:
 \begin{itemize}
     \item Phân tích biểu thức điều kiện:
-    Sau khi nhận diện từ khóa \kw{while}, chương trình tiến hành phân tích biểu thức điều kiện bằng cách gọi hàm \\\textit{parse\_expr}. Nếu biểu thức điều kiện không hợp lệ thì báo lỗi. %TODO!
-    \item Phân tích câu lệnh khối:
-    Sau khi phân tích biểu thức điều kiện, chương trình gọi hàm \textit{parse\_stmt\_block} để phân tích cú pháp câu lệnh khối được bao bởi cặp kí tự '\{' và '\}'.%TODO!
+    Sau khi nhận diện từ khóa \kw{during}, chương trình tiến hành phân tích biểu thức điều kiện bằng cách gọi hàm \\\textit{parse\_expr}. Nếu biểu thức điều kiện không hợp lệ thì báo lỗi.
+    \item Phân tích câu lệnh sau biểu thức điều kiện:
+    Sau khi phân tích biểu thức điều kiện, chương trình gọi hàm \textit{parse\_stmt} để phân tích cú pháp câu lệnh tiếp theo.
 \end{itemize}
 
 \textbf{Câu lệnh lặp trình lặp:} 
 
 Cú pháp của câu lệnh lặp trình lặp được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:while_stmt]{\bf Chương 2}.
 
-Câu lệnh lặp trình lặp được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{for}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_for}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+Câu lệnh lặp trình lặp được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{for}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_for}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmtfor]{\bf Phụ lục 1}. % , Mục 1.xx todo!
 
 Cụ thể hàm \textit{parse\_stmt\_for} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh lặp trình lặp như sau:
 
 \begin{itemize}
     \item Phân tích tên biến sử dụng cho trình lặp:
-    Sau khi nhận diện từ khóa for, chương trình tiến hành đọc từ tố tiếp theo từ luồng đầu vào và kiểm tra để đảm bảo nó là một tên hợp lệ. Nếu tên không hợp lệ thì báo lỗi. %TODO!
+    Sau khi nhận diện từ khóa \kw{for}, chương trình tiến hành đọc từ tố tiếp theo từ luồng đầu vào và kiểm tra để đảm bảo nó là một tên hợp lệ. Nếu tên không hợp lệ thì báo lỗi. %TODO!
     \item Xác định từ khóa \kw{in}:
     Sau khi xác định tên biến lặp, chương trình tiến hành kiểm tra từ tố tiếp theo có phải là từ khóa \kw{in} hay không. Nếu không phải từ khóa \kw{in} thì báo lỗi. %TODO!
     \item Phân tích biểu thức trình lặp:
     Sau khi xác định được từ khóa \kw{in}, chương trình tiến hành gọi hàm \textit{parse\_expr} để phân tích biểu thức đại diện cho tập hợp các giá trị mà biến lặp sẽ duyệt qua. Nếu biểu thức này không hợp lệ thì báo lỗi. %TODO!
-    \item Phân tích câu lệnh khối:
-    Sau khi phân tích biểu thức điều kiện, chương trình gọi hàm \textit{parse\_stmt\_block} để phân tích cú pháp câu lệnh khối được bao bởi cặp kí tự '\{' và '\}'.
+    \item Phân tích câu lệnh lặp:
+    Sau khi phân tích biểu thức điều kiện, chương trình gọi hàm \textit{parse\_stmt} để phân tích cú pháp câu lệnh lặp.
 \end{itemize}
+
+\textbf{Câu lệnh trả về:}
+
+Cú pháp của câu lệnh trả về được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:block_stmt]{\bf Chương 2}.
+
+Câu lệnh trả về được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{yeet}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_return}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmtyeet]{\bf Phụ lục 1}. % , Mục 1.xx todo!
+
+Cụ thể hàm \textit{parse\_stmt\_return} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh trả về như sau: 
+Sau khi nhận diện từ khóa \kw{yeet}, chương trình sẽ phân tích xem kiểu của câu lệnh trả về là gì dựa trên từ tố theo sau từ khóa \kw{yeet}. Nếu từ tố này có thể bắt đầu một biểu thức thì chương trình sẽ bắt đầu phân tích biểu thức và đặt kiểu của câu lệnh là câu lệnh trả về có giá trị. Nếu không, từ tố này bắt buộc phải là ký tự `;' để kết thúc câu lệnh trả về với kiểu trả về không có giá trị nếu không sẽ báo lỗi.
+
+\textbf{Câu lệnh thêm thư viện:}
+
+Cú pháp của câu lệnh thêm thư viện được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:block_stmt]{\bf Chương 2}.
+
+Câu lệnh thêm thư viện được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{add}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \\\textit{parse\_stmt\_import}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmtadd]{\bf Phụ lục 1}. % , Mục 1.xx todo!
+
+Cụ thể hàm \textit{parse\_stmt\_import} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh thêm thư viện như sau: 
+Sau khi nhận diện từ khóa \kw{add}, chương trình sẽ phân tích đường dẫn đến thư viện bằng cách kiểm tra xem từ tố tiếp theo có phải là một tên hợp lệ không.
+
+\textbf{Câu lệnh ngắt vòng lặp:}
+
+Cú pháp của câu lệnh ngắt vòng lặp được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:block_stmt]{\bf Chương 2}.
+
+Câu lệnh ngắt vòng lặp được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{br}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_break}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmtbr]{\bf Phụ lục 1}. % , Mục 1.xx todo!
+
+Cụ thể hàm \textit{parse\_stmt\_break} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh ngắt vòng lặp như sau: Sau khi nhận diện từ khóa \kw{br}, chương trình sẽ nhận diện từ tố tiếp theo phải là ký tự `;' nếu không sẽ báo lỗi.
+
+
+\textbf{Câu lệnh tiếp tục vòng lặp:}
+
+Cú pháp của câu lệnh tiếp tục vòng lặp được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:block_stmt]{\bf Chương 2}.
+
+Câu lệnh tiếp tục vòng lặp được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{skip}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \\\textit{parse\_stmt\_continue}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmtskip]{\bf Phụ lục 1}. % , Mục 1.xx todo!
+
+Cụ thể hàm \textit{parse\_stmt\_continue} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh tiếp tục vòng lặp như sau:
+Sau khi nhận diện từ khóa \kw{skip}, chương trình sẽ nhận diện từ tố tiếp theo phải là ký tự `;' nếu không sẽ báo lỗi.
+
+\textbf{Câu lệnh rỗng:}
+
+Cú pháp của câu lệnh rỗng được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:block_stmt]{\bf Chương 2}.
+
+Câu lệnh rỗng được bắt đầu khi từ tố đọc được hiện tại là kí tự `;'. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_block}:
+
+\begin{lstlisting}
+pub fn parse_stmt_empty(&mut self) -> PResult<Box<Stmt>> {
+    self.expect(TokenKind::Semicolon)?;
+    let span = self.token.span;
+    self.advance();
+    Ok(Box::new(Stmt {
+        kind: StmtKind::Empty,
+        span,
+    }))
+}
+\end{lstlisting}
+
+Thông qua hàm \textit{parse\_stmt\_block}, ký tự `;' nằm ngoài các câu lệnh khác được nhận diện là câu lệnh rỗng và bỏ qua.
 
 \subsubsection{Câu lệnh biểu thức:} 
 Cú pháp của câu lệnh biểu thức được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:expr_stmt]{\bf Chương 2}.
 
-Câu lệnh biểu thức được bắt đầu khi từ tố đọc được hiện tại có thể bắt đầu một biểu thức. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_expr}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+Câu lệnh biểu thức được bắt đầu khi từ tố đọc được hiện tại có thể bắt đầu một biểu thức. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_expr}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmtexpr]{\bf Phụ lục 1}. % , Mục 1.xx todo!
 
-Thông qua hàm \textit{parse\_stmt\_expr}, biểu thức sẽ được chương trình phân tích bằng cách gọi đến hàm \textit{parse\_expr}. Sau khi phân tích được biểu thức, chương trình sẽ kiểm tra từ tố tiếp theo có phải là ký tự ';', nếu không sẽ báo lỗi.
+Thông qua hàm \textit{parse\_stmt\_expr}, biểu thức sẽ được chương trình phân tích bằng cách gọi đến hàm \textit{parse\_expr}. Sau khi phân tích được biểu thức, chương trình sẽ kiểm tra từ tố tiếp theo có phải là ký tự `;', nếu không sẽ báo lỗi.
 
 \subsection{Biểu thức}
 Cú pháp của biểu thức được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:expr]{\bf Chương 2}.
 
-Quá trình phân tích biểu thức sẽ được thực hiện thông qua hàm \textit{parse\_expr}, chi tiết mã nguồn triển khai đực trình bày trong \hyperref[ap1:simple_token]{\bf Phụ lục 1, Mục 1.xx todo!}.
+Quá trình phân tích biểu thức sẽ được thực hiện thông qua hàm \textit{parse\_expr}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:expr]{\bf Phụ lục 1}. % , Mục 1.xx todo!
 
 Đầu tiên chương trình sẽ phân tích phần tiền tố của biểu thức thông qua hàm \\\textit{parse\_expr\_prefix}:
 \begin{itemize}
@@ -160,7 +233,7 @@ Quá trình phân tích biểu thức sẽ được thực hiện thông qua hà
 %         }
 %     }
 % \end{lstlisting}
-    \item Phân tích từ tố tiếp theo sau khi đã bỏ qua phần tiền tố thông qua hàm \textit{parse\_expr\_bottom}:
+    \item Phân tích từ tố tiếp theo sau khi đã bỏ qua phần tiền tố thông qua hàm \textit{parse\_expr\_dot\_or\_call} có chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:expr]{\bf Phụ lục 1}. Hàm \textit{parse\_expr\_dot\_or\_call} sẽ phân tích từ tố đầu tiên thông qua hàm \textit{parse\_expr\_bottom}, sau đó xác định xem từ tố tiếp theo nếu là ký tự `.' hoặc `(' hoặc `[' thì sẽ phân tích phần này thông qua hàm \textit{parse\_expr\_dot\_or\_call\_with}. %todo! add code
 % \begin{lstlisting}
 %     fn parse_expr_bottom(&mut self) -> PResult<Box<Expr>> {
 %         match self.token.kind {
@@ -173,11 +246,12 @@ Quá trình phân tích biểu thức sẽ được thực hiện thông qua hà
 %         }
 %     }
 % \end{lstlisting}
-    Nếu từ tố này là tên biến hoặc là giá trị trực tiếp thì sẽ được phân tính thông qua các hàm tương ứng, nếu đây là ký tự '(' thì chương trình sẽ bắt đầu phân tích 1 biểu thức mới. Nếu không thỏa mãn trường hợp nào sẽ báo lỗi.
+    \item Hàm \textit{parse\_expr\_bottom} có chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:expr]{\bf Phụ lục 1} phân tích biểu thức ngay sau phần tiền tố. Nếu từ tố hiện tại là tên biến hoặc là giá trị trực tiếp thì sẽ được phân tính thông qua các hàm tương ứng, nếu đây là ký tự `(' thì chương trình sẽ bắt đầu phân tích 1 biểu thức mới, nếu đây là ký tự `[' thì chương trình sẽ bắt đầu phân tích biểu thức mảng. Nếu không thỏa mãn trường hợp nào sẽ báo lỗi. %todo! add code
+    \item Hàm \textit{parse\_expr\_dot\_or\_call\_with} có chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:expr]{\bf Phụ lục 1} sẽ phân tích từng biểu thức dựa trên từ tố hiện tại là `.' hay `(' hay `['. Điều này sẽ được lặp lại cho đến khi không tìm thấy một trong ba từ tố này. %todo! add code
 \end{itemize}
-Sau đó, chương trình sẽ phân tích phần còn lại của biểu thức thông qua hàm \textit{parse\_expr\_rest}:
+Sau đó, chương trình sẽ phân tích phần còn lại của biểu thức thông qua hàm \textit{parse\_expr\_rest}. Cụ thể hàm này thực hiện việc phân tích phần còn lại của biểu thức như sau:
 \begin{itemize}
-    \item Lấy ra toán tử hiện tại và xác định thứ tự ưu tiên:
+    \item Lấy ra toán tử hiện tại và xác định thứ tự ưu tiên.
 % \begin{lstlisting}
 %     fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
 %         ...
@@ -196,7 +270,7 @@ Sau đó, chương trình sẽ phân tích phần còn lại của biểu thức
 %         ...
 %     }
 % \end{lstlisting}
-    \item Phân tích tiền tố toán tử tiếp theo:
+    \item Phân tích tiền tố toán tử tiếp theo.
 % \begin{lstlisting}
 %     fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
 %         ...
@@ -206,7 +280,7 @@ Sau đó, chương trình sẽ phân tích phần còn lại của biểu thức
 %         ...
 %     }
 % \end{lstlisting}
-    \item Tính toán mức độ ưu tiên cho toán tử tiếp theo:
+    \item Tính toán mức độ ưu tiên cho toán tử tiếp theo.
 % \begin{lstlisting}
 %     fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
 %         ...
@@ -220,7 +294,7 @@ Sau đó, chương trình sẽ phân tích phần còn lại của biểu thức
 %         ...
 %     }
 % \end{lstlisting}
-    \item Phân tích toán tử tiếp theo:
+    \item Phân tích toán tử tiếp theo.
 % \begin{lstlisting}
 %     fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
 %         ...
@@ -230,7 +304,7 @@ Sau đó, chương trình sẽ phân tích phần còn lại của biểu thức
 %         ...
 %     }
 % \end{lstlisting}
-    \item Xác định kiểu của biểu thức hiện tại:
+    \item Xác định kiểu của biểu thức hiện tại.
 % \begin{lstlisting}
 %     fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
 %         ...
