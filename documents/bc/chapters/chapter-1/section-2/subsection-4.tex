@@ -1,7 +1,7 @@
 \subsection{Xử lý lỗi}
 Nếu một trình thông dịch chỉ phải dịch các chương trình nguồn viết đúng thì thiết kế và hoạt động của nó sẽ rất đơn giản. Nhưng những người lập trình lại thường xuyên tạo ra những chương trình viết sai. Một trình thông dịch tốt phải phát hiện, định vị, phân loại được tất cả các lỗi để giúp đỡ người viết. Do vậy, việc thiết kế và thực hiện một chương trình dịch có phần xử lý lỗi tốt trở thành một thách thức lớn.
 
-Các lỗi có thể xuất hiện ở bất kỳ giai đoạn nào, do đó chúng em sẽ trình bày việc xử lý lỗi trong từng giai đoạn dưới đây.
+Các lỗi có thể xuất hiện ở bất kỳ giai đoạn nào, do đó ta sẽ đi vào chi tiết việc xử lý lỗi trong từng giai đoạn dưới đây.
 
 \subsubsection{Xử lý lỗi trong phần phân tích từ vựng}
 Trong giai đoạn này, lỗi có thể sẽ xảy ra khi trình thông dịch cố gắng đọc các từ tố không hợp lệ như sau:
@@ -22,13 +22,13 @@ Hiện tại trong Pandora các lỗi này sẽ bao gồm các loại:
 \begin{itemize}
     \item \textbf{Mong chờ từ tố}. Lỗi này sẽ xảy ra khi trình thông dịch phân tích một câu lệnh và mong chờ một trong các từ tố hợp lệ nhất định nhưng lại tìm được một từ tố khác.
     \item \textbf{Mong chờ câu lệnh}. Lỗi này sẽ xảy ra khi trình thông dịch bắt đầu phân tích một câu lệnh mới nhưng lại gặp một số các từ tố không thể bắt đầu một câu lệnh. Ví dụ: `<', `>', \dots
-    \item \textbf{Mong chờ tên}. Lỗi này sẽ xảy ra khi trình thông dịch phân tích một câu lệnh và mong chờ một từ tố tên nhưng tìm thấy một từ tố khác. Ví dụ trong câu lệnh gán thì sau từ khóa \kw{set} thì sẽ là tên biến, \dots
+    \item \textbf{Mong chờ tên}. Lỗi này sẽ xảy ra khi trình thông dịch phân tích một câu lệnh và mong chờ một từ tố tên nhưng tìm thấy một từ tố khác. Ví dụ trong câu lệnh vòng lặp trình lặp thì sau từ khóa \kw{for} thì sẽ là tên biến, \dots
 \end{itemize}
 
 Các lỗi xảy ra trong quá trình này sẽ được xử lý bằng cách chỉ ra cho người lập trình biết vị trí gặp lỗi và cho họ biết các từ tố có thể thêm vào vị trí đó để sửa lỗi.
 
 \subsubsection{Xử lý lỗi trong phần phân tích ngữ nghĩa và thực thi}
-Đa số các lỗi người dùng gặp phải sẽ nằm trong giai đoạn này. Các lỗi xảy ra trong giai đoạn này sẽ là những lỗi liên quan đến ngữ nghĩa đã được trình bày ở phần trên khi trình bày về \textit{phần phân tích ngữ nghĩa và thực thi}. Các lỗi có thể bao gồm:
+Đa số các lỗi người dùng gặp phải sẽ nằm trong giai đoạn này. Các lỗi xảy ra trong giai đoạn này sẽ là những lỗi liên quan đến ngữ nghĩa đã được trình bày ở phần trên khi trình bày về \hyperref[ch1:semantic]{\textit{phần phân tích ngữ nghĩa và thực thi}}. Các lỗi có thể bao gồm:
 
 \begin{itemize}
     \item \textbf{Các lỗi liên quan đến kiểu}.

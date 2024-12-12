@@ -47,7 +47,7 @@ Phân tích cú pháp là một giai đoạn quan trọng trong quá trình xây
 
 Mục đích chính của phân tích cú pháp là đảm bảo mã nguồn tuân thủ đúng các quy tắc cú pháp của ngôn ngữ lập trình. Qua đó, trình thông dịch có thể phát hiện và báo cáo các lỗi cú pháp, giúp nhà phát triển sửa chữa trước khi chuyển sang các giai đoạn xử lý tiếp theo. Phân tích cú pháp đóng vai trò như một bước đệm giữa việc nhận diện token và việc kiểm tra ý nghĩa logic cũng như sinh mã cuối cùng, giúp đảm bảo quá trình thông dịch diễn ra mượt mà và chính xác.
 \subsubsection{Một số phương pháp phân tích cú pháp}
-Ở đây chúng em đề cập đến hai thuật toán phân tích phổ biến nhất là \textit{Thuật toán phân tích Top-down} và \textit{Thuật toán phân tích Bottom-up}
+Ở đây ta đề cập đến hai thuật toán phân tích phổ biến nhất là \textit{Thuật toán phân tích Top-down} và \textit{Thuật toán phân tích Bottom-up}
 
 \textbf{Thuật toán phân tích Top-down:}
 Tên \textit{phân tích Top-down} xuất phát từ ý tưởng cố gắng tạo ra một cây phân tích cho đầu vào bắt đầu từ đỉnh và đi xuống cho đến lá.
@@ -56,7 +56,7 @@ Tên \textit{phân tích Top-down} xuất phát từ ý tưởng cố gắng t�
 Phương pháp \textit{phân tích Bottom-up} về tư tưởng là ngược lại với phương pháp \textit{phân tích Bottom-up}. Phương pháp này lại bắt đầu từ lá (tức là từ chính các ký hiệu đầu vào) và cố gắng xây dựng thành cây bằng cách hướng lên gốc.
 
 \subsubsection{Liên hệ với trình thông dịch ngôn ngữ Pandora}
-Trong thiết kế và xây dựng bộ phân tích cú pháp cho trình thông dịch ngôn ngữ Pandora, chúng em sử dụng thuật toán phân tích Top-down và cụ thể là sử dụng phương pháp phân tích đệ quy đi xuống (recursive descent parsing).
+Trong thiết kế và xây dựng bộ phân tích cú pháp cho trình thông dịch ngôn ngữ Pandora, ta sử dụng thuật toán phân tích Top-down và cụ thể là sử dụng phương pháp phân tích đệ quy đi xuống (recursive descent parsing).
 
 \textit{Phân tích đệ quy đi xuống} là một kỹ thuật phân tích cú pháp từ trên xuống, xây dựng cây cú pháp từ đỉnh và đọc đầu vào từ trái sang phải. Phương pháp này sử dụng các thủ tục tương ứng cho từng từ tố đơn (\textit{\emph{Các kí tự đơn như} Colon, Comma, Plus, Minus \dots \emph{hoặc các từ khóa như} \kw{when}, \kw{for}, \dots }) và các ký hiệu không kết thúc (\textit{IF\_STATEMENT, LOOP\_STATEMENT, BLOCK\_STATEMENT, \dots}), với mỗi \\quy tắc ngữ pháp được triển khai dưới dạng một hàm hoặc thủ tục riêng biệt. Quá trình phân tích diễn ra đệ quy, nghĩa là các hàm gọi lại chính chúng hoặc gọi các hàm khác để phân tích các phần tử con.
 % \cite{} TODO!

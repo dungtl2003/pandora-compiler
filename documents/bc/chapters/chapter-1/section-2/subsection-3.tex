@@ -4,12 +4,13 @@ Giai đoạn phân tích ngữ nghĩa và thực thi được thực hiện trê
 
 \textbf{Giai đoạn 1.} Phân tích ngữ nghĩa: 
 
-Giai đoạn này kiểm tra xem câu lệnh trong chương trình nguồn có đúng theo các quy định về ngữ nghĩa của ngôn ngữ nguồn hay không, đảm bảo sẽ phát hiện và mô tả các lỗi liên quan. Việc kiểm tra này có thể bao gồm (có thể sẽ được mở rộng khi ngôn ngữ phát triển thêm về sau): 
+Giai đoạn này kiểm tra xem câu lệnh trong chương trình nguồn có đúng theo các quy định về ngữ nghĩa của ngôn ngữ nguồn hay không, đảm bảo sẽ phát hiện và mô tả các lỗi liên quan. Việc kiểm tra này có thể bao gồm: 
+\label{ch1:semantic}
 \begin{itemize}
-    \item Kiểm tra kiểu. Trình thông dịch sẽ kiểm tra để đảm bảo một biểu thức phải được thực hiện trên các toán tử có kiểu hợp lệ, các câu lệnh phải được thực hiện với các biểu thức có kiểu tương thích với câu lệnh hoặc khi cố gắng ép kiểu các kiểu dữ liệu phải hợp lệ và có thể ép kiểu.
-    \item Kiểm tra dòng điều khiển. Có một số câu lệnh thay đổi dòng điều khiển, khiến chương trình thay đổi thứ tự thực hiện các câu lệnh như  \kw{break}, \kw{continue}, \dots (Trong Pandora tương ứng là các câu lệnh \kw{br}, \kw{skip}). Trình thông dịch sẻ kiểm tra để đảm bảo các câu lệnh này nằm bên trong một vòng lặp không.
-    \item Kiểm tra tính nhất quán. Trình thông dịch sẽ kiểm tra những trường hợp như các biến được tạo với kiểu không được thay đổi giá trị sẽ chỉ được gán giá trị một lần duy nhất, các hàm sẽ chỉ được định nghĩa một lần, \dots
-    \item Kiểm tra phạm vi. Trình thông dịch sẽ kiểm tra một biến, hàm, \dots có được định nghĩa đúng phạm vi hay không trước khi thực hiện các câu lệnh trên chúng.
+    \item \textbf{Kiểm tra kiểu}. Trình thông dịch sẽ kiểm tra để đảm bảo một biểu thức phải được thực hiện trên các toán tử có kiểu hợp lệ, các câu lệnh phải được thực hiện với các biểu thức có kiểu tương thích với câu lệnh hoặc khi cố gắng ép kiểu các kiểu dữ liệu phải hợp lệ và có thể ép kiểu.
+    \item \textbf{Kiểm tra dòng điều khiển}. Có một số câu lệnh thay đổi dòng điều khiển từ một khối phải có một vài nơi để chuyển điều khiển đến đó. Ví dụ trong Pandora, khiến chương trình thay đổi thứ tự thực hiện các câu lệnh như  \kw{break}, \kw{continue}, \dots (Trong Pandora tương ứng là các câu lệnh \kw{br}, \kw{skip}). Trình thông dịch sẻ kiểm tra để đảm bảo các câu lệnh này nằm bên trong một vòng lặp không.
+    \item \textbf{Kiểm tra tính nhất quán}. Trình thông dịch sẽ kiểm tra những trường hợp như các biến được tạo với kiểu không được thay đổi giá trị sẽ chỉ được gán giá trị một lần duy nhất, các hàm sẽ chỉ được định nghĩa một lần, \dots
+    \item \textbf{Kiểm tra phạm vi}. Trình thông dịch sẽ kiểm tra một biến, hàm, \dots có được định nghĩa đúng phạm vi hay không trước khi thực hiện các câu lệnh trên chúng.
 \end{itemize}
 
 \textbf{Giai đoạn 2.} Thực thi: 
