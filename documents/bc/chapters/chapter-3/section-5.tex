@@ -1,4 +1,5 @@
 \section{Xây dựng bộ phân tích ngữ nghĩa}
+\label{ch3:semantic-analysis}
 
     Sau khi đã đảm bảo chương trình được xây dựng đúng cú pháp, việc tiếp theo cần làm là cần đảm bảo mỗi câu lệnh trước khi được thực thi xử lý cần đúng ngữ nghĩa. Trong Pandora, việc kiểm tra ngữ nghĩa câu lệnh sẽ được thực hiện trong khi chương trình đang chạy, nên còn được gọi là kiểm tra ngữ nghĩa động (\textbf{dynamic semantic checking}). Bộ phân tích ngữ nghĩa sẽ kiểm tra ngữ nghĩa của mỗi câu lệnh trong chương trình, đảm bảo rằng chúng không chỉ đúng cú pháp mà còn đúng ngữ nghĩa rồi mới được thực thi. Phần lớn các loại lỗi sẽ nằm ở đây, nên việc kiểm tra ngữ nghĩa là một bước quan trọng trong quá trình xây dựng chương trình. Bộ phân tích ngữ nghĩa của ngôn ngữ Pandora bao gồm:
 
@@ -13,7 +14,7 @@
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.4]{semantic-checking.png}
-    \caption{Bộ phân tích ngữ nghĩa trong ngôn ngữ Pandora}
+    \caption{Bộ phân tích ngữ nghĩa trong cấu trúc của trình thông dịch Pandora}
 \end{figure}
 
     Dựa vào sơ đồ trên, ta có thể thấy rằng bộ phân tích ngữ nghĩa sẽ nhận cây cú pháp đã được xây dựng từ bước phân tích cú pháp, sau đó sẽ thực hiện kiểm tra ngữ nghĩa cho từng câu lệnh trong chương trình. Bộ phân tích ngữ nghĩa có thể tương tác với bộ xử lý môi trường để kiểm tra phạm vi, kiểu dữ liệu, \dots của các biến, hàm, \dots trong chương trình. Nếu câu lệnh không đúng ngữ nghĩa, bộ phân tích ngữ nghĩa sẽ thực hiện thông báo lỗi nhờ bộ thông báo lỗi, sau đó chương trình sẽ dừng lại. Nếu câu lệnh đúng ngữ nghĩa, bộ phân tích ngữ nghĩa sẽ chuyển câu lệnh đó cho bộ thông dịch để thực thi. Quá trình kiểm tra ngữ nghĩa sẽ được thực hiện cho đến khi toàn bộ cây cú pháp được kiểm tra xong.
