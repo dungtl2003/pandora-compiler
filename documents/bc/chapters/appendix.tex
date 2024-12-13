@@ -55,7 +55,7 @@
       pub len: u32,
     }
   \end{lstlisting}
-  \item Các loại từ tố sơ cấp. \textbf{(lexer::token::TokenKind)}
+  \item \label{ap1:simple_token_kind}Các loại từ tố sơ cấp. \textbf{(lexer::token::TokenKind)}
   \begin{lstlisting}[]
     pub enum TokenKind {
       /* one char symbol */
@@ -135,7 +135,7 @@
       Eof,
     }
   \end{lstlisting}
-  \item Loại từ tố chuỗi ký tự. \textbf{(lexer::token::LiteralKind)}
+  \item \label{ap1:simple_token_literal}Loại từ tố chuỗi ký tự. \textbf{(lexer::token::LiteralKind)}
   \begin{lstlisting}
     pub enum LiteralKind {
       /// `"abc"`, `"ab`, `"ab\"`, `"ab\""`.
@@ -162,7 +162,7 @@
       },
     }
   \end{lstlisting}
-  \item Hàm \textit{advance\_token}. \textbf{(lexer::advance\_token)}
+  \item \label{ap1:simple_token_advance_token}Hàm \textit{advance\_token}. \textbf{(lexer::advance\_token)}
   \begin{lstlisting}
     pub fn advance_token(&mut self) -> Token {
       self.reset_bytes_eaten();
@@ -233,39 +233,195 @@
 
 \subsubsection{Phân tích từ tố thứ cấp}
 \begin{itemize}
-  \item \label{ap1:flextoken}Từ tố thứ cấp. \textbf{(ast::token::Token)}
+  \item \label{ap1:flex_token}Từ tố thứ cấp. \textbf{(ast::token::Token)}
   \begin{lstlisting}[]
     pub struct Token {
       pub kind: TokenKind,
       pub span: Span,
     }
   \end{lstlisting}
-  \item Vị trí của từ tố thứ cấp.
-  \item Các loại từ tố thứ cấp.
-  \item Loại từ tố phép toán học.
-  \item Loại từ tố ngoặc.
-  \item Loại từ tố chuỗi ký tự.
-  \item Loại từ tố tên.
-  \item Loại từ tố chú thích tài liệu.
-  \item Hàm \textit{next\_token}
+  \item \label{ap1:flex_token_span}Vị trí của từ tố thứ cấp.
+  \item \label{ap1:flex_token_kind}Các loại từ tố thứ cấp.
+\begin{lstlisting}
+pub enum TokenKind {
+    /* Expression-operator symbols. */
+    /// `=`
+    Eq,
+    /// `<`
+    Lt,
+    /// `<=`
+    Le,
+    /// `==`
+    EqEq,
+    /// `!=`
+    Ne,
+    /// `>=`
+    Ge,
+    /// `>`
+    Gt,
+    /// `&&`
+    AndAnd,
+    /// `||`
+    OrOr,
+    /// `!`
+    Not,
+    /// `~`
+    Tilde,
+    BinOp(BinOpToken),
+    BinOpEq(BinOpToken),
+    
+    /* Structural symbols */
+    /// `.`
+    Dot,
+    /// `,`
+    Comma,
+    /// `;`
+    Semicolon,
+    /// `:`
+    Colon,
+    /// `::`
+    PathSep,
+    /// `->`
+    RArrow,
+    /// `?`
+    Question,
+    /// An opening delimiter (e.g., `{`).
+    OpenDelim(Delimiter),
+    /// A closing delimiter (e.g., `}`).
+    CloseDelim(Delimiter),
+    
+    /* Literals */
+    Literal(Lit),
+    
+    Ident(Symbol, IdentIsRaw),
+    
+    /// A doc comment token.
+    /// `Symbol` is the data of doc's comment excluding its "quotes" (`///`, `/**`, etc)
+    DocComment(CommentKind, Option<DocStyle>, Symbol),
+    
+    /// End Of File.
+    Eof,
+}
+\end{lstlisting}
+  \item \label{ap1:flex_token_bin_op}Loại từ tố phép toán học.
+  \item \label{ap1:flex_token_delimiter}Loại từ tố ngoặc.
+  \item \label{ap1:flex_token_literal}Loại từ tố chuỗi ký tự.
+  \item \label{ap1:flex_token_identifier}Loại từ tố tên.
+  \item \label{ap1:flex_token_doc_cmt}Loại từ tố chú thích tài liệu.
+  \item \label{ap1:flex_token_next_token}Hàm \textit{next\_token}
 \end{itemize}
 
 \subsubsection{Phân tích cây từ tố}
 \begin{itemize}
-  \item \label{ap1:tokentree}Cây từ tố. \textbf{(ast::tokenstream::TokenTree)}
-  \begin{lstlisting}
-    pub enum TokenTree {
-      /// A single token. Should never be `OpenDelim` or `CloseDelim`, because
-      /// delimiters are implicitly represented by `Delimited`.
-      Token(Token, Spacing),
-      // A delimited sequence of token trees.
-      Delimited(DelimSpan, Delimiter, TokenStream),
+    \item \label{ap1:token_tree_lex_token_trees}Hàm \textit{lex\_token\_trees}
+    \item 
+\begin{lstlisting}
+fn lex_token_trees(&mut self, is_delimited: bool) -> (TokenStream, PResult<()>) {
+    // This can be the first token or open delim, can not glue.
+    self.eat(false);
+
+    let mut buf = Vec::new();
+    loop {
+        match self.token.kind {
+            TokenKind::OpenDelim(delim) => match self.lex_token_tree_open_delim(delim) {
+                Ok(val) => buf.push(val),
+                Err(err) => return (TokenStream::new(buf), Err(err)),
+            },
+            TokenKind::CloseDelim(delim) => {
+                if !is_delimited {
+                    let err = PError::UnexpectedClosingDelimiter {
+                        delimiter: delim,
+                        span: self.token.span,
+                    };
+                    return (TokenStream::new(buf), Err(vec![err]));
+                }
+                return (TokenStream::new(buf), Ok(()));
+            }
+            TokenKind::Eof => {
+                if is_delimited {
+                    // This is weird but for display.
+                    let span = Span::new(self.token.span.offset - 1, self.token.span.offset);
+                    let err = PError::UnclosedDelimiter {
+                        unclosed_delimiter_spans: self
+                            .open_delims
+                            .iter()
+                            .map(|&(_, span)| span)
+                            .collect(),
+                        suggest_close_pos_span: Some(span),
+                    };
+                    return (TokenStream::new(buf), Err(vec![err]));
+                }
+                return (TokenStream::new(buf), Ok(()));
+            }
+            _ => {
+                // Get the next normal token.
+                // We will have the previous token, so we can try to glue.
+                let (this_tok, this_spacing) = self.eat(true);
+                match this_tok.kind {
+                    TokenKind::DocComment(..) => {
+                        // We will ignore doc comments for now.
+                    }
+                    _ => {
+                        buf.push(TokenTree::Token(this_tok, this_spacing));
+                    }
+                }
+            }
+        }
     }
-  \end{lstlisting}
-  \item Kiểu liên kết từ tố.
-  \item Vị trí đóng mở ngoặc.
-  \item Kiểu của ngoặc
-  \item Hàm \textit{lex\_token\_trees}
+}
+\end{lstlisting}
+
+    \item \label{ap1:token_tree_lex_token_tree_open_delim}Hàm \textit{lex\_token\_tree\_open\_delim}
+
+\begin{lstlisting}
+fn lex_token_tree_open_delim(&mut self, open_delim: Delimiter) -> PResult<TokenTree> {
+    // The span for beginning of the delimited section.
+    let pre_span = self.token.span;
+
+    self.open_delims.push((open_delim, self.token.span));
+
+    // Lex the token trees within the delimiters.
+    // We stop at any delimiter so we can try to recover if the user
+    // uses an incorrect delimiter.
+    let (tts, res) = self.lex_token_trees(/* is_delimited */ true);
+    if res.is_err() {
+        return Err(res.unwrap_err());
+    }
+
+    // Expand to cover the entire delimited token tree.
+    let delim_span = DelimSpan::from_pair(pre_span, self.token.span);
+
+    match self.token.kind {
+        // Correct delimiter.
+        TokenKind::CloseDelim(close_delim) if close_delim == open_delim => {
+            self.open_delims.pop();
+
+            // Move past the closing delimiter (ofcourse no glue here).
+            self.eat(false);
+        }
+
+        // Incorrect delimiter.
+        TokenKind::CloseDelim(close_delim) => {
+            let err = PError::MismatchedClosingDelimiter {
+                delimiter: close_delim,
+                unmatched_span: self.token.span,
+                unclosed_span: pre_span,
+            };
+
+            return Err(vec![err]);
+        }
+        TokenKind::Eof => {
+            // Silently recover, the EOF token will be seen again
+            // and an error emitted then. Thus we don't pop from
+            // self.open_delims here.
+        }
+        _ => unreachable!(),
+    }
+
+    Ok(TokenTree::Delimited(delim_span, open_delim, tts))
+}    
+\end{lstlisting}
+
 \end{itemize}
 
 \subsection{Bộ phân tích cú pháp}
@@ -810,28 +966,232 @@ fn parse_expr_prefix(&mut self) -> PResult<Box<Expr>> {
 \paragraph{Hàm \textit{parse\_expr\_dot\_or\_call}}
 \label{ap1:expr_dot_or_call}
 \begin{lstlisting}
-
+fn parse_expr_dot_or_call(&mut self) -> PResult<Box<Expr>> {
+  let base = self.parse_expr_bottom()?;
+  if self.token.is_kind(TokenKind::Dot)
+      || self.token.is_open_delim(Delimiter::Parenthesis)
+      || self.token.is_open_delim(Delimiter::Bracket)
+  {
+      self.parse_expr_dot_or_call_with(base)
+  } else {
+      Ok(base)
+  }
+}
 \end{lstlisting}
 
 \paragraph{Hàm \textit{parse\_expr\_bottom}}
 \label{ap1:expr_bottom}
 \begin{lstlisting}
+fn parse_expr_bottom(&mut self) -> PResult<Box<Expr>> {
+  match self.token.kind {
+      TokenKind::Literal(_) => self.parse_expr_lit(),
+      TokenKind::Ident(_, _) => self.parse_expr_ident(),
+      TokenKind::OpenDelim(Delimiter::Parenthesis) => {
+          self.parse_expr_grouped(Delimiter::Parenthesis)
+      }
+      TokenKind::OpenDelim(Delimiter::Bracket) => self.parse_expr_array(),
+      _ => {
+          let err = PError::ExpectedToken {
+              expected: vec![
+                  TokenType::Const,
+                  TokenType::Ident,
+                  TokenType::Token(TokenKind::OpenDelim(Delimiter::Parenthesis)),
+                  TokenType::Token(TokenKind::OpenDelim(Delimiter::Bracket)),
+              ],
+              found: TokenType::Token(self.token.kind.clone()),
+              span: self.token.span,
+              prev_span: self.prev_token.span,
+          };
 
+          return Err(vec![err]);
+      }
+  }
+}
 \end{lstlisting}
 
 \paragraph{Hàm \textit{parse\_expr\_dot\_or\_call\_with}}
 \label{ap1:expr_dot_or_call_with}
 \begin{lstlisting}
+fn parse_expr_dot_or_call_with(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
+  debug_assert!(
+      self.token.is_kind(TokenKind::Dot)
+          || self.token.is_open_delim(Delimiter::Parenthesis)
+          || self.token.is_open_delim(Delimiter::Bracket)
+  );
 
+  let mut base = base;
+  loop {
+      if self.token.kind == TokenKind::Dot {
+          base = self.parse_expr_dot(base)?;
+      } else if self.token.is_open_delim(Delimiter::Parenthesis) {
+          base = self.parse_expr_call_with(base)?;
+      } else if self.token.is_open_delim(Delimiter::Bracket) {
+          base = self.parse_expr_array_index(base)?;
+      } else {
+          break;
+      }
+  }
+
+  Ok(base)
+}
 \end{lstlisting}
 
 \paragraph{Hàm \textit{parse\_expr\_rest}}
 \label{ap1:expr_rest}
 \begin{lstlisting}
+fn parse_expr_rest(&mut self, min_prec: usize, mut lhs: Box<Expr>) -> PResult<Box<Expr>> {
+  self.expected_tokens.push(TokenType::Operator);
 
+  loop {
+      let op_assoc = AssocOp::from_token(&self.token);
+      if op_assoc.is_none() {
+          break;
+      }
+      let op_assoc = op_assoc.unwrap();
+      let prec = op_assoc.precedence();
+      if prec < min_prec {
+          break;
+      }
+
+      let lhs_span = lhs.span;
+
+      // Special cases:
+      if op_assoc == AssocOp::As {
+          lhs = self.parse_assoc_op_cast(lhs, lhs_span, ExprKind::Cast)?;
+          continue;
+      }
+
+      let op_span = self.token.span;
+      self.advance();
+
+      let mut rhs = self.parse_expr_prefix()?;
+      let fixity = op_assoc.fixity();
+      let next_prec = match fixity {
+          Fixity::Left => prec + 1,
+          Fixity::Right => prec,
+      };
+      rhs = self.parse_expr_rest(next_prec, rhs)?;
+      let span = self.mk_expr_sp(&lhs, rhs.span);
+      lhs = match op_assoc {
+          AssocOp::Add
+          | AssocOp::Subtract
+          | AssocOp::Multiply
+          | AssocOp::Divide
+          | AssocOp::Modulus
+          | AssocOp::LAnd
+          | AssocOp::LOr
+          | AssocOp::BitXor
+          | AssocOp::BitAnd
+          | AssocOp::BitOr
+          | AssocOp::ShiftLeft
+          | AssocOp::ShiftRight
+          | AssocOp::Equal
+          | AssocOp::Less
+          | AssocOp::LessEqual
+          | AssocOp::NotEqual
+          | AssocOp::Greater
+          | AssocOp::GreaterEqual => {
+              let ast_op = op_assoc.to_ast_binop().unwrap();
+              let binary = self.mk_binary(span_encoding::respan(ast_op, op_span), lhs, rhs);
+              self.mk_expr(binary, span)
+          }
+          AssocOp::Assign => self.mk_expr(ExprKind::Assign(lhs, rhs, op_span), span),
+          AssocOp::AssignOp(k) => {
+              let aop = match k {
+                  BinOpToken::Plus => BinOpKind::Add,
+                  BinOpToken::Minus => BinOpKind::Sub,
+                  BinOpToken::Star => BinOpKind::Mul,
+                  BinOpToken::Slash => BinOpKind::Div,
+                  BinOpToken::Percent => BinOpKind::Mod,
+                  BinOpToken::Caret => BinOpKind::BitXor,
+                  BinOpToken::And => BinOpKind::BitAnd,
+                  BinOpToken::Or => BinOpKind::BitOr,
+                  BinOpToken::Shl => BinOpKind::Shl,
+                  BinOpToken::Shr => BinOpKind::Shr,
+              };
+              let aopexpr = self.mk_assign_op(span_encoding::respan(aop, op_span), lhs, rhs);
+              self.mk_expr(aopexpr, span)
+          }
+          AssocOp::As => unreachable!("AssocOp::As should be handled separately"),
+      }
+  }
+
+  Ok(lhs)
+}
 \end{lstlisting}
 
+\paragraph{Hàm \textit{parse\_expr\_dot}}
+\label{ap1:expr_dot}
+\begin{lstlisting}
+fn parse_expr_dot(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
+  debug_assert!(self.token.is_kind(TokenKind::Dot));
+  let start = self.token.span;
+  self.advance();
+  let field = self.parse_ident()?;
+  let span = start.to(field.span);
+  let dot = ExprKind::LibAccess(base, field);
+  Ok(self.mk_expr(dot, span))
+}
+\end{lstlisting}
 
+\paragraph{Hàm \textit{parse\_expr\_call\_with}}
+\label{ap1:expr_call_with}
+\begin{lstlisting}
+fn parse_expr_call_with(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
+  debug_assert!(self.token.is_open_delim(Delimiter::Parenthesis));
+  self.advance();
+
+  let is_lib_func = match base.kind {
+      ExprKind::LibAccess(..) => true,
+      _ => false,
+  };
+
+  let mut args = Vec::new();
+  loop {
+      if self.token.is_close_delim(Delimiter::Parenthesis) {
+          break;
+      }
+
+      let arg = self.parse_expr()?;
+      args.push(arg);
+
+      if !self.token.is_kind(TokenKind::Comma) {
+          break;
+      }
+
+      self.advance(); // eat comma
+  }
+
+  self.expect(TokenKind::CloseDelim(Delimiter::Parenthesis))?;
+
+  let span = self.mk_expr_sp(&base, self.token.span);
+  let call = if is_lib_func {
+      ExprKind::LibFunCall(base, args)
+  } else {
+      ExprKind::FunCall(base, args)
+  };
+  self.advance();
+
+  Ok(self.mk_expr(call, span))
+}
+\end{lstlisting}
+
+\paragraph{Hàm \textit{parse\_expr\_array\_index}}
+\label{ap1:expr_array_index}
+\begin{lstlisting}
+fn parse_expr_array_index(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
+  debug_assert!(self.token.is_open_delim(Delimiter::Bracket));
+  let start = self.token.span;
+  self.advance();
+  let index = self.parse_expr()?;
+  let index_span = index.span;
+  self.expect(TokenKind::CloseDelim(Delimiter::Bracket))?;
+  let span = start.to(self.token.span);
+  self.advance();
+  let index = self.mk_expr(ExprKind::Index(base, index, index_span), span);
+  Ok(index)
+}
+\end{lstlisting}
 }
 
 \paragraph{Hàm \textit{}}

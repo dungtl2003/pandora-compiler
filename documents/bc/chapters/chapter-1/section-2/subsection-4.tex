@@ -1,43 +1,24 @@
 \subsection{Xử lý lỗi}
 Nếu một trình thông dịch chỉ phải dịch các chương trình nguồn viết đúng thì thiết kế và hoạt động của nó sẽ rất đơn giản. Nhưng những người lập trình lại thường xuyên tạo ra những chương trình viết sai. Một trình thông dịch tốt phải phát hiện, định vị, phân loại được tất cả các lỗi để giúp đỡ người viết. Do vậy, việc thiết kế và thực hiện một chương trình dịch có phần xử lý lỗi tốt trở thành một thách thức lớn.
 
-Các lỗi có thể xuất hiện ở bất kỳ giai đoạn nào, do đó ta sẽ đi vào chi tiết việc xử lý lỗi trong từng giai đoạn dưới đây.
+Các lỗi có thể xuất hiện ở bất kỳ giai đoạn nào, tùy theo mức độ nghiêm trọng của lỗi thì trình thông dịch sẽ phân biệt lỗi đó có thể khôi phục hay không, có mỗi số lỗi khi gặp sẽ dừng ngay chương trình. Do đó ta sẽ đi vào chi tiết việc xử lý lỗi trong từng giai đoạn dưới đây.
 
 \subsubsection{Xử lý lỗi trong phần phân tích từ vựng}
-Trong giai đoạn này, lỗi có thể sẽ xảy ra khi trình thông dịch cố gắng đọc các từ tố không hợp lệ như sau:
+Trong giai đoạn này, lỗi có thể sẽ xảy ra khi trình thông dịch cố gắng đọc các từ tố không hợp lệ với quy tắc của ngôn ngữ. Đối với từng lỗi, trình thông dịch sẽ có những cách xử lí lỗi riêng biệt. Ví dụ trong ngôn ngữ Pandora, giai đoạn này sẽ có 2 loại lỗi khôi phục được và không khôi phục được:
 
 \begin{itemize}
-    \item \textbf{Các ký tự không hợp lệ}. Đây là các ký tự không là một trong các loại từ tố hợp lệ được hỗ trợ bởi ngôn ngữ nguồn hoặc không thể bắt đầu một từ tố hợp lệ nào khác. Ví dụ như trong Pandora có một số ký tự như: `@', `\$', \dots 
-    \item \textbf{Các lỗi liên quan đến việc đóng chuỗi, đóng xâu, đóng chú thích nhiều dòng không hợp lệ}. 
-    \item \textbf{Có nhiều hơn một ký tự bên trong cặp nháy đơn}.
-    \item \textbf{Đóng ngoặc không đúng, các ngoặc mở mà không được đóng, các ngoặc đóng xuất hiện khi không có ngoặc mở}.
+    \item Lỗi không khôi phục được: ví dụ lỗi chuỗi không được đóng đúng cách. Khi gặp lỗi này trình thông dịch sẽ dừng chương trình và thông báo vị trí chuỗi không được đóng ngoặc để người lập trình dễ dàng xử lý. Tương tự như lỗi này, khi gặp các lỗi như chú thích nhiều dòng không được đóng đúng cách, ký tự không được đóng đúng cách, \dots trình thông dịch cũng sẽ dừng chương trình.
+    \item Lỗi có thể khôi phục (chương trình có thể tiếp tục được phân tích): ví dụ lỗi đọc ký tự không hợp lệ. Đây là các ký tự không là một trong các loại từ tố hợp lệ được hỗ trợ bởi ngôn ngữ nguồn hoặc không thể bắt đầu một từ tố hợp lệ nào khác. Ví dụ như trong Pandora có một số ký tự như: `@', `\$', \dots Khi gặp lỗi này, trình thông dịch không bị dừng mà sẽ tiếp tục thực hiện phân tích tiếp chương trình nguồn để tìm kiếm các lỗi còn lại. Tương tự lỗi này, trình thông dịch cũng sẽ tiếp tục tìm kiếm các lỗi khác trong chương trình nguồn khi gặp các lỗi như lỗi không có chữ số theo sau khí tự định dạng cơ số khi sử dụng các loại số không phải hệ thập phân (ví dụ: 0b), \dots
 \end{itemize}
 
-Các lỗi xảy ra trong giai đoạn này sẽ được xử lý bằng cách chỉ ra vị trí của ký tự xảy ra lỗi, giúp người lập trình có thể dễ dàng sửa nó.
+Ngoài việc tìm kiếm các lỗi, tùy theo từng loại lỗi, trình thông dịch sẽ xử lý chúng theo từng cách khác nhau.
 
 \subsubsection{Xử lý lỗi trong phần phân tích cú pháp}
-Trong giai đoạn này, lỗi sẽ xảy ra khi trình thông dịch phát triển sự sai lệch về mặt cú pháp của ngôn ngữ nguồn so với quy tắc được đặt ra trong định nghĩa ngôn ngữ nguồn.
+Trong giai đoạn này, lỗi sẽ xảy ra khi trình thông dịch phát triển sự sai lệch về mặt cú pháp của ngôn ngữ nguồn so với quy tắc được đặt ra trong định nghĩa ngôn ngữ nguồn. Ví dụ với quy tắc cú pháp của ngôn ngữ Pandora, cú pháp câu lệnh khai báo biến cần kết thúc bởi ký tự \texttt{';'}, nếu sau khi phân tích xong câu lệnh khai báo biến, trình thông dịch không thể tìm thấy ký tự \texttt{';'} thì sẽ báo lỗi cho người lập trình biết vị trí tìm thấy từ tố sai và từ tố cần thiết để câu lệnh hợp lệ, sau đó tiếp tục giai đoạn phân tích và tìm các lỗi khác. Hoặc sau khi đã kết thúc một câu lệnh, trình thông dịch bắt đầu phân tích một câu lệnh mới lại gặp phải một từ tố không thể bắt đầu một câu lệnh như \texttt{'<'}, \texttt{'>'}, \dots thì trình thông dịch sẽ báo lỗi cho người dùng biết tại vị trí từ tố bị sai cần một câu lệnh hợp lệ, sau đó tiếp tục giai đoạn phân tích và tìm các lỗi khác.
 
-Hiện tại trong Pandora các lỗi này sẽ bao gồm các loại:
-\begin{itemize}
-    \item \textbf{Mong chờ từ tố}. Lỗi này sẽ xảy ra khi trình thông dịch phân tích một câu lệnh và mong chờ một trong các từ tố hợp lệ nhất định nhưng lại tìm được một từ tố khác.
-    \item \textbf{Mong chờ câu lệnh}. Lỗi này sẽ xảy ra khi trình thông dịch bắt đầu phân tích một câu lệnh mới nhưng lại gặp một số các từ tố không thể bắt đầu một câu lệnh. Ví dụ: `<', `>', \dots
-    \item \textbf{Mong chờ tên}. Lỗi này sẽ xảy ra khi trình thông dịch phân tích một câu lệnh và mong chờ một từ tố tên nhưng tìm thấy một từ tố khác. Ví dụ trong câu lệnh vòng lặp trình lặp thì sau từ khóa \kw{for} thì sẽ là tên biến, \dots
-\end{itemize}
-
-Các lỗi xảy ra trong quá trình này sẽ được xử lý bằng cách chỉ ra cho người lập trình biết vị trí gặp lỗi và cho họ biết các từ tố có thể thêm vào vị trí đó để sửa lỗi.
+Tại giai đoạn này, tùy vào từng lỗi cụ thể, trình thông dịch cũng sẽ có cách xử lý lỗi khác nhau.
 
 \subsubsection{Xử lý lỗi trong phần phân tích ngữ nghĩa và thực thi}
-Đa số các lỗi người dùng gặp phải sẽ nằm trong giai đoạn này. Các lỗi xảy ra trong giai đoạn này sẽ là những lỗi liên quan đến ngữ nghĩa đã được trình bày ở phần trên khi trình bày về \hyperref[ch1:semantic]{\textit{phần phân tích ngữ nghĩa và thực thi}}. Các lỗi có thể bao gồm:
+Đa số các lỗi người dùng gặp phải sẽ nằm trong giai đoạn này. Các lỗi xảy ra trong giai đoạn này sẽ là những lỗi liên quan đến ngữ nghĩa đã được trình bày ở phần trên khi trình bày về \hyperref[ch1:semantic]{\textit{phần phân tích ngữ nghĩa và thực thi}}. Ví dụ trong một chương trình được viết bằng ngôn ngữ Pandora, khi khai báo một biến mà không kèm theo từ khóa \kw{mut} thì biến này sẽ không được thay đổi giá trị, khi xuất hiện một câu lệnh gán lại giá trị cho biến này sẽ xảy ra lỗi. Với lỗi này trình thông dịch sẽ chỉ cho ta biết vị trí của câu lệnh gán giá trị, vị trí mà biến này được khai báo, đồng thời sẽ gợi ý cho người lập trình biết có thể thêm từ khóa \kw{mut} vào câu lệnh khai báo để sửa lỗi này. Hoặc với câu lệnh thoát vòng lặp, nếu ta sử dụng câu lệnh này bên ngoài một vòng lặp thì khi chạy chương trình, lỗi sẽ xảy ra trình thông dịch sẽ thông báo cho ta biết vị trí câu lệnh xảy ra lỗi.
 
-\begin{itemize}
-    \item \textbf{Các lỗi liên quan đến kiểu}.
-    \item \textbf{Các lỗi liên quan đến dòng điều khiển}. Có một vài câu lệnh làm thay đổi thứ tự chạy các câu lệnh trong Pandora như \kw{br}, \kw{skip}, \dots
-    \item \textbf{Các lỗi liên quan đến các thuộc tính của kiểu dữ liệu}. Các thuộc tính này có thể là kích cỡ của kiểu dữ liệu (ví dụ: kiểu int có kích cỡ là 64bit, \dots), số lượng phần tử của kiểu mảng.
-    \item \textbf{Các lỗi liên quan đến tính nhất quán}. Các lỗi này xảy ra trong một số câu lệnh như gán giá trị nhiều lần cho biến "immutable", định nghĩa nhiều lần một hàm, \dots
-    \item \textbf{Các lỗi liên quan đến phạm vi}. Các lỗi này xảy ra trong một số câu leehj như sử dụng biến không được tạo trong phạm vi hiện tại, gọi hàm được định nghĩa ngoài phạm vi, \dots
-    \item \textbf{Các lỗi liên quan đến việc các thư viện}. Các lỗi này xảy ra khi ta thêm, sử dụng các thư viện nằm ngoài file hiện tại như thêm thư viện không đúng đường dẫn, không tìm thấy hàm trong một thư viện, \dots
-    \item \textbf{Các lỗi liên quan đến khởi chạy trình thông dịch}. Các lỗi này có thể xảy ra khi không chỉ định tên file được thông dịch, tên file sai phần mở rộng, \dots
-\end{itemize}
-
-Vói các lỗi trong giai đoạn này, khi lỗi xảy ra chương trình đều sẽ dừng lại và báo lỗi tại các vị trí gặp lỗi, đồng thời hướng dẫn người lập trình các cách xử lí lỗi cho hiệu quả.
+Các lỗi trong giai đoạn này đều sẽ được trình thông dịch nhận định là lỗi nghiêm trọng và một khi gặp lỗi, trình thông dịch sẽ dừng ngay lập tức.Đồng thời, tùy theo từng loại lỗi mà trình thông dịch sẽ có cách xử lý lỗi khác nhau.
