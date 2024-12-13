@@ -376,11 +376,6 @@ impl ExternalLibrary {
                   args: Vec<(Value, bool)>|
                   -> Result<ValueKind, Vec<IError>> {
                 let mut env = Environment::new();
-                // FIX: ignore value's mutability for now
-                let args = args
-                    .into_iter()
-                    .map(|(val, _is_mut)| val)
-                    .collect::<Vec<Value>>();
 
                 Value::evaluate_function(
                     &mut env,

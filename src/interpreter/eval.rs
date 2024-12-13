@@ -25,9 +25,11 @@ impl Value {
         env: &Environment,
         prefix_span: Span,
         function: ValueKind,
-        evaluated_args: Vec<Value>,
+        evaluated_args: Vec<(Value, bool)>,
         is_verbose: bool,
     ) -> Result<ValueKind, Vec<IError>> {
+        // TODO: handle mutable arguments
+        let evaluated_args: Vec<Value> = evaluated_args.into_iter().map(|(val, _)| val).collect();
         match function {
             ValueKind::Function(func) => {
                 let Func { sig, body } = func;
