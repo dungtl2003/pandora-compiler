@@ -48,14 +48,14 @@
 \subsection{Bộ phân tích từ vựng}
 \subsubsection{Phân tích từ tố sơ cấp}
 \begin{itemize}
-  \item \label{ap1:simple_token}Từ tố sơ cấp. \textbf{(lexer::token::Token)}
+  \item \label{ap1:simple_token}Từ tố sơ cấp. %\textbf{(lexer::token::Token)}
   \begin{lstlisting}[]
     pub struct Token {
       pub kind: TokenKind,
       pub len: u32,
     }
   \end{lstlisting}
-  \item \label{ap1:simple_token_kind}Các loại từ tố sơ cấp. \textbf{(lexer::token::TokenKind)}
+  \item \label{ap1:simple_token_kind}Các loại từ tố sơ cấp. %\textbf{(lexer::token::TokenKind)}
   \begin{lstlisting}[]
     pub enum TokenKind {
       /* one char symbol */
@@ -135,7 +135,7 @@
       Eof,
     }
   \end{lstlisting}
-  \item \label{ap1:simple_token_literal}Loại từ tố chuỗi ký tự. \textbf{(lexer::token::LiteralKind)}
+  \item \label{ap1:simple_token_literal}Loại từ tố chuỗi ký tự. %\textbf{(lexer::token::LiteralKind)}
   \begin{lstlisting}
     pub enum LiteralKind {
       /// `"abc"`, `"ab`, `"ab\"`, `"ab\""`.
@@ -162,7 +162,7 @@
       },
     }
   \end{lstlisting}
-  \item \label{ap1:simple_token_advance_token}Hàm \textit{advance\_token}. \textbf{(lexer::advance\_token)}
+  \item \label{ap1:simple_token_advance_token}Hàm \textit{advance\_token}. %\textbf{(lexer::advance\_token)}
   \begin{lstlisting}
     pub fn advance_token(&mut self) -> Token {
       self.reset_bytes_eaten();
@@ -233,14 +233,14 @@
 
 \subsubsection{Phân tích từ tố thứ cấp}
 \begin{itemize}
-  \item \label{ap1:flex_token}Từ tố thứ cấp. \textbf{(ast::token::Token)}
+  \item \label{ap1:flex_token}Từ tố thứ cấp. %\textbf{(ast::token::Token)}
   \begin{lstlisting}[]
     pub struct Token {
       pub kind: TokenKind,
       pub span: Span,
     }
   \end{lstlisting}
-  \item \label{ap1:flex_token_span}Vị trí của từ tố thứ cấp.
+%   \item \label{ap1:flex_token_span}Vị trí của từ tố thứ cấp.
   \item \label{ap1:flex_token_kind}Các loại từ tố thứ cấp.
 \begin{lstlisting}
 pub enum TokenKind {
@@ -303,18 +303,112 @@ pub enum TokenKind {
     Eof,
 }
 \end{lstlisting}
-  \item \label{ap1:flex_token_bin_op}Loại từ tố phép toán học.
-  \item \label{ap1:flex_token_delimiter}Loại từ tố ngoặc.
-  \item \label{ap1:flex_token_literal}Loại từ tố chuỗi ký tự.
-  \item \label{ap1:flex_token_identifier}Loại từ tố tên.
-  \item \label{ap1:flex_token_doc_cmt}Loại từ tố chú thích tài liệu.
+%   \item \label{ap1:flex_token_bin_op}Loại từ tố phép toán học.
+%   \item \label{ap1:flex_token_delimiter}Loại từ tố ngoặc.
+%   \item \label{ap1:flex_token_literal}Loại từ tố chuỗi ký tự.
+%   \item \label{ap1:flex_token_identifier}Loại từ tố tên.
+%   \item \label{ap1:flex_token_doc_cmt}Loại từ tố chú thích tài liệu.
   \item \label{ap1:flex_token_next_token}Hàm \textit{next\_token}
+\begin{lstlisting}
+fn next_token(&mut self) -> Token {
+    // Skip trivial (whitespaces and comments) tokens.
+    loop {
+        if !self.session.can_recover() {
+            return Token::new(TokenKind::Eof, self.mk_sp(self.pos, self.pos));
+        }
+        let token = self.cursor.advance_token();
+        let tok_len = token.len;
+        let start_pos = self.pos;
+        self.pos = self.pos + token.len as BytePos;
+
+        // Now "cook" the token, converting the simple `lexer::TokenKind` to rich `ast::TokenKind`.
+        // This also turn strings into interned symbols.
+        let kind = match token.kind {
+            lexer::TokenKind::LineComment { doc_style } => {
+                // Skip normal comment
+                let Some(doc_style) = doc_style else {
+                    continue;
+                };
+
+                let content_start = start_pos + 3; // skip "quotes" (//! or //@)
+                let content_end = self.pos;
+                let content = self.str_from_to(content_start, content_end);
+                self.cook_doc_comment(content, CommentKind::Line, doc_style)
+            }
+            lexer::TokenKind::BlockComment {
+                doc_style,
+                terminated,
+            } => {
+                if !terminated {
+                    self.report_unterminated_block_comment(start_pos, doc_style, tok_len);
+                }
+
+                // Skip normal comment
+                let Some(doc_style) = doc_style else {
+                    continue;
+                };
+
+                let content_start = start_pos + 3; // skip "quotes" (/*! or /*@)
+                let content_end = self.pos - if terminated { 2 } else { 0 };
+                let content = self.str_from_to(content_start, content_end);
+                self.cook_doc_comment(content, CommentKind::Block, doc_style)
+            }
+            lexer::TokenKind::Whitespace => {
+                continue;
+            }
+            lexer::TokenKind::Ident => {
+                let content = self.str_from_to(start_pos, self.pos);
+                self.cook_ident(content)
+            }
+            lexer::TokenKind::RawIdent => {
+                let content = self.str_from_to(start_pos + 2, self.pos); // skip r#
+                self.cook_raw_ident(content)
+            }
+            lexer::TokenKind::Literal(kind) => self.cook_literal(start_pos, self.pos, kind),
+
+            lexer::TokenKind::Eq => TokenKind::Eq,
+            lexer::TokenKind::Lt => TokenKind::Lt,
+            lexer::TokenKind::Gt => TokenKind::Gt,
+            lexer::TokenKind::Bang => TokenKind::Not,
+            lexer::TokenKind::Tilde => TokenKind::Tilde,
+            lexer::TokenKind::Plus => TokenKind::BinOp(BinOpToken::Plus),
+            lexer::TokenKind::Minus => TokenKind::BinOp(BinOpToken::Minus),
+            lexer::TokenKind::Star => TokenKind::BinOp(BinOpToken::Star),
+            lexer::TokenKind::Slash => TokenKind::BinOp(BinOpToken::Slash),
+            lexer::TokenKind::Percent => TokenKind::BinOp(BinOpToken::Percent),
+            lexer::TokenKind::Caret => TokenKind::BinOp(BinOpToken::Caret),
+            lexer::TokenKind::And => TokenKind::BinOp(BinOpToken::And),
+            lexer::TokenKind::Or => TokenKind::BinOp(BinOpToken::Or),
+            lexer::TokenKind::Dot => TokenKind::Dot,
+            lexer::TokenKind::Comma => TokenKind::Comma,
+            lexer::TokenKind::Semicolon => TokenKind::Semicolon,
+            lexer::TokenKind::Colon => TokenKind::Colon,
+            lexer::TokenKind::Question => TokenKind::Question,
+            lexer::TokenKind::OpenParen => TokenKind::OpenDelim(Delimiter::Parenthesis),
+            lexer::TokenKind::CloseParen => TokenKind::CloseDelim(Delimiter::Parenthesis),
+            lexer::TokenKind::OpenBrace => TokenKind::OpenDelim(Delimiter::Brace),
+            lexer::TokenKind::CloseBrace => TokenKind::CloseDelim(Delimiter::Brace),
+            lexer::TokenKind::OpenBracket => TokenKind::OpenDelim(Delimiter::Bracket),
+            lexer::TokenKind::CloseBracket => TokenKind::CloseDelim(Delimiter::Bracket),
+
+            lexer::TokenKind::Unknown => {
+                self.report_unknown_symbol(start_pos, self.pos);
+                continue;
+            }
+
+            lexer::TokenKind::Eof => TokenKind::Eof,
+        };
+
+        let span = self.mk_sp(start_pos, self.pos);
+        return Token::new(kind, span);
+    }
+}
+\end{lstlisting}
 \end{itemize}
 
 \subsubsection{Phân tích cây từ tố}
 \begin{itemize}
     \item \label{ap1:token_tree_lex_token_trees}Hàm \textit{lex\_token\_trees}
-    \item 
 \begin{lstlisting}
 fn lex_token_trees(&mut self, is_delimited: bool) -> (TokenStream, PResult<()>) {
     // This can be the first token or open delim, can not glue.
@@ -1193,13 +1287,3 @@ fn parse_expr_array_index(&mut self, base: Box<Expr>) -> PResult<Box<Expr>> {
 }
 \end{lstlisting}
 }
-
-\paragraph{Hàm \textit{}}
-\label{ap1:}
-\begin{lstlisting}
-
-\end{lstlisting}
-
-\begin{lstlisting}
-
-\end{lstlisting}
