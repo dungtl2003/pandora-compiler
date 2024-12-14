@@ -43,7 +43,7 @@ pub enum ValueKind {
 StmtResult(Option<ControlFlow>),
 \end{lstlisting}
 
-Trong đó, \kw{Option<ControlFlow>} đại diện cho việc một câu lệnh có thể trả về giá trị hoặc không trả về giá trị, còn \kw{ControlFlow} là một enum định nghĩa các loại giá trị mà một câu lệnh có thể trả về. \kw{ControlFlow} sẽ được định nghĩa như sau:
+    Trong đó, \kw{Option<ControlFlow>} đại diện cho việc một câu lệnh có thể trả về giá trị hoặc không trả về giá trị, còn \kw{ControlFlow} là một enum định nghĩa các loại giá trị mà một câu lệnh có thể trả về. \kw{ControlFlow} sẽ được định nghĩa như sau:
 
 \begin{lstlisting}[]
 pub enum ControlFlow {
@@ -54,6 +54,8 @@ pub enum ControlFlow {
 \end{lstlisting}
 
     Trong đó, \kw{Continue} đại diện cho việc tiếp tục thực thi câu lệnh tiếp theo, \kw{Break} đại diện cho việc thoát khỏi vòng lặp hiện tại, và \kw{Return(Value)} đại diện cho việc trả về giá trị \kw{Value} và thoát khỏi hàm hiện tại. Với cách xây dựng như vậy, ta đã đảm bảo rằng mọi câu lệnh đều có thể trả về giá trị, và mọi biểu thức đều có thể trả về giá trị.
+
+\subsection{Đánh giá biểu thức (\textit{Expression evaluation})}
 
     Để thực hiện việc đánh giá một biểu thức, bộ thông dịch thông thường sẽ thực hiện một số công việc như sau:
 
@@ -326,4 +328,182 @@ pub fn evaluate_function(
 }
 \end{lstlisting}
 
-Đoạn mã trên mô tả cách thức thực hiện hàm. Đầu tiên, ta sẽ tạo một môi trường mới cho hàm đó và thực hiện hàm đó trong môi trường mới vừa tạo. Trước khi thực hiện hàm, ta cũng cần thực hiện kiểm tra ngữ nghĩa của hàm đó. Sau khi đảm bảo tính đúng đắn về ngữ nghĩa, ta sẽ thực hiện hàm thông qua việc đánh giá câu lệnh của hàm đó bằng cách gọi hàm \kw{stmt::interpret\_stmt} (sẽ được phân tích sau). Sau khi đã thực hiện hàm, ta sẽ kiểm tra xem hàm đó có trả về giá trị không. Nếu có, ta sẽ trả về giá trị đó, còn nếu không, ta sẽ trả về giá trị \kw{Unit}. 
+    Đoạn mã trên mô tả cách thức thực hiện hàm. Đầu tiên, ta sẽ tạo một môi trường mới cho hàm đó và thực hiện hàm đó trong môi trường mới vừa tạo. Trước khi thực hiện hàm, ta cũng cần thực hiện kiểm tra ngữ nghĩa của hàm đó. Sau khi đảm bảo tính đúng đắn về ngữ nghĩa, ta sẽ thực hiện hàm thông qua việc đánh giá câu lệnh của hàm đó bằng cách gọi hàm \kw{stmt::interpret\_stmt} (sẽ được phân tích sau). Sau khi đã thực hiện hàm, ta sẽ kiểm tra xem hàm đó có trả về giá trị không. Nếu có, ta sẽ trả về giá trị đó, còn nếu không, ta sẽ trả về giá trị \kw{Unit}. 
+
+\subsection{Đánh giá câu lệnh (\textit{Statement evaluation})}
+
+    Để thực hiện đánh giá một câu lệnh, ta sẽ gọi một hàm \kw{interpret\_stmt} trong tệp \kw{src/interpreter/stmt.rs}. Hàm này sẽ nhận vào một câu lệnh và trả về giá trị của nó. Để thực hiện việc này, ta sẽ định nghĩa hàm \kw{interpret\_stmt} như sau:
+
+\begin{lstlisting}[]
+pub fn interpret_stmt(
+    env: &mut Environment,
+    stmt: &Box<Stmt>,
+    ...
+) -> IResult {
+    ...
+    match &stmt.kind {
+        StmtKind::Import(...) => interpret_stmt_import(...),
+        StmtKind::Expr(...) => interpret_stmt_expr(...),
+        StmtKind::Var(...) => interpret_stmt_var_decl(...),
+        StmtKind::If(...) => interpret_stmt_if(...),
+        StmtKind::While(...) => interpret_stmt_while(...),
+        StmtKind::Break => interpret_stmt_break(...),
+        StmtKind::Continue => interpret_stmt_continue(...),
+        StmtKind::Block(...) => interpret_stmt_block(...),
+        StmtKind::FuncDecl(...) => interpret_stmt_func_decl(...),
+        StmtKind::Return(...) => interpret_stmt_return(...),
+        StmtKind::For(...) => interpret_stmt_for(...),
+        StmtKind::Empty => Ok(EvalResult::StmtResult(...)),
+    }
+}
+\end{lstlisting}
+
+    Trong đó, \kw{env} kiểu \kw{Environment} đại diện cho môi trường hiện tại, \kw{stmt} kiểu \kw{Box<Stmt>} đại diện cho câu lệnh cần đánh giá. Hàm này sẽ trả về một giá trị kiểu \kw{IResult}. \kw{IResult} là một \textit{alias} cho kiểu dữ liệu \kw{Result<EvalResult} \kw{, Vec<IError>}\kw{>}, đại diện cho kết quả của việc đánh giá một câu lệnh. 
+
+    \kw{EvalResult} là một enum định nghĩa các loại giá trị có thể trả về sau khi đánh giá một câu lệnh hay một biểu thức. \kw{IError} là một struct định nghĩa một lỗi trong quá trình đánh giá một câu lệnh hay một biểu thức. Ta sẽ định nghĩa các đối tượng kể trên như sau:
+
+\begin{lstlisting}[]
+pub type IResult = Result<EvalResult, Vec<IError>>;
+
+pub enum EvalResult {
+    StmtResult(Option<ControlFlow>),
+    ...
+}
+
+pub enum IError {
+    ...
+}
+\end{lstlisting}
+
+    Để thực hiện việc này, ta sẽ kiểm tra xem câu lệnh đó thuộc loại nào và gọi hàm tương ứng. Ví dụ, nếu câu lệnh là một câu lệnh gán, ta sẽ gọi hàm \kw{interpret\_stmt\_assign} để đánh giá câu lệnh đó.
+
+    Tương tự như việc đánh giá biểu thức, ta sẽ chỉ trình bày cách thức đánh giá một số câu lệnh cơ bản.
+
+\noindent \textbf{Đánh giá câu lệnh khai báo biến}
+
+    Câu lệnh khai báo biến là một câu lệnh mà khai báo một biến mới. Ví dụ, câu lệnh \kw{set x: int = 1;} là một câu lệnh khai báo biến với tên biến là \kw{x} và giá trị là \kw{1}. Đoạn mã sau mô tả cách thức đánh giá một câu lệnh khai báo biến:
+
+\begin{lstlisting}[]
+pub fn interpret_stmt_var_decl(
+    env: &mut Environment,
+    local: &Local,
+    ...
+) -> IResult {
+    ...
+    let Local {
+        is_mut,
+        ident,
+        ty,
+        kind,
+        ...
+    } = local;
+
+    let decl_ty = interpret_ty(env, ty, ...)?;
+
+    // If the variable is array, it must have a length if it is not declared with an initializer
+    let (value, var_ty_kind, ...) = match kind {
+        LocalKind::Init(expr) => {
+            let value = interpret_expr(env, expr, ...)?;
+
+            // semantic analysis
+            ...
+        }
+        LocalKind::Decl => ...,
+    };
+
+    let decl_ty = Ty {
+        kind: var_ty_kind,
+        ...
+    };
+    let ident = Ident {
+        name: ident.name.to_string(),
+        ...
+    };
+    env.insert_variable(ident, value, *is_mut, decl_ty, ...);
+    Ok(EvalResult::StmtResult(None))
+}
+\end{lstlisting}
+
+    Trong đoạn mã trên, \kw{env} kiểu \kw{Environment} đại diện cho môi trường hiện tại, \kw{local} kiểu \kw{Local} đại diện cho câu lệnh khai báo biến. Hàm này sẽ trả về một giá trị kiểu \kw{IResult}. Đầu tiên, ta sẽ kiểm tra kiểu dữ liệu của biến thông qua hàm \kw{interpret\_ty}. Sau đó, ta sẽ kiểm tra xem biến đó có được khởi tạo hay không. Nếu có, ta sẽ đánh giá giá trị của biến thông qua hàm \kw{interpret\_expr} và thực hiện kiểm tra ngữ nghĩa của nó. Sau khi đã đánh giá giá trị của biến, ta sẽ thêm biến đó vào môi trường hiện tại thông qua hàm \kw{env.insert\_variable}. Câu lệnh khai báo biến sẽ không trả về giá trị nên ta sẽ trả về \kw{None}.
+
+\noindent \textbf{Đánh giá câu lệnh biểu thức}
+
+    Câu lệnh biểu thức là một câu lệnh mà chỉ chứa một biểu thức. Ví dụ, câu lệnh \kw{1 + 2;} là một câu lệnh biểu thức. Đoạn mã sau mô tả cách thức đánh giá một câu lệnh biểu thức:
+
+\begin{lstlisting}[]
+pub fn interpret_stmt_expr(
+    env: &mut Environment,
+    expr: &Box<Expr>,
+    ...
+) -> IResult {
+    ...
+    interpret_expr(env, expr, ...)?;
+    Ok(EvalResult::StmtResult(None))
+}
+\end{lstlisting}
+
+    Trong đoạn mã trên, \kw{env} kiểu \kw{Environment} đại diện cho môi trường hiện tại, \kw{expr} kiểu \kw{Box<Expr>} đại diện cho biểu thức. Hàm này sẽ trả về một giá trị kiểu \kw{IResult}. Để thực hiện việc này, ta sẽ gọi hàm \kw{interpret\_expr} để đánh giá biểu thức và trả về giá trị của nó (chi tiết hàm đã được phân tích phía trên). Tương tự với câu lệnh khai báo biến, câu lệnh này cũng không trả về giá trị nên ta sẽ trả về \kw{None}.
+
+\noindent \textbf{Đánh giá câu lệnh trả về}
+
+Câu lệnh trả về là một câu lệnh thoát khỏi hàm và trả về một giá trị. Những câu lệnh sau câu lệnh này trong hàm đó sẽ không được thực thi. Ví dụ, câu lệnh \kw{yeet 3;} sẽ kết thúc hàm hiện tại đang xét và trả về giá trị \kw{3}. Đoạn mã sau sẽ mô tả cách thức đánh giá một câu lệnh trả về:
+
+\begin{lstlisting}[]
+pub fn interpret_stmt_return(
+    env: &mut Environment,
+    expr: &Option<Box<Expr>>,
+    ...
+) -> IResult {
+    ...
+
+    let value = match expr {
+        Some(expr) => interpret_expr(env, expr, ...)?,
+        None => Value {
+            kind: ValueKind::Unit,
+            ...
+        },
+    };
+    Ok(EvalResult::StmtResult(Some(ControlFlow::Return(value))))
+}
+\end{lstlisting}
+
+    Ở đoạn mã trên, \kw{env} kiểu \kw{Environment} đại diện cho môi trường hiện tại, kiểu \kw{Option<Box<Expr>>} đại diện cho giá trị trả về. Hàm này sẽ trả về một giá trị kiểu \kw{IResult}. Đầu tiên, ta sẽ kiểm tra xem câu lệnh trả về có giá trị trả về hay không. Nếu có, ta sẽ đánh giá giá trị trả về thông qua hàm \kw{interpret\_expr}. Sau đó, ta sẽ trả về giá trị trả về thông qua \kw{ControlFlow::Return}. 
+
+\noindent \textbf{Đánh giá câu lệnh rẽ nhánh}
+
+Câu lệnh rẽ nhánh là một câu lệnh mà thực hiện một số câu lệnh dựa trên một điều kiện. Ví dụ, câu lệnh \kw{when x>5 \{println("x is greater than 5");\} alt \{println("x is not greater than 5");\}} là một câu lệnh rẽ nhánh. Đoạn mã sau mô tả cách thức đánh giá một câu lệnh rẽ nhánh:
+
+\begin{lstlisting}[]
+pub fn interpret_stmt_if(
+    env: &mut Environment,
+    cond: &Box<Expr>,
+    then_block: &Box<Stmt>,
+    else_block: &Option<Box<Stmt>>,
+    ...
+) -> IResult {
+    ...
+    let cond_result = interpret_expr(env, cond, in_loop, is_verbose);
+
+    // semantic analysis
+    ...
+
+    let cond = cond_result.clone().unwrap();
+    let is_true = match cond.kind {
+        ValueKind::Bool(bool) => bool,
+        _ => {
+            return Err(vec![IError::MismatchedType {...}])
+        }
+    };
+
+    if is_true {
+        interpret_stmt(env, then_block, ...)
+    } else {
+        match else_block {
+            Some(else_block) => interpret_stmt(env, else_block, ...),
+            None => Ok(EvalResult::StmtResult(None)),
+        }
+    }
+}
+\end{lstlisting}
+
+    Trong đoạn mã trên, \kw{env} kiểu \kw{Environment} đại diện cho môi trường hiện tại, \kw{cond} kiểu \kw{Box<Expr>} đại diện cho điều kiện, \kw{then\_block} kiểu \kw{Box<Stmt>} đại diện cho khối lệnh thực thi nếu điều kiện đúng, \kw{else\_block} kiểu \kw{Option<Box<Stmt>}\kw{>} đại diện cho khối lệnh thực thi nếu điều kiện sai. Hàm này sẽ trả về một giá trị kiểu \kw{IResult}. Đầu tiên, ta sẽ đánh giá điều kiện thông qua hàm \kw{interpret\_expr}. Sau đó, ta sẽ kiểm tra xem điều kiện đó có phải là một giá trị logic hay không. Nếu không, ta sẽ trả về một lỗi. Sau khi đã kiểm tra điều kiện, ta sẽ thực hiện khối lệnh thích hợp dựa trên giá trị của điều kiện. Nếu điều kiện đúng, ta sẽ thực hiện khối lệnh \kw{then\_block}, còn nếu điều kiện sai, ta sẽ thực hiện khối lệnh \kw{else\_block} nếu có.
