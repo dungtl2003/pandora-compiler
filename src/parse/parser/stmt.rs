@@ -287,16 +287,13 @@ impl Parser {
 
         let mut stmts = Vec::new();
         let mut errors: Vec<PError> = Vec::new();
+        // Parse statements until we reach the end of the block.
         while self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
             let result = self.parse_stmt();
 
             if let Err(mut err) = result {
                 errors.append(&mut err);
-
-                // recover may eat the closing brace, so we need to check again
-                if self.token.kind != TokenKind::CloseDelim(Delimiter::Brace) {
-                    self.recover();
-                }
+                self.recover();
 
                 continue;
             }
@@ -310,8 +307,10 @@ impl Parser {
         let kind = StmtKind::Block(stmts);
         let stmt = Box::new(Stmt { kind, span });
 
-        self.expect(TokenKind::CloseDelim(Delimiter::Brace))?;
-        self.advance();
+        // This must be true because we have already checked for the closing brace.
+        self.expect(TokenKind::CloseDelim(Delimiter::Brace))
+            .unwrap();
+        self.advance(); // Eat '}'
 
         if errors.is_empty() {
             Ok(stmt)

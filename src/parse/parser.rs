@@ -39,12 +39,20 @@ pub fn parse(contents: &str, session: &mut Session) -> Option<Ast> {
     let mut errors: Vec<PError> = Vec::new();
     let mut stmts: Vec<Box<Stmt>> = Vec::new();
     while parser.token.kind != TokenKind::Eof {
+        let need_recover = if parser.token.kind == TokenKind::OpenDelim(Delimiter::Brace) {
+            false
+        } else {
+            true
+        };
+
         let result = parser.parse_stmt();
         match result {
             Ok(stmt) => stmts.push(stmt),
             Err(mut err) => {
                 errors.append(&mut err);
-                parser.recover();
+                if need_recover {
+                    parser.recover();
+                }
             }
         }
     }
@@ -125,7 +133,9 @@ impl Parser {
 
         match self.token.kind {
             TokenKind::Semicolon => true,
-            TokenKind::OpenDelim(Delimiter::Brace) => true,
+            TokenKind::OpenDelim(Delimiter::Brace) | TokenKind::CloseDelim(Delimiter::Brace) => {
+                true
+            }
             _ => false,
         }
     }
