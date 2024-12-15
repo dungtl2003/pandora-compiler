@@ -4,28 +4,28 @@
 
 \subsubsection{Kiểu số nguyên}
 
-    Những biến nào có kiểu dữ liệu là số nguyên thì có thể chứa các giá trị số nguyên. Trong Pandora, kiểu số nguyên được ký hiệu là \textit{int}. Kiểu số nguyên có thể chứa các giá trị từ $-2^{31}+1$ đến $2^{31}-1$.
+    Những biến nào có kiểu dữ liệu là số nguyên thì có thể chứa các giá trị số nguyên. Trong Pandora, kiểu số nguyên được ký hiệu là \kw{int}. Kiểu số nguyên có thể chứa các giá trị từ $-2^{31}+1$ đến $2^{31}-1$.
 
 \subsubsection{Kiểu số thực}
 
-    Những biến nào có kiểu dữ liệu là số thực thì có thể chứaa các giá trị số thực. Trong Pandora, kiểu số thực được ký hiệu là \textit{float}. Ta lưu ý rằng những biến có kiểu số thực không thể chứa các giá trị số nguyên. Ví dụ, nếu ta muốn gán giá trị $5$ cho một biến có kiểu số thực, ta phải gán giá trị $5.0$.
+    Những biến nào có kiểu dữ liệu là số thực thì có thể chứaa các giá trị số thực. Trong Pandora, kiểu số thực được ký hiệu là \kw{float}. Ta lưu ý rằng những biến có kiểu số thực không thể chứa các giá trị số nguyên. Ví dụ, nếu ta muốn gán giá trị $5$ cho một biến có kiểu số thực, ta phải gán giá trị $5.0$.
 
 \subsubsection{Kiểu ký tự}
 
-    Những biến nào có kiểu dữ liệu là ký tự thì có thể chứa các giá trị ký tự. Trong Pandora, kiểu ký tự được ký hiệu là \textit{char}. Giá trị của loại ký tự được biểu thị dưới dạng ký tự Unicode.
+    Những biến nào có kiểu dữ liệu là ký tự thì có thể chứa các giá trị ký tự. Trong Pandora, kiểu ký tự được ký hiệu là \kw{char}. Giá trị của loại ký tự được biểu thị dưới dạng ký tự Unicode.
 
 \subsubsection{Kiểu logic}
 
-    Những biến nào có kiểu dữ liệu là logic thì có thể chứa giá trị \textit{true} hoặc \textit{false}. Trong Pandora, kiểu logic được ký hiệu là \textit{bool}.
+    Những biến nào có kiểu dữ liệu là logic thì có thể chứa giá trị \kw{true} hoặc \kw{false}. Trong Pandora, kiểu logic được ký hiệu là \kw{bool}.
 
 \subsubsection{Kiểu chuỗi}
 
-    Những biến nào có kiểu dữ liệu là chuỗi thì có thể chứa chuỗi các ký tự. Trong Pandora, kiểu chuỗi được ký hiệu là \textit{str}.
+    Những biến nào có kiểu dữ liệu là chuỗi thì có thể chứa chuỗi các ký tự. Trong Pandora, kiểu chuỗi được ký hiệu là \kw{str}.
 
 \subsubsection{Kiểu tuple}
 
-    Những biến nào có kiểu dữ liệu là tuple thì có thể chứa một bộ giá trị. Trong Pandora, kiểu tuple được ký hiệu là \textit{tuple}. Một tuple có thể chứa nhiều giá trị khác nhau, và mỗi giá trị trong tuple có thể có kiểu dữ liệu khác nhau. Một tuple được tạo ra bằng cách đặt các giá trị cần chứa trong cặp dấu ngoặc đơn U+0028 ('\textbf{(}') và U+0029 ('\textbf{)}'), cách nhau bởi dấu phẩy U+002C ('\textbf{,}'). Ví dụ, \textbf{(1, true, "hello")} là một tuple chứa 3 giá trị là số nguyên 1, logic \textit{true} và chuỗi "hello". Tuy nhiên, do đang trong quá trình phát triển, Pandora chỉ hỗ trợ đúng một tuple duy nhất là tuple không có phần tử nào, hay còn gọi là \textit{unit}, và được dùng làm giá trị trả về của hàm không có giá trị trả về.
+Những biến nào có kiểu dữ liệu là tuple thì có thể chứa một bộ giá trị. Trong Pandora, kiểu tuple được ký hiệu là \kw{tuple}. Một tuple có thể chứa nhiều giá trị khác nhau, và mỗi giá trị trong tuple có thể có kiểu dữ liệu khác nhau. Một tuple được tạo ra bằng cách đặt các giá trị cần chứa trong cặp dấu ngoặc đơn U+0028 (\kw{(}) và U+0029 (\kw{)}), cách nhau bởi dấu phẩy U+002C (\kw{,}). Ví dụ, \kw{(1, true, "hello")} là một tuple chứa 3 giá trị là số nguyên \kw{1}, logic \kw{true} và chuỗi \kw{"hello"}. Tuy nhiên, do đang trong quá trình phát triển, Pandora chỉ hỗ trợ đúng một tuple duy nhất là tuple không có phần tử nào, hay còn gọi là \kw{unit}, và được dùng làm giá trị trả về của hàm không có giá trị trả về.
 
 \subsubsection{Kiểu mảng}
 
-    Những biến nào có kiểu dữ liệu là mảng thì có thể chứa một dãy các giá trị. Trong Pandora, kiểu mảng được ký hiệu là \textit{array}. Một mảng có thể chứa nhiều giá trị cùng kiểu dữ liệu. Một mảng có thể được tạo ra thông qua biểu thức mảng (chi tiết ở phần \textbf{\ref{ch2:arrayexpr}}).
+Những biến nào có kiểu dữ liệu là mảng thì có thể chứa một dãy các giá trị. Trong Pandora, kiểu mảng được ký hiệu là \kw{[T]} với \kw{T} là một kiểu dữ liệu bất kỳ. Một mảng có thể chứa nhiều giá trị cùng kiểu dữ liệu. Một mảng có thể được tạo ra thông qua biểu thức mảng (chi tiết ở phần \textbf{\ref{ch2:arrayexpr}}).

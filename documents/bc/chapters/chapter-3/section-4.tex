@@ -1,196 +1,122 @@
-\section{Xây dựng bộ phân tích cú pháp}
-\label{ch3:syntax-analysis}
-Giai đoạn phân tích cú pháp là bước tiếp theo sau khi mã nguồn đã được chuyển đổi thành các token bởi bộ phân tích từ vựng. Mục tiêu của giai đoạn này là xây dựng cây cú pháp trừu tượng (AST) để biểu diễn cấu trúc logic của mã nguồn, tạo nền tảng cho các giai đoạn phân tích ngữ nghĩa và thực thi sau này. 
+\section{Xây dựng bộ phân tích ngữ nghĩa}
+\label{ch3:semantic-analysis}
 
-Việc xây dựng bộ phân tích cú pháp đòi hỏi một quy trình rõ ràng nhằm đảm bảo trình thông dịch có thể nhận diện đúng cú pháp và xử lý chính xác các câu lệnh phức tạp.
-
-Trong ngôn ngữ Pandora, các loại câu lệnh như khai báo biến, biểu thức, câu lệnh điều khiển, và các cấu trúc phức tạp khác đóng vai trò quan trọng trong việc xây dựng logic của chương trình. Việc triển khai bộ phân tích cú pháp cho các câu lệnh này là một phần thiết yếu trong việc xây dựng trình thông dịch, giúp đảm bảo rằng tất cả các cấu trúc cú pháp được phân tích và xử lý đúng cách. Phần này sẽ giới thiệu cách thức bộ phân tích cú pháp hoạt động khi phân tích các loại câu lệnh khác nhau, cùng với việc giải thích chi tiết các mã nguồn triển khai được cung cấp tại phần phụ lục.
-
-\subsection{Câu lệnh}
-Quá trình phân tích cú pháp bắt đầu bằng việc nhận diện loại câu lệnh hiện tại. Điều này được thực hiện thông qua từ tố tiếp theo trong luồng đầu vào và được xử lý bởi hàm \textit{parse\_stmt}. Hàm này có nhiệm vụ phân loại câu lệnh dựa trên từ tố đầu tiên, từ đó chuyển hướng quá trình phân tích đến hàm phù hợp cho từng loại câu lệnh (ví dụ: khai báo biến, câu lệnh điều kiện, vòng lặp, v.v.).
-
-Chi tiết mã nguồn của hàm \textit{parse\_stmt} sẽ được trình bày tại \hyperref[ap1:stmt]{\bf Phụ lục 1}. % Mục 1.xx todo!
-
-
-\subsubsection{Câu lệnh khai báo}
-
-\noindent\textbf{Câu lệnh khai báo biến:}
-
-Cú pháp của câu lệnh khai báo biến được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:decl_var_stmt]{\bf Chương 2}.
-
-Câu lệnh khai báo biến được bắt đầu khi từ tố hiện tại là từ khóa \kw{set}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_var\_decl}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_decl_var]{\bf Phụ lục 1}. %, Mục 1.xx todo!
-
-Cụ thể hàm \textit{parse\_stmt\_var\_decl} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh khai báo biến như sau:
+    Sau khi đã đảm bảo chương trình được xây dựng đúng cú pháp, việc tiếp theo cần làm là cần đảm bảo mỗi câu lệnh trước khi được thực thi xử lý cần đúng ngữ nghĩa. Trong Pandora, việc kiểm tra ngữ nghĩa câu lệnh sẽ được thực hiện trong khi chương trình đang chạy, nên còn được gọi là kiểm tra ngữ nghĩa động (\textbf{dynamic semantic checking}). Bộ phân tích ngữ nghĩa sẽ kiểm tra ngữ nghĩa của mỗi câu lệnh trong chương trình, đảm bảo rằng chúng không chỉ đúng cú pháp mà còn đúng ngữ nghĩa rồi mới được thực thi. Phần lớn các loại lỗi sẽ nằm ở đây, nên việc kiểm tra ngữ nghĩa là một bước quan trọng trong quá trình xây dựng chương trình. Bộ phân tích ngữ nghĩa của ngôn ngữ Pandora bao gồm:
 
 \begin{itemize}
-    \item \textbf{Xác định chế độ gán giá trị của biến:}
-    Sau khi nhận diện từ khóa \kw{set}, trình thông dịch kiểm tra từ khóa bổ sung để xác định liệu biến được khai báo có thể thay đổi giá trị hay không. Nếu từ khóa \kw{mut} xuất hiện ngay sau \kw{set}, biến được đánh dấu là mutable (có thể thay đổi giá trị). Ngược lại, biến sẽ là immutable (không thể thay đổi giá trị).
-    \item \textbf{Xác định tên biến:}
-    Sau khi đã xác định được chế độ gán giá trị của biến, trình thông dịch sẽ đọc từ tố tiếp theo từ luồng đầu vào và kiểm tra để đảm bảo nó là một tên hợp lệ. Nếu tên không hợp lệ thì báo lỗi. 
-    \item \textbf{Xác định kiểu dữ liệu của biến:}
-    Sau khi xác định tên biến, trình thông dịch kiểm tra từ tố tiếp theo có phải là kí tự ':' và xác định kiểu dữ liệu được chỉ định ngay sau nó bằng cách gọi hàm \textit{parse\_ty}. Nếu kiểu dữ liệu không hợp lệ thì báo lỗi. 
-    \item \textbf{Kiểm tra, xử lý giá trị khởi tạo (nếu có) và phân loại:}
-    Sau khi xác định kiểu dữ liệu, trình thông dịch sẽ kiểm tra từ tố tiếp theo. Nếu nó không phải là 1 dấu '=' thì trình thông dịch xác định loại của câu lệnh khai báo là \textit{Declaration} (tức chỉ khai báo mà không gán giá trị). Ngược lại nếu nó là dấu '=' thì trình thông dịch sẽ xác định biểu thức khởi tạo ngay sau nó bằng cách gọi hàm \textit{parse\_expr} và xác định loại của câu lệnh khai báo là \textit{Initialization} (tức là câu lệnh khai báo có gán giá trị), nhưng nếu biểu thức này không hợp lệ thì báo lỗi. 
-    \item \textbf{Đảm bảo câu lệnh kết thúc hợp lệ:}
-    Câu lệnh khai báo kết thúc bởi một kí tự ';', do đó sau khi đã xác định xong các thành phần cơ bản của câu lệnh khai báo, trình thông dịch sẽ phải kiểm tra để đảm bảo tồn tại kí tự ';' để kết thúc câu lệnh nếu như không tồn tại kí tự ';' thì báo lỗi.
+    \item \textbf{Kiểm tra kiểu dữ liệu}: Kiểm tra xem các biến, biểu thức, hàm, \dots có đúng kiểu dữ liệu hay không.
+    \item \textbf{Kiểm tra phạm vi}: Kiểm tra xem các biến, hàm, \dots có được sử dụng trong phạm vi đúng hay không.
+    \item \textbf{Kiểm tra khởi tạo}: Kiểm tra xem các biến, hàm, \dots có được khởi tạo trước khi sử dụng hay không.
+    \item \textbf{Kiểm tra luồng điều khiển}: Kiểm tra các cấu trúc luồng điều khiển (như quay lại, ngắt, tiếp tục) được sử dụng ở các vị trí thích hợp.
+    \item \textbf{Kiểm tra lỗi thực thi}: Kiểm tra xem các câu lệnh có thể gây ra lỗi thực thi hay không.
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.4]{semantic-checking.png}
+    \caption{Bộ phân tích ngữ nghĩa trong cấu trúc của trình thông dịch Pandora}
+\end{figure}
 
-\noindent\textbf{Câu lệnh khai báo hàm:}
+    Dựa vào sơ đồ trên, ta có thể thấy rằng bộ phân tích ngữ nghĩa sẽ nhận cây cú pháp đã được xây dựng từ bước phân tích cú pháp, sau đó sẽ thực hiện kiểm tra ngữ nghĩa cho từng câu lệnh trong chương trình. Bộ phân tích ngữ nghĩa có thể tương tác với bộ xử lý môi trường để kiểm tra phạm vi, kiểu dữ liệu, \dots của các biến, hàm, \dots trong chương trình. Nếu câu lệnh không đúng ngữ nghĩa, bộ phân tích ngữ nghĩa sẽ thực hiện thông báo lỗi nhờ bộ thông báo lỗi, sau đó chương trình sẽ dừng lại. Nếu câu lệnh đúng ngữ nghĩa, bộ phân tích ngữ nghĩa sẽ chuyển câu lệnh đó cho bộ thông dịch để thực thi. Quá trình kiểm tra ngữ nghĩa sẽ được thực hiện cho đến khi toàn bộ cây cú pháp được kiểm tra xong.
 
-Cú pháp của câu lệnh khai báo biến được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:decl_func_stmt]{\bf Chương 2}.
+    Ta sẽ phân tích khái quát cách thức hoạt động và xử lý của bộ phân tích ngữ nghĩa trong ngôn ngữ Pandora như sau:
 
-Câu lệnh khai báo hàm được bắt đầu khi từ tố hiện tại là từ khóa \kw{fun}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_func\_decl}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_decl_fun]{\bf Phụ lục 1}. % Mục 1.xx todo!
+\noindent \textbf{Kiểm tra khai báo (\textit{declaration checking})}
 
-Cụ thể hàm \textit{parse\_stmt\_func\_decl} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh khai báo hàm như sau:
+\noindent \textbf{Kiểm tra kiểu dữ liệu (\textit{type checking})}
 
-\begin{itemize}
-    \item \textbf{Xác định phần ký hiệu của hàm}: Sau khi nhận diện từ khóa \kw{fun}, trình thông dịch bắt đầu phân tích phần ký hiệu của hàm bằng cách gọi hàm \textit{parse\_stmt\_func\_sig} (chi tiết mã nguồn triển khai tại \hyperref[ap1:stmt_decl_fun_sig]{\bf Phụ lục 1}. % Mục 1.xx todo! 
-    Phần ký hiệu này bao gồm:
-    \begin{itemize}
-        \item Tên hàm. Một tên hợp lệ với quy tắc đặt tên của Pandora
-        \item Tham số truyền vào. Sau khi xác định tên hàm, danh sách các tham số truyền vào được xác định thông qua chuỗi từ tố được đặt bên trong cặp ngoặc `(' và `)'. Mỗi tham số sẽ được phân tích lần lượt như sau: đầu tiên nếu trình thông dịch đọc được từ khóa \kw{mut} thì xác định tham số đó có thể thay đổi giá trị và ngược lại, tiếp đến trình thông dịch xác định tên tham số, cuối cùng là xác định kiểu dữ liệu của tham số được ngăn cách với tên tham số bằng ký tự `:'. Mỗi tham số phân cách nhau bởi ký tư `,'.
-        \item Kiểu dữ liệu trả về. Sau khi xác định tham số truyền vào, nếu từ tố đọc được là từ tố "->" thì trình thông dịch sẽ xác định kiểu dữ liệu trả về của hàm thông qua từ tố tiếp theo.
-    \end{itemize}
-    \item \textbf{Xác định phần thân hàm}: Sau khi xác định được phần ký hiệu, trình thông dịch sẽ phân tích câu lệnh phần thân hàm bằng cách gọi hàm \textit{parse\_stmt}.
-\end{itemize}
+    Bước này sẽ kiểm tra xem các biến, biểu thức, hàm, \dots có đúng kiểu dữ liệu hay không. Bộ phân tích ngữ nghĩa thường sẽ thực hiện bước này khi thực hiện kiểm tra ngữ nghĩa cho các biểu thức, gán giá trị, truyền tham số, \dots Ví dụ, nếu ta có một biểu thức \kw{a + b}, bộ phân tích ngữ nghĩa sẽ kiểm tra xem biến \kw{a} và \kw{b} có cùng kiểu dữ liệu hay không. Nếu không, bộ phân tích ngữ nghĩa sẽ thông báo lỗi. Phép gán giá trị cũng tương tự, biến và giá trị gán vào biến cần có cùng kiểu dữ liệu. Đối với dữ liệu đặc biệt như mảng, bộ phân tích ngữ nghĩa còn phải thực hiện kiểm tra kích thước mảng (đảm bảo kích thước mảng của biến khi khai báo khớp với số lượng các giá trị có trong mảng), kiểm tra kiểu dữ liệu của mỗi phần tử trong mảng (đảm bảo tất cả các phần tử đều có cùng kiểu dữ liệu), từ đó mới kết luận được kiểu dữ liệu của mảng để quyết định xem có giống với kiểu dữ liệu của biến hay không. Đối với biểu thức gọi hàm, bộ phân tích ngữ nghĩa cần đảm bảo từng tham số truyền vào phải đúng kiểu dữ liệu hàm đó yêu cầu, cũng như kiểu dữ liệu được trả về khi đang thực thi chương trình phải khớp với kiểu dữ liệu trả về hàm yêu cầu. Một số trường hợp khác như biểu thức ép kiểu, bộ phân tích ngữ nghĩa sẽ kiểm tra xem liệu việc chuyển đổi từ kiểu này sang kiểu kia thì có hợp lệ, khả thi không. Ví dụ, việc chuyển từ \kw{3} sang \kw{3.0} (kiểu số nguyên sang kiểu số thực) là hoàn toàn có thể, trong khi việc chuyển từ \kw{2.5} sang \kw{true} (kiểu số thực sang kiểu logic) lại là không hợp lệ trong ngôn ngữ Pandora. Ta cần lưu ý rằng, việc kiểm tra sự khả thi của việc chuyển từ kiểu dữ liệu này sang kiểu dữ liệu khác không có nghĩa là việc ép kiểu đó sẽ luôn hợp lệ. Chẳng hạn, biểu thức ép kiểu \kw{"30" as int} là hợp lệ, tuy nhiên việc cố gắng ép \kw{"hello" as int} lại không hợp lệ, mặc dù đều là biến đổi từ kiểu chuỗi sang kiểu số nguyên. 
 
-\subsubsection{Câu lệnh khối}
+    Thông qua việc kiểm tra kiểu dữ liệu, bộ phân tích ngữ nghĩa sẽ đảm bảo kiểu dữ liệu tại mọi thời điểm thực thi của chương trình luôn đúng với những gì ta mong đợi. Từ đó, việc đọc luồng logic cũng như việc phát hiện và sửa lỗi sẽ trở nên dễ dàng hơn.
 
-Cú pháp của câu lệnh khối được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:block_stmt]{\bf Chương 2}.
+\noindent Một số ví dụ về việc kiểm tra kiểu dữ liệu
+\begin{lstlisting}[]
+set a: int = 5; // assign `int` to `int`, correct
+set b: float = 5; // assign `int` to `float`, incorrect
+set arr: [int; 3] = [1, 2]; // assign `[int; 2]` to `[int; 3]`, incorrect
+5 + "5"; // try to add `int` with `str`, not allowed
+"hello" as true; // although not correct but still valid in type checking phase
+[1, false]; // an array with 2 different types: `int` and `bool`, incorrect
+\end{lstlisting}
 
-Câu lệnh khối được bắt đầu khi từ tố đọc được hiện tại là kí tự `\{'. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_block}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_block]{\bf Phụ lục 1}. % , Mục 1.xx todo!
+\noindent \textbf{Kiểm tra phạm vi (\textit{scope checking})}
 
-Thông qua hàm \textit{parse\_stmt\_block}, từng câu lệnh sau kí tự `\{' sẽ được phân tích cho đến khi gặp từ tố đóng ngoặc nhọn `\}'.
+    Hầu như tất cả các ngôn ngữ lập trình đều phải có phần kiểm tra phạm vi, và Pandora cũng không ngoại lệ. Phạm vi truy cập là một trong những yếu tố quan trọng nhất của ngôn ngữ lập trình. Nó cho ta biết một biến, hàm, \dots nào đó có thể được truy cập và sử dụng hay không. Thông tin về phạm vi truy cập trong ngôn ngữ Pandora sẽ được lưu trữ trong \textbf{môi trường} (một cấu trúc dữ liệu, được phân tích chi tiết ở phần TODO). Bộ phân tích ngữ nghĩa sẽ thông qua dữ liệu có được từ đối tượng môi trường để đánh giá sự hợp lệ trong việc truy cập một biến, hàm, \dots nào đó. Để hiểu hơn về quá trình kiểm tra phạm vi của một biến hay một hàm của bộ phân tích ngữ nghĩa, ta sẽ phân tích ví dụ sau đây:   
 
-\subsubsection{Câu lệnh điều khiển}
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.4]{scope-checking.png}
+    \caption{Ví dụ về quá trình kiểm tra phạm vi của bộ phân tích ngữ nghĩa}
+\end{figure}
 
-\noindent\textbf{Câu lệnh rẽ nhánh:} 
+    Giả sử câu lệnh đang xét là \kw{set b: int = a + 5}, tức trình thông dịch đã thực thi xong lệnh \kw{set a: int = 5}, và biến \kw{a} đã được lưu vào phạm vi môi trường hiện tại. Khi trình thông dịch đang phân tích tới biến \kw{a} trong biểu thức \kw{a + 5}, nó sẽ yêu cầu bộ phận xử lý ngữ nghĩa kiểm tra phạm vi của biến này. Bộ phân tích ngữ nghĩa sẽ thu thập thông tin của biến \kw{a} trong môi trường hiện tại. Sau khi thấy được thông tin biến \kw{a} có tồn tại trong môi trường. Bộ phân tích ngữ nghĩa sẽ kết thúc quá trình kiểm tra phạm vi của biến \kw{a} và thông báo cho trình thông dịch rằng biến \kw{a} có thể được sử dụng trong biểu thức \kw{a + 5}.
 
-Cú pháp của câu lệnh rẽ nhánh được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:if_stmt]{\bf Chương 2}.
+\noindent \textbf{Kiểm tra khởi tạo (\textit{Initialization checking})}
 
-Câu lệnh rẽ nhánh được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{when}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_if}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_when]{\bf Phụ lục 1}. %Mục 1.xx todo!
+    Trong quá trình thực thi, bộ xử lý ngữ nghĩa sẽ đảm bảo không có trường hợp nào mà biến hoặc hàm được sử dụng mà không được khởi tạo trước đó. Ví dụ, khi truy cập một phần tử trong mảng, hay khi sử dụng một biến, bộ xử lý ngữ nghĩa sẽ kiểm tra xem biến đó đã được khởi tạo hay chưa, nếu chưa, sẽ thông báo lỗi. Bộ xử lý ngữ nghĩa có được thông tin về việc khởi tạo biến từ môi trường, từ đó sẽ kiểm tra xem biến đó đã được khởi tạo hay chưa. Do vậy, bộ xử lý ngữ nghĩa thông thường sẽ thực hiện kiểm tra khởi tạo ngay sau khi kiểm tra phạm vi của biến (bởi cả hai thông tin này đều được lưu trong môi trường) giúp tăng hiệu suất và giảm thời gian thực thi. 
 
-Cụ thể hàm \textit{parse\_stmt\_if} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh rẽ nhánh như sau:
-\begin{itemize}
-    \item \textbf{Phân tích biểu thức điều kiện}: 
-    Sau khi nhận diện từ khóa \kw{when}, trình thông dịch tiến hành phân tích cú pháp biểu thức theo sau bằng cách gọi hàm \textit{parse\_expr}. Nếu biểu thức này không hợp lệ thì báo lỗi.
-    \item \textbf{Phân tích câu lệnh của nhánh \kw{when}}: 
-    Sau khi phân tích biểu thức điều kiện, trình thông dịch gọi hàm \textit{parse\_stmt} để phân tích cú pháp câu lệnh nhánh \kw{when}.
-    \item \textbf{Xử lí tùy chọn nhánh \kw{alt} nếu có}:
-    Sau khi phân tích câu lệnh của nhánh \kw{when}, nếu từ tố tiếp theo là từ khóa \kw{alt} thì trình thông dịch sẽ tiếp tục phân tích cú pháp câu lệnh tiếp theo bằng cách gọi hàm \textit{parse\_stmt}.
-\end{itemize}
+\noindent Ví dụ về việc kiểm tra khởi tạo
+\begin{lstlisting}[]
+set a: int;
+set b: int = a; // a is not initialized
+\end{lstlisting}
 
+\noindent \textbf{Kiểm tra luồng điều khiển (\textit{control flow checking})}
 
-\noindent\textbf{Câu lệnh lặp biểu thức điều kiện:}
+    Kiểm tra luồng điều khiển cũng là một bước quan trọng trong quá trình kiểm tra ngữ nghĩa của một chương trình. Bộ phân tích ngữ nghĩa sẽ kiểm tra xem các cấu trúc luồng điều khiển (như quay lại, ngắt, tiếp tục) được sử dụng ở các vị trí thích hợp. Ví dụ, việc sử dụng câu lệnh \kw{br} hoặc câu lệnh \kw{skip} ngoài cấu trúc lặp là không hợp lệ, hay việc sử dụng câu lệnh \kw{yeet} ngoài hàm cũng không hợp lệ.
 
-Cú pháp của câu lệnh lặp biểu thức điều kiện được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:while_stmt]{\bf Chương 2}.
+\noindent Ví dụ về việc kiểm tra luồng điều khiển
+\begin{lstlisting}[]
+when true {
+    br; // not allowed
+}
+during true {
+    skip; // allowed
+}
+yeet; // not allowed
+\end{lstlisting}
 
-Câu lệnh lặp biểu thức điều kiện được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{during}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_while}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_during]{\bf Phụ lục 1}. % , Mục 1.xx todo!
+\noindent \textbf{Kiểm tra lỗi thực thi (\textit{Running error checking})}
 
-Cụ thể hàm \textit{parse\_stmt\_while} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh lặp biểu thức điều kiện như sau:
-\begin{itemize}
-    \item \textbf{Phân tích biểu thức điều kiện}:
-    Sau khi nhận diện từ khóa \kw{during}, trình thông dịch tiến hành phân tích biểu thức theo sau bằng cách gọi hàm \textit{parse\_expr}. Nếu biểu thức này không hợp lệ thì báo lỗi.
-    \item \textbf{Phân tích câu lệnh sau biểu thức điều kiện}:
-    Sau khi phân tích biểu thức điều kiện, trình thông dịch gọi hàm \textit{parse\_stmt} để phân tích cú pháp câu lệnh tiếp theo.
-\end{itemize}
+    Trong quá trình thực thi, chẳng hạn khi đang thực thi một biểu thức, mặc dù các biến trong biểu thức được khởi tạo đúng cách, các kiểu dữ liệu khớp nhau, nhưng vẫn có thể xảy ra lỗi thực thi. Ví dụ, khi chia một số cho 0, hoặc khi truy cập một phần tử không tồn tại trong mảng, hoặc khi truy cập một biến không tồn tại, \dots. Bộ phân tích ngữ nghĩa sẽ kiểm tra xem các câu lệnh có thể gây ra lỗi thực thi hay không, và thông báo lỗi nếu cần thiết. 
 
-\noindent\textbf{Câu lệnh lặp trình lặp:} 
+\noindent Ví dụ về việc kiểm tra lỗi thực thi
+\begin{lstlisting}[]
+set a: int = 5;
+set b: int = 0;
+set c: int = a / b; // division by zero
+set arr: [int; 3] = [1, 2, 3];
+set d: int = arr[3]; // index out of range
+\end{lstlisting}
 
-Cú pháp của câu lệnh lặp trình lặp được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:for_stmt]{\bf Chương 2}.
+\noindent \textbf{Một số lưu ý về bộ xử lý ngữ nghĩa}
 
-Câu lệnh lặp trình lặp được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{for}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_for}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_for]{\bf Phụ lục 1}. % , Mục 1.xx todo!
+    Việc kiểm tra lỗi thực thi chỉ có thể thực hiện khi chương trình đang thực thi, nên bộ phân tích ngữ nghĩa sẽ không thể kiểm tra hết tất cả các trường hợp có thể xảy ra. Tuy nhiên, việc kiểm tra lỗi thực thi sẽ giúp giảm thiểu việc xảy ra lỗi trong quá trình thực thi chương trình.
 
-Cụ thể hàm \textit{parse\_stmt\_for} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh lặp trình lặp như sau:
+\noindent Ví dụ về việc bộ xử lý không phát hiện lỗi
+\begin{lstlisting}[]
+if true {
+    // do something
+} alt {
+    skip; // not allowed but not detected (because the interpreter will not reach this line)
+}
 
-\begin{itemize}
-    \item \textbf{Phân tích tên biến sử dụng cho trình lặp}:
-    Sau khi nhận diện từ khóa \kw{for}, trình thông dịch tiến hành đọc từ tố tiếp theo từ luồng đầu vào và kiểm tra để đảm bảo nó là một tên hợp lệ. Nếu tên không hợp lệ thì báo lỗi.
-    \item \textbf{Xác định từ khóa \kw{in}}:
-    Sau khi xác định tên biến lặp, trình thông dịch tiến hành kiểm tra từ tố tiếp theo có phải là từ khóa \kw{in} hay không. Nếu không phải từ khóa \kw{in} thì báo lỗi.
-    \item \textbf{Phân tích biểu thức trình lặp}:
-    Sau khi xác định được từ khóa \kw{in}, trình thông dịch tiến hành gọi hàm \textit{parse\_expr} để phân tích biểu thức theo sau. Nếu biểu thức này không hợp lệ thì báo lỗi.
-    \item \textbf{Phân tích câu lệnh lặp}:
-    Sau khi phân tích biểu thức điều kiện, trình thông dịch gọi hàm \textit{parse\_stmt} để phân tích cú pháp câu lệnh của trình lặp.
-\end{itemize}
+fun test() {
+    set b: int = a; // not allowed but not detected (because you are not calling this function)
+}
+\end{lstlisting}
 
-\noindent\textbf{Câu lệnh trả về:}
+    Một chương trình đúng ngữ nghĩa không có nghĩa là chương trình không có lỗi. Bộ phân tích ngữ nghĩa chỉ đảm bảo rằng chương trình không có lỗi ngữ nghĩa, nhưng không đảm bảo rằng chương trình sẽ đúng về mặt logic. Do đó, việc kiểm tra ngữ nghĩa chỉ là một phần nhỏ trong quá trình kiểm tra chương trình, và không thể thay thế việc kiểm tra logic của chương trình.
 
-Cú pháp của câu lệnh trả về được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:return_stmt]{\bf Chương 2}.
+\noindent Ví dụ về việc chương trình đúng ngữ nghĩa nhưng không đúng logic
+\begin{lstlisting}[]
+fun fib(n: int): int {
+    fib(n - 1) + fib(n - 2); // missing base case
+}
 
-Câu lệnh trả về được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{yeet}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_return}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_yeet]{\bf Phụ lục 1}. % , Mục 1.xx todo!
+set a: int = fib(5); // correct in semantic checking phase
+\end{lstlisting}
 
-Cụ thể hàm \textit{parse\_stmt\_return} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh trả về như sau: 
-Sau khi nhận diện từ khóa \kw{yeet}, trình thông dịch sẽ phân tích xem câu lệnh trả về có bao gồm giá trị hay không dựa trên từ tố theo sau từ khóa \kw{yeet}. Nếu từ tố này có thể bắt đầu một biểu thức thì trình thông dịch sẽ bắt đầu phân tích biểu thức và xác định câu lệnh trả về có giá trị. Nếu không, từ tố này bắt buộc phải là ký tự `;' để kết thúc và xác định câu lệnh trả về không có giá trị, nếu không sẽ báo lỗi.
+    Trong ví dụ trên, chương trình không có lỗi ngữ nghĩa, nhưng lại không đúng logic. Hàm \kw{fib} sẽ không bao giờ kết thúc vì không có điều kiện dừng, và chương trình sẽ bị lặp vô hạn.
 
-
-
-\noindent\textbf{Câu lệnh thoát khỏi vòng lặp:}
-
-Cú pháp của câu lệnh thoát khỏi vòng lặp được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:break_stmt]{\bf Chương 2}.
-
-Câu lệnh thoát khỏi vòng lặp được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{br}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_break}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_br]{\bf Phụ lục 1}. % , Mục 1.xx todo!
-
-Cụ thể hàm \textit{parse\_stmt\_break} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh thoát khỏi vòng lặp như sau: Sau khi nhận diện từ khóa \kw{br}, trình thông dịch sẽ nhận diện từ tố tiếp theo phải là ký tự `;' nếu không sẽ báo lỗi.
-
-
-\noindent\textbf{Câu lệnh tiếp tục vòng lặp:}
-
-Cú pháp của câu lệnh tiếp tục vòng lặp được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:continue_stmt]{\bf Chương 2}.
-
-Câu lệnh tiếp tục vòng lặp được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{skip}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_continue}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_skip]{\bf Phụ lục 1}. % , Mục 1.xx todo!
-
-Cụ thể hàm \textit{parse\_stmt\_continue} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh tiếp tục vòng lặp như sau:
-Sau khi nhận diện từ khóa \kw{skip}, trình thông dịch sẽ nhận diện từ tố tiếp theo phải là ký tự `;' nếu không sẽ báo lỗi.
-
-\subsubsection{Câu lệnh thêm thư viện}
-
-Cú pháp của câu lệnh thêm thư viện được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:import_stmt]{\bf Chương 2}.
-
-Câu lệnh thêm thư viện được bắt đầu khi từ tố đọc được hiện tại là từ khóa \kw{add}. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_import}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_add]{\bf Phụ lục 1}. % , Mục 1.xx todo!
-
-Cụ thể hàm \textit{parse\_stmt\_import} chịu trách nhiệm triển khai các bước phân tích cú pháp câu lệnh thêm thư viện như sau: 
-sau khi nhận diện từ khóa \kw{add}, trình thông dịch sẽ phân tích đường dẫn đến thư viện bằng cách kiểm tra xem từ tố tiếp theo có phải là một tên hợp lệ không.
-
-\subsubsection{Câu lệnh rỗng}
-
-Cú pháp của câu lệnh rỗng được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:empty_stmt]{\bf Chương 2}.
-
-Câu lệnh rỗng được bắt đầu khi từ tố đọc được hiện tại là ký tự `;'. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_empty}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_semicolon]{\bf Phụ lục 1}.
-
-Thông qua hàm \textit{parse\_stmt\_empty}, ký tự `;' được đọc và xác định câu lệnh rỗng, nếu không tìm thấy ký tự `;' sẽ báo lỗi.
-
-\subsubsection{Câu lệnh biểu thức:} 
-Cú pháp của câu lệnh biểu thức được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:expr_stmt]{\bf Chương 2}.
-
-Câu lệnh biểu thức được bắt đầu khi từ tố đọc được hiện tại có thể bắt đầu một biểu thức. Việc phân tích câu lệnh này được thực hiện thông qua hàm \textit{parse\_stmt\_expr}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:stmt_expr]{\bf Phụ lục 1}. % , Mục 1.xx todo!
-
-Thông qua hàm \textit{parse\_stmt\_expr}, biểu thức sẽ được trình thông dịch phân tích bằng cách gọi đến hàm \textit{parse\_expr} (cụ thể sẽ được trình bày bên dưới). Sau khi phân tích được biểu thức, trình thông dịch sẽ kiểm tra từ tố tiếp theo có phải là ký tự `;', nếu không sẽ báo lỗi.
-
-\subsection{Biểu thức}
-Cú pháp của biểu thức được thể hiện thông qua biểu thức chính quy tại \hyperref[ch2:expr]{\bf Chương 2}.
-
-Quá trình phân tích biểu thức sẽ được thực hiện thông qua hàm \textit{parse\_expr}, chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:expr]{\bf Phụ lục 1}. % , Mục 1.xx todo!
-
-Đầu tiên trình thông dịch sẽ phân tích phần tiền tố của toán tử biểu thức đầu tiên thông qua hàm \textit{parse\_expr\_prefix}, chi tiết mã nguồn triển khai tại \hyperref[ap1:expr_prefix]{\bf Phụ lục 1}:
-\begin{itemize}
-    \item \textbf{Phân tích phần tiền tố}. Hàm \textit{parse\_expr\_prefix} kiểm tra và trả về kiểu của tất cả các từ tố là \textbf{Not}('!') hoặc là \textbf{Minus}('-').
-    \item \textbf{Phân tích phần biểu thức theo sau tiền tố}. Sau khi đã bỏ qua phần tiền tố, trình thông dịch sẽ xử lý biểu thức tiếp theo thông qua hàm \textit{parse\_expr\_dot\_or\_call} (chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:expr_dot_or_call]{\bf Phụ lục 1}). Hàm này sẽ phân tích biểu thức có mức ưu tiên cao nhất theo sau tiền tố thông qua hàm \textit{parse\_expr\_bottom}, sau đó trình thông dịch sẽ phân tích phần biểu thức đặc biệt (nếu có) thông qua hàm \textit{parse\_expr\_dot\_or\_call\_with}. Biểu thức đặc biệt cần xử lý riêng này có thể là biểu thức truy cập thư viện (Library access) hoặc biểu thức gọi hàm (Function calls) đã được đề cập đến trong bảng \ref{table2:precedence}.
-    \item \textbf{Phân tích phần toán tử có mức độ ưu tiên cao nhất theo sau toán tử một ngôi}. Hàm \textit{parse\_expr\_bottom} (chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:expr_bottom]{\bf Phụ lục 1}) phân tích biểu thức ngay sau phần tiền tố. Nếu từ tố hiện tại là tên biến hoặc là giá trị trực tiếp thì sẽ được phân tích thông qua các hàm tương ứng, nếu đây là ký tự `(' thì trình thông dịch sẽ bắt đầu phân tích 1 biểu thức mới, nếu đây là ký tự `[' thì trình thông dịch sẽ bắt đầu phân tích biểu thức mảng. Nếu không thỏa mãn trường hợp nào sẽ báo lỗi.
-    \item Hàm \textit{parse\_expr\_dot\_or\_call\_with} có chi tiết mã nguồn triển khai được trình bày trong \hyperref[ap1:expr_dot_or_call_with]{\bf Phụ lục 1} sẽ phân tích từng biểu thức dựa trên từ tố hiện tại là `.' hay `(' hay `['.
-    \begin{itemize}
-        \item \textbf{Nếu từ tố này là ký tự `.'}, trình thông dịch sẽ phân tích biểu thức truy cập thư viện thông qua hàm \textit{parse\_expr\_dot} (chi tiết mã nguồn triển khai tại \hyperref[ap1:expr_dot]{Phụ lục 1}). Từ tố tên tiếp theo sẽ được trình thông dịch phân tích và trả về biểu thức truy cập thư viện, nếu không tìm thấy từ tố tên sẽ báo lỗi.
-        \item \textbf{Nếu từ tố này là ký tự `('}, trình thông dịch sẽ phân tích biểu thức gọi hàm thông qua hàm \textit{parse\_expr\_call\_with} (chi tiết mã nguồn triển khai tại \hyperref[ap1:expr_call_with]{Phụ lục 1}). Trình thông dịch sẽ phân tích các biểu thức bên trong cặp ngoặc `(', `)' và kiểm tra phần biểu thức trước nó để xác định xem đây là biểu thức gọi hàm bình thường hay là gọi hàm của thư viện. Nếu có biểu thức không hợp lệ sẽ báo lỗi.
-        \item \textbf{Nếu từ tố này là ký tự `['}, trình thông dịch sẽ phân tích biểu thức ký tự mảng thông qua hàm \textit{parse\_expr\_array\_index} (chi tiết mã nguồn triển khai tại \hyperref[ap1:expr_array_index]{Phụ lục 1}). Trình thông dịch sẽ phân tích biểu thức nằm bên trong cặp ngoặc `[', `]', nếu biểu thức khong hợp lệ sẽ báo lỗi.
-    \end{itemize}
-    Điều này sẽ được lặp lại cho đến khi không tìm thấy một trong ba từ tố này.
-\end{itemize}
-Sau đó, trình thông dịch sẽ phân tích phần còn lại của biểu thức thông qua hàm \textit{parse\_expr\_rest}. Với các mức độ ưu tiên của toán tử được đề cập đến trong bảng \ref{table2:precedence}, cụ thể hàm này thực hiện việc phân tích phần còn lại của biểu thức như sau:
-\begin{itemize}
-    \item Lấy ra toán tử hiện tại và xác định thứ tự ưu tiên của nó so với toán tử trước đó, nếu không có toán tử thích hợp hoặc toán tử có mức độ ưu tiên thấp hơn thì dừng lại để trả về biểu thức trước đó.
-    \item Nếu toán tử hiện tại có mức độ ưu tiên cao hơn, trình thông dịch sẽ tiếp tục phân tích toán hạng tiếp theo từ phần tiền tố thông qua hàm \textit{parse\_expr\_prefix} đã được trình bày phía trên.
-    \item Sau khi đã phân tích toán hạng tiếp theo, trình thông dịch sẽ tiếp tục tính toán mức độ ưu tiên cho nó và phân tích phần còn lại bằng cách gọi đệ quy hàm \textit{parse\_expr\_rest}.
-    \item Sau khi đến được mức có độ ưu tiên cao nhất sẽ xác định loại của biểu thức hiện tại.
-\end{itemize}
-Quá trình này sẽ lặp lại cho đến khi đọc hết biểu thức hoặc khi phân tích 1 biểu thức nào đó không hợp lệ.
+    Sau khi đã xây dựng xong bộ phân tích ngữ nghĩa, ta sẽ tiến hành kết hợp bộ phân tích ngữ nghĩa với bộ thông dịch để thực thi chương trình. Quá trình này sẽ được thực hiện trong bước thực thi chương trình.

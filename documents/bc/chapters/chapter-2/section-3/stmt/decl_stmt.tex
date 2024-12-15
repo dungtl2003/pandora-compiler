@@ -6,7 +6,7 @@ Câu lệnh khai báo là câu lệnh dùng để tạo ra một tên mới tron
 
 \noindent\textbf{\label{ch2:decl_var_stmt}Câu lệnh khai báo biến (\textit{Variable declaration statement})}
 
-    Câu lệnh khai báo biến dùng để tạo ra một biến mới trong chương trình. Biến là một vùng nhớ được dùng để lưu trữ dữ liệu. Mỗi biến sẽ có một kiểu dữ liệu và một tên riêng. Câu lệnh khai báo biến bắt đầu bằng từ khóa \kw{set}, sau đó là tên biến và kiểu dữ liệu của biến. Ta có thể gán giá trị cho biến ngay sau khi khai báo hoặc sau đó. Nếu ta muốn biến đó thay đổi giá trị, ta có thể khai báo biến với từ khóa \kw{mut} ở trước tên biến. Câu lệnh khai báo biến kết thúc bằng dấu chấm phẩy U+003B (\textbf{;}). Ta có thể tạo một biến mới với tên trùng với tên của biến đã tồn tại trong cùng một phạm vi (\textbf{shadow variable}). Khi này, biến mới sẽ ghi đè lên biến cũ. Câu lệnh khai báo biến được mô tả bởi biểu thức chính quy sau:
+    Câu lệnh khai báo biến dùng để tạo ra một biến mới trong chương trình. Biến là một vùng nhớ được dùng để lưu trữ dữ liệu. Mỗi biến sẽ có một kiểu dữ liệu và một tên riêng. Câu lệnh khai báo biến bắt đầu bằng từ khóa \kw{set}, sau đó là tên biến và kiểu dữ liệu của biến. Ta có thể gán giá trị cho biến ngay sau khi khai báo hoặc sau đó. Nếu ta muốn biến đó thay đổi giá trị, ta có thể khai báo biến với từ khóa \kw{mut} ở trước tên biến. Câu lệnh khai báo biến kết thúc bằng dấu chấm phẩy U+003B (\kw{;}). Ta có thể tạo một biến mới với tên trùng với tên của biến đã tồn tại trong cùng một phạm vi (\textbf{shadow variable}). Khi này, biến mới sẽ ghi đè lên biến cũ. Câu lệnh khai báo biến được mô tả bởi biểu thức chính quy sau:
 
 \regexvardeclstmt
 
@@ -20,7 +20,7 @@ set mut a: float = 3.14;
 
 \noindent\textbf{\label{ch2:decl_func_stmt}Câu lệnh khai báo hàm (\textit{Function declaration statement})}
 
-    Câu lệnh khai báo hàm dùng để tạo ra một hàm mới trong chương trình. Hàm là một khối mã thực thi một tập hợp các công việc cụ thể. Câu lệnh khai báo hàm bắt đầu bằng từ khóa \kw{fun}, sau đó là tên hàm, danh sách tham số, kiểu trả về và thân hàm. Nếu hàm không trả về giá trị, kiểu trả về sẽ là \kw{unit}. Câu lệnh khai báo hàm kết thúc bằng dấu chấm phẩy U+003B (\textbf{;}). Câu lệnh khai báo hàm được mô tả bởi biểu thức chính quy sau:
+    Câu lệnh khai báo hàm dùng để tạo ra một hàm mới trong chương trình. Hàm là một khối mã thực thi một tập hợp các công việc cụ thể. Câu lệnh khai báo hàm bắt đầu bằng từ khóa \kw{fun}, sau đó là tên hàm, danh sách tham số, kiểu trả về và thân hàm. Nếu hàm không trả về giá trị, kiểu trả về sẽ là \kw{unit}. Câu lệnh khai báo hàm kết thúc bằng dấu chấm phẩy U+003B (\kw{;}). Câu lệnh khai báo hàm được mô tả bởi biểu thức chính quy sau:
 
 \regexfuncdeclstmt
 
