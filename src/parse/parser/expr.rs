@@ -43,12 +43,12 @@ impl Parser {
             let op_span = self.token.span;
             self.advance();
 
-            let mut rhs = self.parse_expr_prefix()?;
             let fixity = op_assoc.fixity();
             let next_prec = match fixity {
                 Fixity::Left => prec + 1,
                 Fixity::Right => prec,
             };
+            let mut rhs = self.parse_expr_prefix()?;
             rhs = self.parse_expr_rest(next_prec, rhs)?;
             let span = self.mk_expr_sp(&lhs, rhs.span);
             lhs = match op_assoc {

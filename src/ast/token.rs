@@ -77,7 +77,7 @@ pub enum TokenKind {
     Ident(Symbol, IdentIsRaw),
 
     /// A doc comment token.
-    /// `Symbol` is the data of doc's comment excluding its "quotes" (`///`, `/**`, etc)
+    /// `Symbol` is the data of doc's comment excluding its "quotes" (`//!`, `/*@`, etc)
     DocComment(CommentKind, Option<DocStyle>, Symbol),
 
     /// End Of File.
