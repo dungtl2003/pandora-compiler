@@ -18,52 +18,26 @@
 %     label = \mlii
 % }
 
-Trong bối cảnh phát triển mạnh mẽ của ngành công nghệ thông tin, ngôn ngữ lập trình và công cụ biên dịch (compiler) đóng vai trò quan trọng trong việc xây dựng các phần mềm hiện đại. Từ các công cụ phân tích dữ liệu đến các hệ thống điều khiển công nghiệp, các ngôn ngữ lập trình mới không ngừng được ra đời nhằm đáp ứng nhu cầu đa dạng và chuyên biệt của ngành.
+Trong bối cảnh phát triển mạnh mẽ của ngành công nghệ thông tin, ngôn ngữ lập trình và công cụ dịch ngôn ngữ đóng vai trò quan trọng trong việc xây dựng các phần mềm hiện đại. Từ các công cụ phân tích dữ liệu đến các hệ thống điều khiển công nghiệp, các ngôn ngữ lập trình mới không ngừng được ra đời nhằm đáp ứng nhu cầu đa dạng và chuyên biệt của ngành.
 
-Nhóm chúng em thực hiện đề tài "Xây dựng trình biên dịch cho ngôn ngữ lập trình Pandora sử dụng ngôn ngữ Rust" nhằm nghiên cứu, thiết kế ngôn ngữ lập trình Pandora và triển khai một trình biên dịch dành riêng cho ngôn ngữ này. Đề tài này được lựa chọn với mục tiêu khám phá các khía cạnh cốt lõi của quá trình biên dịch và mở ra hướng đi mới cho việc ứng dụng Rust vào các dự án phức tạp.
+Nhóm chúng em thực hiện đề tài "Xây dựng trình thông dịch cho ngôn ngữ lập trình Pandora sử dụng ngôn ngữ Rust" nhằm nghiên cứu, thiết kế ngôn ngữ lập trình mới Pandora và triển khai một trình thông dịch dành riêng cho ngôn ngữ này. Đề tài này được lựa chọn với mục tiêu phân tích, xây dựng một ngôn ngữ lập trình mới, đồng thời khám phá các khía cạnh cốt lõi của quá trình thông dịch và mở ra hướng đi mới cho việc ứng dụng Rust vào các dự án phức tạp.
 
-Qua quá trình thực hiện, nhóm đã tìm hiểu về kiến trúc của compiler, từ các giai đoạn phân tích từ vựng, phân tích cú pháp, phân tích ngữ nghĩa, đến sinh mã và tối ưu mã. Đồng thời, chúng em đã triển khai các kỹ thuật và thư viện mới của Rust nhằm đạt được hiệu quả cao trong việc biên dịch và xử lý lỗi.
+Qua quá trình thực hiện, nhóm đã tìm hiểu về kiến trúc của trình thông dịch, từ các giai đoạn phân tích từ vựng, phân tích cú pháp, phân tích ngữ nghĩa, đến thực thi mã. Đồng thời, chúng em đã triển khai các kỹ thuật và thư viện mới của Rust nhằm đạt được hiệu quả cao trong việc thông dịch và xử lý lỗi.
 
 Nội dung báo cáo được chia làm bốn chương cụ thể như sau:
 
 \begin{mucluc}
     
-    \item {\bf{Tổng quan về ngôn ngữ và compiler}} - 
-        Giới thiệu về nguồn gốc và ý nghĩa của ngôn ngữ lập trình Pandora và các khái niệm cơ bản liên quan đến trình biên dịch (compiler). Em sẽ trình bày vai trò và tầm quan trọng của compiler trong quá trình phát triển phần mềm. Đồng thời, chương này cũng cung cấp cái nhìn tổng quát về ngôn ngữ lập trình Rust, ngôn ngữ được sử dụng để xây dựng trình biên dịch cho ngôn ngữ lập trình Pandora, và lý do lựa chọn Rust cho dự án. Và phần cuối của chương sẽ là mục tiêu của đề tài do bọn em đặt ra.
-    \item {\bf{Định nghĩa ngôn ngữ Pandora}} - 
-        Mô tả chi tiết ngôn ngữ lập trình Pandora, giúp làm rõ hơn về các khía cạnh cấu trúc và cú pháp của ngôn ngữ. Chương này phân tích cách thức tổ chức mã nguồn, quy tắc cú pháp các câu lệnh khai báo, câu lệnh điều khiển, câu lệnh biểu thức, \dots và từ khóa quan trọng, đồng thời trình bày các kiểu dữ liệu cơ bản và phức tạp, cách sử dụng biểu thức và toán tử. Những kiến thức này tạo nền tảng cho các chương tiếp theo trong việc xây dựng trình biên dịch.
-    \item {\bf{Kiến trúc tổng quan về compiler}} - 
-        Phân tích các thành phần chính cấu thành nên một compiler, 
-        bao gồm các bước quan trọng trong quá trình biên dịch: phân tích 
-        từ vựng (lexical analysis), phân tích cú pháp (syntax analysis), 
-        phân tích ngữ nghĩa (semantic analysis), sinh mã trung gian, 
-        tối ưu mã và sinh mã đích. Ngoài ra, chương này còn mô tả vai 
-        trò của bảng ký hiệu và cách thức xử lý lỗi trong quá trình biên 
-        dịch.
-    \item {\bf{Quá trình xây dựng compiler sử dụng ngôn ngữ Rust}} - 
-        Trình bày chi tiết từng bước trong quá trình xây dựng compiler 
-        Pandora bằng Rust. Em sẽ giới thiệu cách thiết lập môi trường 
-        phát triển, sau đó đi vào các phần chính của compiler như: 
-        xây dựng bảng ký hiệu, xây dựng bộ phân tích từ vựng (Lexer), 
-        bộ phân tích cú pháp (Parser), bộ phân tích ngữ nghĩa, và cuối 
-        cùng là sinh mã và xử lý lỗi. Các bước này sẽ được mô tả kỹ càng 
-        để làm rõ quy trình triển khai và các kỹ thuật đặc thù trong Rust.
-    \item {\bf{Triển khai, thực nghiệm và đánh giá}} - 
-        trình bày các thử nghiệm thực tế nhằm đánh giá khả năng và hiệu quả 
-        của trình biên dịch Pandora. Em sẽ đưa ra ví dụ cụ thể, như việc 
-        biên dịch một chương trình in "Hello, world", sau đó thử nghiệm 
-        với các đoạn mã khác để kiểm tra tính chính xác và độ ổn định của 
-        compiler. Phần này cũng bao gồm việc đánh giá hiệu năng và những 
-        cải tiến có thể thực hiện trong tương lai.
+    \item {\bf{Tổng quan về trình thông dịch}}\\
+    Chương này sẽ trình bày khái niệm và vai trò của trình thông dịch trong quá trình phát triển phần mềm. Phân tích các thành phần chính cấu thành nên một trình thông dịch, bao gồm các bước quan trọng trong quá trình thông dịch: phân tích từ vựng (lexical analysis), phân tích cú pháp (syntax analysis), phân tích ngữ nghĩa (semantic analysis), thực thi mã. Ngoài ra, chương này còn mô tả vai trò của bảng ký hiệu và cách thức xử lý lỗi trong quá trình thông dịch.
+    \item {\bf{Tổng quan về ngôn ngữ lập trình}}\\
+    Chương này sẽ giới thiệu cái nhìn tổng quát về ngôn ngữ lập trình Rust, ngôn ngữ được sử dụng để xây dựng trình thông dịch cho ngôn ngữ lập trình Pandora, và lý do lựa chọn Rust cho dự án. Sau đó sẽ giới thiệu về nguồn gốc và ý nghĩa của ngôn ngữ lập trình Pandora, mô tả chi tiết ngôn ngữ lập trình Pandora, giúp làm rõ hơn về các khía cạnh cấu trúc và cú pháp của ngôn ngữ. Cuối cùng sẽ phân tích quy tắc cú pháp các câu lệnh khai báo, câu lệnh điều khiển, câu lệnh biểu thức, \dots và từ khóa quan trọng, đồng thời trình bày các kiểu dữ liệu cơ bản và phức tạp, cách sử dụng biểu thức và toán tử. Những kiến thức này tạo nền tảng cho các chương tiếp theo trong việc xây dựng trình thông dịch.  
+    \item {\bf{Quá trình xây dựng trình thông dịch sử dụng ngôn ngữ Rust}}\\
+    Trình bày chi tiết từng bước trong quá trình xây dựng trình thông dịch Pandora bằng Rust. Chương này sẽ giới thiệu cách thiết lập môi trường phát triển, sau đó đi vào các phần chính của trình thông dịch như: xây dựng bộ phân tích từ vựng (Lexer), bộ phân tích cú pháp (Parser), bộ phân tích ngữ nghĩa, thực thi mã và xây dựng bảng ký hiệu. Các bước này sẽ được mô tả kỹ càng để làm rõ quy trình triển khai và các kỹ thuật đặc thù trong Rust.
+    \item {\bf{Triển khai, thực nghiệm và đánh giá}}\\
+    Trình bày các thử nghiệm thực tế nhằm đánh giá khả năng và hiệu quả của trình thông dịch Pandora. Chương này sẽ đưa ra ví dụ cụ thể, như việc thông dịch một chương trình in "Hello, world", sau đó thử nghiệm với các đoạn mã khác để kiểm tra tính chính xác và độ ổn định của trình thông dịch. Phần này cũng bao gồm việc đánh giá hiệu năng và những cải tiến có thể thực hiện trong tương lai.
 \end{mucluc}
 
-Cuối cùng, báo cáo sẽ tổng kết lại những kết quả đạt được, phân tích về những
-hạn chế và đề xuất một số hướng cải tiến, phát triển tiếp theo cho ngôn ngữ Pandora và 
-trình biên dịch  trong tương lai, chẳng hạn như tối ưu hóa hệ thống để tăng tốc độ biên 
-dịch hoặc mở rộng chức năng của ngôn ngữ Pandora, giúp ngôn ngữ lập trình Pandora có thể 
-được ứng dụng thực tế tốt hơn
+Cuối cùng, báo cáo sẽ tổng kết lại những kết quả đạt được, phân tích về những hạn chế và đề xuất một số hướng cải tiến, phát triển tiếp theo cho ngôn ngữ Pandora và trình thông dịch  trong tương lai, chẳng hạn như tối ưu hóa hệ thống để tăng tốc độ thông dịch hoặc mở rộng chức năng của ngôn ngữ Pandora, giúp ngôn ngữ lập trình Pandora có thể được ứng dụng thực tế tốt hơn
 
-Chúng em hy vọng đề tài này sẽ đóng góp một phần nhỏ vào công cuộc nghiên cứu và phát 
-triển các công cụ biên dịch, đồng thời tạo tiền đề cho các hướng nghiên cứu mới về 
-compiler và ngôn ngữ lập trình trong tương lai.
-
+Chúng em hy vọng đề tài này sẽ đóng góp một phần nhỏ vào công cuộc nghiên cứu và phát triển các công cụ thông dịch, đồng thời tạo tiền đề cho các hướng nghiên cứu mới về trình thông dịch và ngôn ngữ lập trình trong tương lai.
