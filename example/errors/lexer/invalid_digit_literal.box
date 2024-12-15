@@ -1,5 +1,5 @@
 set a: int = 0b1234;
-print("something");
-set c: int = 0h1FA2;
-print("something else");
-set a: int = 0b2234;
+//print("something");
+//set c: int = 0h1FA2;
+//print("something else");
+//set a: int = 0b2234;
