@@ -490,7 +490,11 @@ pub fn interpret_stmt_var_decl(
                         }]);
                     }
 
-                    (Some(value), *val_ty, Some(ident.span.clone()))
+                    (
+                        Some(value),
+                        TyKind::Array(val_ty, val_len),
+                        Some(ident.span.clone()),
+                    )
                 }
                 (_, _) => (Some(value), decl_ty.kind, Some(ident.span.clone())),
             }

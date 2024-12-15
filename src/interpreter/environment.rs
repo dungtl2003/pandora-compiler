@@ -207,7 +207,11 @@ impl Environment {
         }
 
         let source_dir = source_dir.unwrap();
-        let lib_filename = format!("{}.boxx", name);
+        let lib_filename = if crate::is_genz_mode() {
+            format!("{}.unbxx", name)
+        } else {
+            format!("{}.boxx", name)
+        };
         let lib_path = source_dir.join(&lib_filename);
 
         if !lib_path.exists() {
