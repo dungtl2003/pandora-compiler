@@ -39,7 +39,7 @@ set arr: [int; 3] = [1, 2]; // assign `[int; 2]` to `[int; 3]`, incorrect
 
 \noindent \textbf{Kiểm tra phạm vi (\textit{scope checking})}
 
-    Hầu như tất cả các ngôn ngữ lập trình đều phải có phần kiểm tra phạm vi, và Pandora cũng không ngoại lệ. Phạm vi truy cập là một trong những yếu tố quan trọng nhất của ngôn ngữ lập trình. Nó cho ta biết một biến, hàm, \dots nào đó có thể được truy cập và sử dụng hay không. Thông tin về phạm vi truy cập trong ngôn ngữ Pandora sẽ được lưu trữ trong \textbf{môi trường} (một cấu trúc dữ liệu, được phân tích chi tiết ở phần TODO). Bộ phân tích ngữ nghĩa sẽ thông qua dữ liệu có được từ đối tượng môi trường để đánh giá sự hợp lệ trong việc truy cập một biến, hàm, \dots nào đó. Để hiểu hơn về quá trình kiểm tra phạm vi của một biến hay một hàm của bộ phân tích ngữ nghĩa, ta sẽ phân tích ví dụ sau đây:   
+    Hầu như tất cả các ngôn ngữ lập trình đều phải có phần kiểm tra phạm vi, và Pandora cũng không ngoại lệ. Phạm vi truy cập là một trong những yếu tố quan trọng nhất của ngôn ngữ lập trình. Nó cho ta biết một biến, hàm, \dots nào đó có thể được truy cập và sử dụng hay không. Thông tin về phạm vi truy cập trong ngôn ngữ Pandora sẽ được lưu trữ trong \textbf{môi trường} (một cấu trúc dữ liệu, được phân tích chi tiết ở phần \textbf{\ref{ch6:env}}). Bộ phân tích ngữ nghĩa sẽ thông qua dữ liệu có được từ đối tượng môi trường để đánh giá sự hợp lệ trong việc truy cập một biến, hàm, \dots nào đó. Để hiểu hơn về quá trình kiểm tra phạm vi của một biến hay một hàm của bộ phân tích ngữ nghĩa, ta sẽ phân tích ví dụ sau đây:   
 
 \begin{figure}[H]
     \centering

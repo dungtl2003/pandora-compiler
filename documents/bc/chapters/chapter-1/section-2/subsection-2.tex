@@ -19,7 +19,6 @@
     Trong thiết kế và xây dựng bộ phân tích cú pháp cho trình thông dịch ngôn ngữ Pandora, ta sử dụng thuật toán phân tích Top-down và cụ thể là sử dụng phương pháp phân tích đệ quy đi xuống (recursive descent parsing).
 
     \textit{Phân tích đệ quy đi xuống} là một kỹ thuật phân tích cú pháp từ trên xuống, xây dựng cây cú pháp từ đỉnh và đọc đầu vào từ trái sang phải. Phương pháp này sử dụng các thủ tục tương ứng cho từng từ tố đơn (\textit{\emph{Các kí tự đơn như} Colon, Comma, Plus, Minus \dots \emph{hoặc các từ khóa như} \kw{when}, \kw{for}, \dots }) và các ký hiệu không kết thúc (\textit{IF\_STATEMENT, LOOP\_STATEMENT, BLOCK\_STATEMENT, \dots}), với mỗi quy tắc ngữ pháp được triển khai dưới dạng một hàm hoặc thủ tục riêng biệt. Quá trình phân tích diễn ra đệ quy, nghĩa là các hàm gọi lại chính chúng hoặc gọi các hàm khác để phân tích các phần tử con.
-% \cite{} TODO!
 
     \textbf{Lý do chọn phương pháp này:} Với ngôn ngữ không quá phức tạp như ngôn ngữ Pandora do chúng em thiết kế, phương pháp đệ quy xuống là một lựa chọn hợp lý để xây dựng trình thông dịch. Đây là kỹ thuật phân tích cú pháp từ trên xuống, giúp mô phỏng cấu trúc ngữ pháp của ngôn ngữ một cách trực quan và dễ hiểu. Phương pháp này không chỉ dễ dàng triển khai mà còn rất thuận tiện cho việc bảo trì và mở rộng hệ thống sau này. Bởi vì nó cho phép phân tích cú pháp theo từng phần tử nhỏ, từ đó dễ dàng kiểm tra và sửa lỗi. Hơn nữa, với ngữ pháp đơn giản của Pandora, việc áp dụng đệ quy xuống giúp giảm bớt độ phức tạp trong việc viết mã và tối ưu hóa hiệu suất của trình thông dịch.
 

@@ -35,7 +35,7 @@ pub enum ValueKind {
 }
 \end{lstlisting}
 
-    Trong đó, \kw{Int(i64)} đại diện cho một giá trị số nguyên, \kw{Float(f64)} đại diện cho một giá trị số thực, \kw{Str(String)} đại diện cho một giá trị chuỗi, \kw{Bool(bool)} đại diện cho một giá trị boolean, \kw{Function(Func)} đại diện cho một giá trị hàm (một biểu thức hàm sẵn sàng để đánh giá mỗi khi gọi hàm, thông tin về \kw{Func} sẽ được trình bày ở phần TODO), \kw{Char(char)} đại diện cho một giá trị ký tự, \kw{Array(Vec<Value>)} đại diện cho một giá trị mảng, và \kw{Unit} đại diện cho một giá trị không có giá trị (đây là một giá trị đặc biệt của kiểu dữ liệu \kw{tuple}). 
+    Trong đó, \kw{Int(i64)} đại diện cho một giá trị số nguyên, \kw{Float(f64)} đại diện cho một giá trị số thực, \kw{Str(String)} đại diện cho một giá trị chuỗi, \kw{Bool(bool)} đại diện cho một giá trị boolean, \kw{Function(Func)} đại diện cho một giá trị hàm (một biểu thức hàm sẵn sàng để đánh giá mỗi khi gọi hàm), \kw{Char(char)} đại diện cho một giá trị ký tự, \kw{Array(Vec<Value>)} đại diện cho một giá trị mảng, và \kw{Unit} đại diện cho một giá trị không có giá trị (đây là một giá trị đặc biệt của kiểu dữ liệu \kw{tuple}). 
 
     
     Còn đối với câu lệnh, ta sẽ định nghĩa một kiểu dữ liệu mới là \kw{StatementResult} để đại diện cho giá trị trả về của mỗi biểu thức. Kiểu dữ liệu này sẽ được định nghĩa trong tệp \kw{src/interpreter/eval.rs} như sau:
