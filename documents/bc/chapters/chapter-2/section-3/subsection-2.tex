@@ -1,12 +1,31 @@
-\subsection{Câu lệnh (\textit{Statement})}
+\subsection{Kiểu dữ liệu (\textit{Type})}
 
-Câu lệnh là một đơn vị mã thể hiện một hành động sẽ được thực hiện. Một chương trình được tạo thành từ một chuỗi các câu lệnh. Câu lệnh có thể là một lệnh khai báo, lệnh điều kiện, lệnh lặp, ... Các câu lệnh có thể chứa các thành phần bên trong, chẳng hạn như các biểu thức. Biểu thức tạo ra các giá trị, sau đó có thể được sử dụng trong các câu lệnh (ta sẽ nói thêm về biểu thức ở phần \textbf{\ref{ch2:expr}}). Ngoài ra, các câu lệnh có thể chứa các câu lệnh con, tạo thành một câu lệnh lồng nhau. Trong ngôn ngữ lập trình Pandora, ta sẽ có các loại câu lệnh sau:
+    Tất cả các biến trong Pandora đều có kiểu dữ liệu. Kiểu dữ liệu xác định loại dữ liệu mà biến đó có thể chứa. Kiểu dữ liệu cũng xác định các phép toán mà biến đó có thể thực hiện. Trong Pandora chỉ có 7 kiểu dữ liệu: kiểu số nguyên, kiểu số thực, kiểu ký tự, kiểu logic, kiểu chuỗi, kiểu tuple và kiểu mảng.
 
-\regexstmt
+\subsubsection{Kiểu số nguyên}
 
-\input{chapters/chapter-2/section-3/stmt/decl_stmt.tex}
-\input{chapters/chapter-2/section-3/stmt/expr_stmt.tex}
-\input{chapters/chapter-2/section-3/stmt/block_stmt.tex}
-\input{chapters/chapter-2/section-3/stmt/ctrl_stmt.tex}
-\input{chapters/chapter-2/section-3/stmt/import_stmt.tex}
-\input{chapters/chapter-2/section-3/stmt/empty_stmt.tex}
+    Kiểu số nguyên được ký hiệu là \kw{int}, có thể chứa các giá trị từ $-2^{31}+1$ đến $2^{31}-1$.
+
+\subsubsection{Kiểu số thực}
+
+    Kiểu số thực được ký hiệu là \kw{float}. Ta lưu ý rằng những biến có kiểu số thực không thể chứa các giá trị số nguyên. Ví dụ, nếu ta muốn gán giá trị $5$ cho một biến có kiểu số thực, ta phải gán giá trị $5.0$.
+
+\subsubsection{Kiểu ký tự}
+
+    Kiểu ký tự được ký hiệu là \kw{char}. Giá trị của loại ký tự được biểu thị dưới dạng ký tự Unicode.
+
+\subsubsection{Kiểu logic}
+
+    Kiểu logic được ký hiệu là \kw{bool}, và chỉ có hai giá trị là \kw{true} và \kw{false}.
+
+\subsubsection{Kiểu chuỗi}
+
+    Kiểu chuỗi được ký hiệu là \kw{str}, có thể có giá trị là chuỗi thường hoặc chuỗi thô.
+
+\subsubsection{Kiểu tuple}
+
+    Kiểu tuple được ký hiệu là \kw{tuple}. Một tuple có thể chứa nhiều giá trị khác nhau, và mỗi giá trị trong tuple có thể có kiểu dữ liệu khác nhau. Một tuple được tạo ra bằng cách đặt các giá trị cần chứa trong cặp dấu ngoặc đơn U+0028 (\kw{(}) và U+0029 (\kw{)}), cách nhau bởi dấu phẩy U+002C (\kw{,}). Ví dụ, \kw{(1, true, "hello")} là một tuple chứa 3 giá trị là số nguyên \kw{1}, logic \kw{true} và chuỗi \kw{"hello"}. Tuy nhiên, do đang trong quá trình phát triển, Pandora chỉ hỗ trợ đúng một tuple duy nhất là tuple không có phần tử nào, hay còn gọi là \kw{unit}, và được dùng làm giá trị trả về của hàm không có giá trị trả về.
+
+\subsubsection{Kiểu mảng}
+
+    Kiểu mảng được ký hiệu là \kw{[T]} với \kw{T} là một kiểu dữ liệu bất kỳ. Một mảng có thể chứa nhiều giá trị cùng kiểu dữ liệu và có thể được tạo ra thông qua biểu thức mảng (chi tiết ở phần \textbf{\ref{ch2:arrayexpr}}).

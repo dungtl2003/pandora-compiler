@@ -1,7 +1,16 @@
-\begin{longtable}{|p{4cm}| l |}
-    \caption{Bảng các từ tố} \\
+\begin{longtable}{|p{4cm}|p{4cm}|}
+    \caption{Bảng tên định danh} \\
 \hline
-\textbf{\textit{Từ tố}} & \textbf{\textit{Kí hiệu}} \\
+\textbf{\textit{Từ tố}} & \textbf{\textit{Ký hiệu}} \\
+\hline
+Ident & identifier \\
+\hline
+RawIdent & raw identifier \\
+\hline
+\end{longtable}
+
+\begin{longtable}{|p{4cm}|p{4cm}|}
+    \caption{Bảng các ký hiệu đặc biệt} \\
 \hline
 Eq & \kw{=} \\
 \hline
@@ -91,6 +100,13 @@ OpenBrace & \kw{\{} \\
 \hline
 CloseBrace & \kw{\}} \\
 \hline
+\end{longtable}
+
+\begin{longtable}{|p{4cm}|p{4cm}|}
+    \caption{Bảng các ký hiệu khác} \\
+\hline
+\textbf{\textit{Từ tố}} & \textbf{\textit{Ký hiệu}} \\
+\hline
 Bool & boolean \\
 \hline
 Char & character \\
@@ -103,10 +119,45 @@ Str & string \\
 \hline
 RawStr & raw string \\
 \hline
-Ident & identifier \\
-\hline
-RawIdent & raw identifier \\
-\hline
 Comment & comment \\
+\hline
+\end{longtable}
+
+Các từ khóa trong Pandora đều được tính là loại từ tố định danh (\textbf{Ident}), và với mỗi từ khóa, chúng sẽ được gán một ký hiệu đặc biệt tương ứng. Dưới đây là bảng các từ khóa và ký hiệu của chúng:
+
+\begin{longtable}{|p{4cm}|p{4cm}|}
+    \caption{Bảng các từ khóa} \\
+\hline
+\textbf{\textit{Từ khóa}} & \textbf{\textit{Ký hiệu}} \\
+\hline
+True & \kw{true} \\
+\hline
+False & \kw{false} \\
+\hline
+Set & \kw{set} \\
+\hline
+Mut & \kw{mut} \\
+\hline
+When & \kw{when} \\
+\hline
+Alt & \kw{alt} \\
+\hline
+Fun & \kw{fun} \\
+\hline
+Br & \kw{br} \\
+\hline
+Skip & \kw{skip} \\
+\hline
+For & \kw{for} \\
+\hline
+In & \kw{in} \\
+\hline
+During & \kw{during} \\
+\hline
+As & \kw{as} \\
+\hline
+Add & \kw{add} \\
+\hline
+Yeet & \kw{yeet} \\
 \hline
 \end{longtable}
