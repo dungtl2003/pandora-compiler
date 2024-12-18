@@ -1,12 +1,12 @@
 \section{Kiến trúc của trình thông dịch}
-\begin{figure}[h]
+\begin{figure}[H]
     \includegraphics[scale=0.24]{interpreter.png}   
     \centering
     \caption{Các giai đoạn khi phân tích chương trình} 
     \label{fig:stages}
 \end{figure}
 
-Quá trình phân tích một ngôn ngữ được hình dung giống như leo núi. Bắt đầu từ dưới cùng với chương trình nguồn (chỉ là văn bản với chuỗi các ký tự thô), qua mỗi giai đoạn phân tích chương trình và chuyển đổi nó thành dạng biểu diễn cao cấp hơn, nơi mà ngữ nghĩa (những gì người lập trình muốn máy tính) trở nên rõ ràng hơn. Sau đó trình dịch nói chung chuyển đổi nó thành dạng biểu diễn mà máy tính có thể thực hiện (xuống núi) bằng nhiều cách khác nhau. Trình thông dịch lựa chọn đường "xuống núi" (thực thi chương trình) ngay sau khi có cây phân tích cú pháp (syntax tree) như đường màu đỏ trong hình \ref{fig:stages} \cite{craftinginterpreters}. Chi tiết từng giai đoạn ta sẽ trình bày bên dưới.
+Quá trình phân tích một ngôn ngữ được hình dung giống như leo núi. Bắt đầu từ dưới cùng với chương trình nguồn (chỉ là văn bản với chuỗi các ký tự thô), qua mỗi giai đoạn phân tích chương trình và chuyển đổi nó thành dạng biểu diễn cao cấp hơn, nơi mà ngữ nghĩa (những gì người lập trình muốn máy tính) trở nên rõ ràng hơn. Sau đó trình dịch nói chung chuyển đổi nó thành dạng biểu diễn mà máy tính có thể thực hiện (xuống núi) bằng nhiều cách khác nhau. Trình thông dịch lựa chọn đường "xuống núi" (thực thi chương trình) ngay sau khi có cây phân tích cú pháp (syntax tree) như đường màu đỏ trong hình \ref{fig:stages} \cite{craftinginterpreters}. Từng giai đoạn trong quá trình phân tích chương trình được mô tả khái quát như sau:            
 
 \input{chapters/chapter-1/section-2/subsection-1.tex}
 \input{chapters/chapter-1/section-2/subsection-2.tex}

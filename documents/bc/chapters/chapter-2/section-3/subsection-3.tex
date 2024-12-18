@@ -17,27 +17,27 @@ Library access & \\
 \hline
 Function calls & \\
 \hline
-\w{$!$} \w{$-$} (unary) & \\
+\w{\kw{!}} \w{\kw{-}} (unary) & \\
 \hline
-\w{$*$} \w{$/$} \w{$\%$} & left to right \\
+\w{\kw{*}} \w{\kw{/}} \w{\kw{\%}} & left to right \\
 \hline
-\w{$+$} \w{$-$} & left to right \\
+\w{\kw{+}} \w{\kw{-}} & left to right \\
 \hline
-\w{$<<$} \w{$>>$} & left to right \\
+\w{\kw{<}\kw{<}} \w{\kw{>}\kw{>}} & left to right \\
 \hline
-\w{$\&$} & left to right \\
+\w{\kw{\&}} & left to right \\
 \hline
-\w{$\wedge$} & left to right \\
+\w{\kw{$\wedge$}} & left to right \\
 \hline
-\w{$|$} & left to right \\
+\w{\kw{|}} & left to right \\
 \hline
-\w{$==$} \w{$!=$} \w{$<$} \w{$>$} \w{$<=$} \w{$>=$} & left to right \\
+\w{\kw{==}} \w{\kw{!=}} \w{\kw{<}} \w{\kw{>}} \w{\kw{<=}} \w{\kw{>=}} & left to right \\
 \hline
-\w{$\&\&$} & left to right \\
+\w{\kw{\&\&}} & left to right \\
 \hline
-\w{$|\,|$} & left to right \\
+\w{\kw{|\,|}} & left to right \\
 \hline
-\w{$=$} \w{$+=$} \w{$-=$} \w{$*=$} \w{$/=$} \w{$\%=$} \w{$<<=$} \w{$>>=$} \w{$\&=$} \w{$\wedge=$} \w{$|=$} & right to left \\
+\w{\kw{=}} \w{\kw{+=}} \w{\kw{-=}} \w{\kw{*=}} \w{\kw{/=}} \w{\kw{\%=}} \w{\kw{<}\kw{<=}} \w{\kw{>}\kw{>=}} \w{\kw{\&=}} \w{\kw{$\wedge$=}} \w{\kw{|=}} & right to left \\
 \hline
 \end{longtable}
 
@@ -49,7 +49,7 @@ Function calls & \\
 
 \noindent\textbf{Biểu thức hằng kí tự (\textit{Character literal expression})}
 
-    Một biểu thức hằng kí tự bao gồm một từ tố kí tự (character literal). Kiểu của biểu thức là kiểu kí tự (\textbf{char}) nguyên thủy. Biểu thức hằng kí tự bắt đầu và kết thúc bằng dấu nháy đơn '\textbf{\textbf{'}}' (U+0027). Kí tự trong biểu thức hằng kí tự có thể là ký tự Unicode đơn hoặc ký tự thoát (escape character). 
+    Một biểu thức hằng kí tự bao gồm một từ tố kí tự (character literal). Kiểu của biểu thức là kiểu kí tự (\kw{char}) nguyên thủy. Biểu thức hằng kí tự bắt đầu và kết thúc bằng dấu nháy đơn \kw{'} (U+0027). Kí tự trong biểu thức hằng kí tự có thể là ký tự Unicode đơn hoặc ký tự thoát (escape character). 
 
 \noindent Ví dụ về biểu thức hằng kí tự:
 \begin{lstlisting}[]
@@ -63,7 +63,7 @@ Function calls & \\
 
 \noindent\textbf{Biểu thức hằng chuỗi (\textit{String literal expression})}
 
-    Một biểu thức hằng chuỗi có thể là một từ tố chuỗi thường (string literal) hoặc một từ tố chuỗi thô (raw string literal). Kiểu của biểu thức là kiểu chuỗi (\textbf{str}). Nếu từ tố là chuỗi thô, nó bắt đầu bằng ký tự '\textbf{r}' (U+0072), tiếp theo đó có thể là một loạt kí tự '\textbf{\#}' (U+0023), rồi đến cặp dấu nháy kép '\textbf{"}' (U+0022). Chuỗi thô có thể chứa bất kỳ ký tự nào trong Unicode. Nếu từ tố là chuỗi thường, nó bắt đầu và kết thúc bằng dấu nháy kép '\textbf{"}' (U+0022). Chuỗi thường có thể chứa bất kỳ ký tự nào trong Unicode, trừ ký tự dấu nháy kép (U+0022) và ký tự thoát (U+005C).
+    Một biểu thức hằng chuỗi có thể là một từ tố chuỗi thường (string literal) hoặc một từ tố chuỗi thô (raw string literal). Kiểu của biểu thức là kiểu chuỗi (\kw{str}). Nếu từ tố là chuỗi thô, nó bắt đầu bằng ký tự \kw{r} (U+0072), tiếp theo đó có thể là một loạt kí tự \kw{\#} (U+0023), rồi đến cặp dấu nháy kép \kw{"} (U+0022). Chuỗi thô có thể chứa bất kỳ ký tự nào trong Unicode. Nếu từ tố là chuỗi thường, nó bắt đầu và kết thúc bằng dấu nháy kép \kw{"} (U+0022). Chuỗi thường có thể chứa bất kỳ ký tự nào trong Unicode, trừ ký tự dấu nháy kép (U+0022) và ký tự thoát (U+005C).
 
 \noindent Ví dụ về biểu thức hằng chuỗi:
 \begin{lstlisting}[]
@@ -75,7 +75,7 @@ r##"Hello, ###"world"#!"##;
 
 \noindent\textbf{Biểu thức hằng số nguyên (\textit{Integer literal expression})}
 
-    Một biểu thức hằng số nguyên bao gồm một từ tố hằng số nguyên (integer literal). Kiểu của biểu thức là kiểu số nguyên (\textbf{int}) nguyên thủy. Hằng số nguyên có thể là hệ thập phân, hệ thập lục phân, hệ bát phân hoặc hệ nhị phân. Hệ thập phân bắt đầu bằng một chữ số thập phân, hệ thập lục phân bắt đầu bằng chuỗi U+0030 U+0068 (\textbf{0h}) hoặc U+0030 U+0048 (\textbf{0H}), hệ bát phân bắt đầu bằng chuỗi U+0030 U+006F (\textbf{0o}) hoặc U+0030 U+004F (\textbf{0O}), hệ nhị phân bắt đầu bằng chuỗi U+0030 U+0062 (\textbf{0b}) hoặc U+0030 U+0042 (\textbf{0B}). Các hệ cơ số có thể chứa dấu gạch dưới U+005F (\textbf{\_}) để phân cách các chữ số.
+    Một biểu thức hằng số nguyên bao gồm một từ tố hằng số nguyên (integer literal). Kiểu của biểu thức là kiểu số nguyên (\kw{int}) nguyên thủy. Hằng số nguyên có thể là hệ thập phân, hệ thập lục phân, hệ bát phân hoặc hệ nhị phân. Hệ thập phân bắt đầu bằng một chữ số thập phân, hệ thập lục phân bắt đầu bằng chuỗi U+0030 U+0068 (\kw{0h}) hoặc U+0030 U+0048 (\kw{0H}), hệ bát phân bắt đầu bằng chuỗi U+0030 U+006F (\kw{0o}) hoặc U+0030 U+004F (\kw{0O}), hệ nhị phân bắt đầu bằng chuỗi U+0030 U+0062 (\kw{0b}) hoặc U+0030 U+0042 (\kw{0B}). Các hệ cơ số có thể chứa dấu gạch dưới U+005F (\kw{\_}) để phân cách các chữ số.
 
 \noindent Ví dụ về biểu thức hằng số nguyên:
 \begin{lstlisting}[]
@@ -87,7 +87,7 @@ r##"Hello, ###"world"#!"##;
 
 \noindent\textbf{Biểu thức hằng số thực (\textit{Float literal expression})}
 
-    Một biểu thức hằng số thực bao gồm một từ tố hằng số thực (float literal). Kiểu của biểu thức là kiểu số thực (\textbf{float}) nguyên thủy. Hằng số thực có thể là số thực hoặc số thực với số mũ. Số thực bắt đầu bằng một số thực, số thực với số mũ bắt đầu bằng số thực theo sau là ký tự '\textbf{e}' hoặc '\textbf{E}' (U+0065 hoặc U+0045) và tiếp theo là một số nguyên. Cả hai loại hằng số thực đều có thể chứa dấu gạch dưới U+005F (\textbf{\_}) để phân cách các chữ số (riêng ký tự đầu tiên sau dấu chấm không thể là dấu gạch dưới).
+    Một biểu thức hằng số thực bao gồm một từ tố hằng số thực (float literal). Kiểu của biểu thức là kiểu số thực (\kw{float}) nguyên thủy. Hằng số thực có thể là số thực hoặc số thực với số mũ. Số thực bắt đầu bằng một số thực, số thực với số mũ bắt đầu bằng số thực theo sau là ký tự \kw{e} hoặc \kw{E} (U+0065 hoặc U+0045) và tiếp theo là một số nguyên. Cả hai loại hằng số thực đều có thể chứa dấu gạch dưới U+005F (\kw{\_}) để phân cách các chữ số (riêng ký tự đầu tiên sau dấu chấm không thể là dấu gạch dưới).
 
 \noindent Ví dụ về biểu thức hằng số thực:
 \begin{lstlisting}[]
@@ -104,7 +104,7 @@ r##"Hello, ###"world"#!"##;
 
 \noindent\textbf{Biểu thức hằng số boolean (\textit{Boolean literal expression})}
 
-    Một biểu thức hằng số boolean bao gồm từ khóa \kw{true} hoặc \kw{false}. Kiểu của biểu thức là kiểu boolean (\textbf{boolean}) nguyên thủy.
+    Một biểu thức hằng số boolean bao gồm từ khóa \kw{true} hoặc \kw{false}. Kiểu của biểu thức là kiểu boolean (\kw{boolean}) nguyên thủy.
 
 \subsubsection{Biểu thức toán tử (\textit{Operator expression})}
 
@@ -114,7 +114,7 @@ r##"Hello, ###"world"#!"##;
 
 \noindent\textbf{Biểu thức phủ định (\textit{Negation expression})}
 
-    Biểu thức phủ định là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của biểu thức con và toán tử phủ định. Biểu thức phủ định có thể là phủ định số học hoặc phủ định logic. Phủ định số học bắt đầu bằng ký tự '\textbf{-}' (U+002D), phủ định logic bắt đầu bằng ký tự '\textbf{!}' (U+0021). Ta lưu ý rằng phủ định số học chỉ áp dụng cho biểu thức số học, phủ định logic chỉ áp dụng cho biểu thức logic. Các số thực có dấu sẽ được biểu diễn bằng cách sử dụng mã bù hai.
+    Biểu thức phủ định là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của biểu thức con và toán tử phủ định. Biểu thức phủ định có thể là phủ định số học hoặc phủ định logic. Phủ định số học bắt đầu bằng ký tự \kw{-} (U+002D), phủ định logic bắt đầu bằng ký tự \kw{!} (U+0021). Ta lưu ý rằng phủ định số học chỉ áp dụng cho biểu thức số học, phủ định logic chỉ áp dụng cho biểu thức logic. Các số thực có dấu sẽ được biểu diễn bằng cách sử dụng mã bù hai.
 
 \regexneexpr
 
@@ -165,7 +165,7 @@ r##"Hello, ###"world"#!"##;
 
 \noindent\textbf{Biểu thức gán (\textit{Assign expression})}
 
-    Biểu thức gán là một biểu thức mà giá trị của nó luôn là \textbf{\textit{unit}}, với mục đích gán giá trị cho biến ở bên trái. Biểu thức gán bắt đầu bằng một biểu thức trái (biểu thức có thể gán giá trị) và tiếp theo là toán tử gán. Biểu thức gán có thể được biểu diễn bằng biểu thức chính quy sau:
+    Biểu thức gán là một biểu thức mà giá trị của nó luôn là \kw{\textit{unit}}, với mục đích gán giá trị cho biến ở bên trái. Biểu thức gán bắt đầu bằng một biểu thức trái (biểu thức có thể gán giá trị) và tiếp theo là toán tử gán. Biểu thức gán có thể được biểu diễn bằng biểu thức chính quy sau:
 
 \regexassignexpr
 
@@ -177,7 +177,7 @@ b = a + 3;
 
 \noindent\textbf{Biểu thức gán phức tạp (\textit{Compound assignment expression})}
 
-    Biểu thức gán phức tạp là một biểu thức mà giá trị của nó luôn là \textbf{\textit{unit}}, kết hợp giữa biểu thức gán và biểu thức toán tử. Biểu thức gán phức tạp có thể là phép cộng gán, phép trừ gán, phép nhân gán, phép chia gán, phép chia lấy dư gán, phép AND gán, phép OR gán, phép XOR gán, phép dịch trái gán hoặc phép dịch phải gán. Biểu thức gán phức tạp bắt đầu bằng một biểu thức trái (biểu thức có thể gán giá trị), tiếp theo là toán tử gán phức tạp và cuối cùng là biểu thức phải. Biểu thức gán phức tạp có thể được biểu diễn bằng biểu thức chính quy sau: 
+    Biểu thức gán phức tạp là một biểu thức mà giá trị của nó luôn là \kw{\textit{unit}}, kết hợp giữa biểu thức gán và biểu thức toán tử. Biểu thức gán phức tạp có thể là phép cộng gán, phép trừ gán, phép nhân gán, phép chia gán, phép chia lấy dư gán, phép AND gán, phép OR gán, phép XOR gán, phép dịch trái gán hoặc phép dịch phải gán. Biểu thức gán phức tạp bắt đầu bằng một biểu thức trái (biểu thức có thể gán giá trị), tiếp theo là toán tử gán phức tạp và cuối cùng là biểu thức phải. Biểu thức gán phức tạp có thể được biểu diễn bằng biểu thức chính quy sau: 
 
 \regexcompoundassignexpr
 
@@ -210,7 +210,7 @@ true || false;
 
 \subsubsection{Biểu thức nhóm (\textit{Grouped expression})}
 
-    Biểu thức nhóm là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của biểu thức con. Biểu thức nhóm bắt đầu và kết thúc bằng cặp ngoặc tròn U+0028 và U+0029 ('\textbf{(}' và '\textbf{)}'). Biểu thức nhóm có thể chứa bất kỳ biểu thức nào. Biểu thức nhóm có thể được biểu diễn bằng biểu thức chính quy sau:
+    Biểu thức nhóm là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của biểu thức con. Biểu thức nhóm bắt đầu và kết thúc bằng cặp ngoặc tròn \kw{(} và \kw{)} (U+0028 và U+0029). Biểu thức nhóm có thể chứa bất kỳ biểu thức nào. Biểu thức nhóm có thể được biểu diễn bằng biểu thức chính quy sau:
 
 \regexgroupexpr
 
@@ -221,7 +221,7 @@ true || false;
 
 \subsubsection{Biểu thức lời gọi hàm (\textit{Function call expression})}
 
-    Biểu thức lời gọi hàm là một biểu thức mà giá trị của nó phụ thuộc vào giá trị trả về của hàm được gọi. Biểu thức lời gọi hàm bắt đầu bằng tên hàm, tiếp theo là cặp ngoặc tròn U+0028 và U+0029 ('\textbf{(}' và '\textbf{)}') chứa danh sách tham số truyền vào hàm. Danh sách tham số truyền vào hàm được phân cách bởi dấu phẩy '\textbf{,}' (U+002C).Biểu thức lời gọi hàm có thể được biểu diễn bằng biểu thức chính quy sau:
+    Biểu thức lời gọi hàm là một biểu thức mà giá trị của nó phụ thuộc vào giá trị trả về của hàm được gọi. Biểu thức lời gọi hàm bắt đầu bằng tên hàm, tiếp theo là cặp ngoặc tròn \kw{(} và \kw{)} (U+0028 và U+0029) chứa danh sách tham số truyền vào hàm. Danh sách tham số truyền vào hàm được phân cách bởi dấu phẩy \kw{,} (U+002C).Biểu thức lời gọi hàm có thể được biểu diễn bằng biểu thức chính quy sau:
 
 \regexfuncallexpr
 
@@ -233,7 +233,7 @@ add(5, 3);
 
 \subsubsection{Biểu thức lời gọi hàm thư viện (\textit{Library call expression})}
 
-Biểu thức lời gọi hàm thư viện là một biểu thức mà giá trị của nó phụ thuộc vào giá trị trả về của hàm thư viện được gọi. Biểu thức lời gọi hàm thư viện bắt đầu bằng tên thư viện, tiếp theo là dấu chấm U+002E ('\textbf{.}') và tên hàm, sau đó là cặp ngoặc tròn U+0028 và U+0029 ('\textbf{(}' và '\textbf{)}') chứa danh sách tham số truyền vào hàm. Danh sách tham số truyền vào hàm được phân cách bởi dấu phẩy '\textbf{,}' (U+002C). Biểu thức lời gọi hàm thư viện có thể được biểu diễn bằng biểu thức chính quy sau:
+Biểu thức lời gọi hàm thư viện là một biểu thức mà giá trị của nó phụ thuộc vào giá trị trả về của hàm thư viện được gọi. Biểu thức lời gọi hàm thư viện bắt đầu bằng tên thư viện, tiếp theo là dấu chấm U+002E (\kw{.}) và tên hàm, sau đó là cặp ngoặc tròn \kw{(} và \kw{)} (U+0028 và U+0029) chứa danh sách tham số truyền vào hàm. Danh sách tham số truyền vào hàm được phân cách bởi dấu phẩy \kw{,} (U+002C). Biểu thức lời gọi hàm thư viện có thể được biểu diễn bằng biểu thức chính quy sau:
 
 \regexlibfuncallexpr
 
@@ -262,8 +262,8 @@ b;
     Biểu thức mảng là một biểu thức có giá trị là một mảng. Biểu thức mảng sẽ có hai dạng:
 
 \begin{itemize}
-    \item Dạng đầu tiên là dạng liệt kê mọi giá trị trong mảng. Cú pháp của dạng này là một danh sách các biểu thức có kiểu thống nhất, được phân cách bởi dấu phẩy '\textbf{,}' (U+002C) và đặt trong cặp dấu ngoặc vuông U+005B và U+005D ('\textbf{[}' và '\textbf{]}'). Dạng này sẽ tạo ra một mảng với các phần tử là giá trị của các biểu thức trong danh sách theo thứ tự mà chúng được liệt kê.  
-    \item Cú pháp của dạng thứ hai là hai biểu thức được phân cách bởi dấu chấm phẩy '\textbf{;}' (U+003B) và đặt trong cặp dấu ngoặc vuông U+005B và U+005D ('\textbf{[}' và '\textbf{]}'). Biểu thức trước dấu chấm phẩy được gọi là toán hạng lặp, biểu thức sau dấu chấm phẩy được gọi là toán hạng độ dài. Biểu thức mảng ở dạng này tạo ra một mảng có độ dài là giá trị của toán hạng độ dài, mỗi phần tử trong mảng có giá trị là giá trị của toán hạng lặp. Phần toán hạng độ dài phải là một biểu thức số nguyên không âm.
+    \item Dạng đầu tiên là dạng liệt kê mọi giá trị trong mảng. Cú pháp của dạng này là một danh sách các biểu thức có kiểu thống nhất, được phân cách bởi dấu phẩy \kw{,} (U+002C) và đặt trong cặp dấu ngoặc vuông U+005B và U+005D (\kw{[} và \kw{]}). Dạng này sẽ tạo ra một mảng với các phần tử là giá trị của các biểu thức trong danh sách theo thứ tự mà chúng được liệt kê.  
+    \item Cú pháp của dạng thứ hai là hai biểu thức được phân cách bởi dấu chấm phẩy \kw{;} (U+003B) và đặt trong cặp dấu ngoặc vuông U+005B và U+005D (\kw{[} và \kw{]}). Biểu thức trước dấu chấm phẩy được gọi là toán hạng lặp, biểu thức sau dấu chấm phẩy được gọi là toán hạng độ dài. Biểu thức mảng ở dạng này tạo ra một mảng có độ dài là giá trị của toán hạng độ dài, mỗi phần tử trong mảng có giá trị là giá trị của toán hạng lặp. Phần toán hạng độ dài phải là một biểu thức số nguyên không âm.
 \end{itemize}
 
     Biểu thức mảng có thể được biểu diễn bằng biểu thức chính quy sau:
@@ -278,7 +278,7 @@ b;
 
 \subsubsection{Biểu thức chỉ số (\textit{Index expression})}
 
-    Biểu thức chỉ số là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của mảng và chỉ số. Biểu thức chỉ số bắt đầu bằng một biểu thức mảng, tiếp theo là dấu ngoặc vuông U+005B và U+005D ('\textbf{[}' và '\textbf{]}') chứa biểu thức chỉ số. Biểu thức chỉ số có thể được biểu diễn bằng biểu thức chính quy sau:
+    Biểu thức chỉ số là một biểu thức mà giá trị của nó phụ thuộc vào giá trị của mảng và chỉ số. Biểu thức chỉ số bắt đầu bằng một biểu thức mảng, tiếp theo là dấu ngoặc vuông U+005B và U+005D (\kw{[} và \kw{]}) chứa biểu thức chỉ số. Biểu thức chỉ số có thể được biểu diễn bằng biểu thức chính quy sau:
 
 \regexindexexpr
 

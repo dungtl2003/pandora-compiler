@@ -1,18 +1,19 @@
 \section{Định nghĩa ngôn ngữ Pandora}
+\label{ch2:pandora}
 
 Tiếp theo đây, ta sẽ đi vào chi tiết về cú pháp và ngữ nghĩa của ngôn ngữ Pandora. Định nghĩa các thành phần trong ngôn ngữ Pandora thường được biểu diễn dưới dạng biểu thức chính quy\cite{li2008regular}. Ở đây, ta sẽ sử dụng một số quy ước cú pháp của biểu thức chính quy mở rộng (Extended regular expression \cite{freydenberger2013extended}). Ta cũng sẽ chỉ xét chế độ bình thường do chế độ hỗn loạn hoạt động y hệt bình thường (chỉ thay đổi từ khóa).
 
 \textbf{\textit{Quy ước của biểu thức chính quy mở rộng:}}
 
 \begin{itemize}
-    \item{$|$ nghĩa là hoặc (or)}
-    \item{( ) nhóm các thành phần}
-    \item{[ ] khớp bất kì một thành phần nào bên trong nó}
-    \item{$^\wedge$ để phủ định thành phần}
-    \item{[$^\wedge$ ] khớp bất kì một thành phần nào không bên trong nó}
-    \item{* lặp lại không hoặc nhiều lần}
-    \item{. khớp với một ký tự bất kì}
-    \item{? để chỉ thành phần trước nó có thể có hoặc không}
+    \item{\kw{|} nghĩa là hoặc (or)}
+    \item{\kw{( )} nhóm các thành phần}
+    \item{\kw{[ ]} khớp bất kì một thành phần nào bên trong nó}
+    \item{\kw{$^\wedge$} để phủ định thành phần}
+    \item{\kw{[$^\wedge$ ]} khớp bất kì một thành phần nào không bên trong nó}
+    \item{\kw{*} lặp lại không hoặc nhiều lần}
+    \item{\kw{.} khớp với một ký tự bất kì}
+    \item{\kw{?} để chỉ thành phần trước nó có thể có hoặc không}
 \end{itemize}
 
 Bây giờ, ta sẽ đi vào chi tiết về cú pháp và ngữ nghĩa của ngôn ngữ Pandora.

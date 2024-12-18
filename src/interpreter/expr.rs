@@ -636,19 +636,20 @@ fn interpret_expr_funcall(
     };
 
     let result = env.lookup_function(ident.name.as_str());
+
+    // Fix: not handle mutable arguments
+    let evaluated_args = {
+        let mut args_vec = Vec::new();
+        for arg in args {
+            args_vec.push((interpret_expr(env, arg, in_loop, is_verbose)?, true));
+        }
+        args_vec
+    };
+
     if result.is_none() {
         // We will try to find the function in the standard library
         let std_func_name = ident.name.as_str();
         let std_func_span = ident.span;
-
-        // Fix: not handle mutable arguments
-        let evaluated_args = {
-            let mut args_vec = Vec::new();
-            for arg in args {
-                args_vec.push((interpret_expr(env, arg, in_loop, is_verbose)?, true));
-            }
-            args_vec
-        };
 
         if let Some(lib) = env.lookup_default_library("std") {
             if let Some(func) = lib.get_function(std_func_name) {
@@ -666,11 +667,6 @@ fn interpret_expr_funcall(
         } else {
             unreachable!("Standard library must be loaded");
         }
-    }
-
-    let mut evaluated_args = Vec::new();
-    for arg in args {
-        evaluated_args.push(interpret_expr(env, arg, in_loop, is_verbose)?);
     }
 
     Value::evaluate_function(

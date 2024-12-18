@@ -1,13 +1,10 @@
 \subsection{Phân tích ngữ nghĩa và thực thi}
 
-Giai đoạn phân tích ngữ nghĩa và thực thi tương ứng với giai đoạn Transpiling 
-% và bao gồm một ít phần Analysis 
-trong hình \ref{fig:stages}. Giai đoạn này thực hiện từng câu lệnh của chương trình nguồn dựa trên cây cú pháp cho nên còn được gọi là TREE-WALK INTERPRETER. Giai đoạn này bao gồm hai giai đoạn nhỏ được thực hiện lần lượt trên từng câu lệnh là: Phân tích ngữ nghĩa và thực thi. Cụ thể với mỗi câu lệnh, từng giai đoạn nhỏ sẽ có nhiệm vụ như sau:
+    Giai đoạn phân tích ngữ nghĩa và thực thi tương ứng với giai đoạn Transpiling trong hình \ref{fig:stages}. Giai đoạn này thực hiện từng câu lệnh của chương trình nguồn dựa trên cây cú pháp cho nên còn được gọi là TREE-WALK INTERPRETER. Giai đoạn này bao gồm hai giai đoạn nhỏ được thực hiện lần lượt trên từng câu lệnh là: Phân tích ngữ nghĩa và thực thi. Cụ thể với mỗi câu lệnh, từng giai đoạn nhỏ sẽ có nhiệm vụ như sau:
 
 \textbf{Giai đoạn 1.} Phân tích ngữ nghĩa: 
 
-Giai đoạn này kiểm tra xem câu lệnh trong chương trình nguồn có đúng theo các quy định về ngữ nghĩa của ngôn ngữ nguồn hay không, đảm bảo sẽ phát hiện và mô tả các lỗi liên quan. Việc kiểm tra này có thể bao gồm: 
-\label{ch1:semantic}
+    Giai đoạn này kiểm tra xem câu lệnh trong chương trình nguồn có đúng theo các quy định về ngữ nghĩa của ngôn ngữ nguồn hay không, đảm bảo sẽ phát hiện và mô tả các lỗi liên quan. Việc kiểm tra này có thể bao gồm: 
 \begin{itemize}
     \item \textbf{Kiểm tra kiểu}. Trình thông dịch sẽ kiểm tra để đảm bảo một biểu thức phải được thực hiện trên các toán tử có kiểu hợp lệ, các câu lệnh phải được thực hiện với các biểu thức có kiểu tương thích với câu lệnh hoặc khi cố gắng ép kiểu các kiểu dữ liệu phải hợp lệ và có thể ép kiểu.
     \item \textbf{Kiểm tra dòng điều khiển}. Có một số câu lệnh thay đổi dòng điều khiển từ một khối phải có một vài nơi để chuyển điều khiển đến đó. Ví dụ trong Pandora, câu lệnh break làm dòng điều khiển thoát khỏi vòng lặp \kw{during}, \kw{for} gần nhất, sẽ báo lỗi nếu như các vòng lặp tại đó lại không có.
@@ -17,4 +14,6 @@ Giai đoạn này kiểm tra xem câu lệnh trong chương trình nguồn có �
 
 \textbf{Giai đoạn 2.} Thực thi: 
 
-Sau khi kiểm tra ngữ nghĩa thành công, trình thông dịch thực thi câu lệnh và lưu kết quả vào bộ nhớ hoặc trả về đầu ra. Ví dụ: Khi thực thi câu lệnh khai báo hàm, sau khi phân tích các thành phần của hàm như tên tàm, tham số truyền vào, kiểu dữ liệu đầu ra, các câu lệnh trong phần thân hàm, trình thông dịch sẽ thực hiện lưu chúng vào bộ quản lý môi trường. Hoặc khi gặp câu lệnh gán giá trị cho một biến, sau khi phân tích ngữ nghĩa để đảm bảo biến này có thể gán giá trị mới thì trình thông dịch sẽ thực thi câu lệnh này, thay đổi giá trị của biến này trong bộ quản lý môi trường.
+    Sau khi kiểm tra ngữ nghĩa thành công, trình thông dịch thực thi câu lệnh và lưu kết quả vào bộ nhớ hoặc trả về đầu ra. Ví dụ: Khi thực thi câu lệnh khai báo hàm, sau khi phân tích các thành phần của hàm như tên tàm, tham số truyền vào, kiểu dữ liệu đầu ra, các câu lệnh trong phần thân hàm, trình thông dịch sẽ thực hiện lưu chúng vào bộ quản lý môi trường. Hoặc khi gặp câu lệnh gán giá trị cho một biến, sau khi phân tích ngữ nghĩa để đảm bảo biến này có thể gán giá trị mới thì trình thông dịch sẽ thực thi câu lệnh này, thay đổi giá trị của biến này trong bộ quản lý môi trường.
+
+    Ta sẽ phân tích chi tiết giai đoạn phân tích ngữ nghĩa và giai đoạn thực thi (thông dịch) trong phần \textbf{\ref{ch3:semantic-analysis}} và phần \textbf{\ref{ch3:interpreter}}.

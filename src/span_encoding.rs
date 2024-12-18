@@ -44,6 +44,11 @@ impl Span {
     }
 
     pub fn to(&self, other: Span) -> Span {
+        if other == DUMMY_SP {
+            // If the other span is a dummy span, return self.
+            return *self;
+        }
+
         Span {
             offset: self.offset,
             length: (other.end() - self.offset) as usize,
