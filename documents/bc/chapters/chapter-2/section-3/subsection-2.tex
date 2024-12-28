@@ -1,6 +1,8 @@
 \subsection{Kiểu dữ liệu (\textit{Type})}
 
-    Tất cả các biến trong Pandora đều có kiểu dữ liệu. Kiểu dữ liệu xác định loại dữ liệu mà biến đó có thể chứa. Kiểu dữ liệu cũng xác định các phép toán mà biến đó có thể thực hiện. Trong Pandora chỉ có 7 kiểu dữ liệu: kiểu số nguyên, kiểu số thực, kiểu ký tự, kiểu logic, kiểu chuỗi, kiểu tuple và kiểu mảng.
+Tất cả các biến trong Pandora đều có kiểu dữ liệu. Kiểu dữ liệu xác định loại dữ liệu mà biến đó có thể chứa. Kiểu dữ liệu cũng xác định các phép toán mà biến đó có thể thực hiện. Trong Pandora chỉ có 7 kiểu dữ liệu: kiểu số nguyên, kiểu số thực, kiểu ký tự, kiểu logic, kiểu chuỗi, kiểu tuple và kiểu mảng. Cú pháp của kiểu dữ liệu được mô tả như sau:
+
+\regexty
 
 \subsubsection{Kiểu số nguyên}
 
@@ -24,8 +26,8 @@
 
 \subsubsection{Kiểu tuple}
 
-    Kiểu tuple được ký hiệu là \kw{tuple}. Một tuple có thể chứa nhiều giá trị khác nhau, và mỗi giá trị trong tuple có thể có kiểu dữ liệu khác nhau. Một tuple được tạo ra bằng cách đặt các giá trị cần chứa trong cặp dấu ngoặc đơn U+0028 (\kw{(}) và U+0029 (\kw{)}), cách nhau bởi dấu phẩy U+002C (\kw{,}). Ví dụ, \kw{(1, true, "hello")} là một tuple chứa 3 giá trị là số nguyên \kw{1}, logic \kw{true} và chuỗi \kw{"hello"}. Tuy nhiên, do đang trong quá trình phát triển, Pandora chỉ hỗ trợ đúng một tuple duy nhất là tuple không có phần tử nào, hay còn gọi là \kw{unit}, và được dùng làm giá trị trả về của hàm không có giá trị trả về.
+    Một tuple có thể chứa nhiều giá trị khác nhau, và mỗi giá trị trong tuple có thể có kiểu dữ liệu khác nhau. Một tuple được tạo ra bằng cách đặt các giá trị cần chứa trong cặp dấu ngoặc đơn U+0028 (\kw{(}) và U+0029 (\kw{)}), cách nhau bởi dấu phẩy U+002C (\kw{,}). Ví dụ, \kw{(1, true, "hello")} là một tuple chứa 3 giá trị là số nguyên \kw{1}, logic \kw{true} và chuỗi \kw{"hello"}. Tuy nhiên, do đang trong quá trình phát triển, Pandora chỉ hỗ trợ đúng một tuple duy nhất là tuple không có phần tử nào, hay còn gọi là \kw{unit}, và được dùng làm giá trị trả về của hàm không có giá trị trả về.
 
 \subsubsection{Kiểu mảng}
 
-    Kiểu mảng được ký hiệu là \kw{[T]} với \kw{T} là một kiểu dữ liệu bất kỳ. Một mảng có thể chứa nhiều giá trị cùng kiểu dữ liệu và có thể được tạo ra thông qua biểu thức mảng (chi tiết ở phần \textbf{\ref{ch2:arrayexpr}}).
+    Một mảng có thể chứa nhiều giá trị cùng kiểu dữ liệu và có thể được tạo ra thông qua biểu thức mảng (chi tiết ở phần \textbf{\ref{ch2:arrayexpr}}). Các giá trị trong mảng được đánh chỉ số từ \kw{0} đến \kw{n-1}, với \kw{n} là số lượng phần tử trong mảng. Ví dụ, mảng \kw{[1, 2, 3]} chứa 3 phần tử với giá trị lần lượt là \kw{1}, \kw{2} và \kw{3}.
